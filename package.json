@@ -12,6 +12,7 @@
     "@aws-sdk/client-s3": "^3.1101.0",
     "@heroicons/react": "^2.2.0",
     "@libsql/client": "^0.17.4",
+    "@react-pdf/renderer": "^4.5.1",
     "@tailwindcss/postcss": "^4.3.2",
     "bcryptjs": "^2.4.3",
     "class-variance-authority": "^0.7.1",
