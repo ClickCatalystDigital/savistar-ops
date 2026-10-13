@@ -261,3 +261,6 @@
     transform: rotateY(360deg) scale(1);
   }
 }
+/* Demo page: the feature links jump to their section below (components/DemoEntry.jsx). */
+html:has(#in-detail) { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html:has(#in-detail) { scroll-behavior: auto; } }
