@@ -1,6 +1,7 @@
 // Copied from shanti-ops. Deploy workflow: waits until <base>/api/version reports <commit>, then checks <path> answers.
 //   node scripts/wait-for-commit.mjs https://example.com <sha> /login
-const [base, sha, path = '/'] = process.argv.slice(2);
+const [rawBase, sha, path = '/'] = process.argv.slice(2);
+const base = rawBase?.replace(/\/+$/, ''); // 'https://x.com/' (a CLIENT_URL typed with a slash) -> 'https://x.com'
 if (!base || !sha) throw new Error('usage: wait-for-commit.mjs <base-url> <commit> [path]');
 const deadline = Date.now() + 25 * 60 * 1000; // Render's free plan builds take ~10 minutes
 let last = '';
