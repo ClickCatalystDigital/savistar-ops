@@ -3,7 +3,7 @@
 // (needs Node crypto) happens in route handlers via lib/auth.js.
 import { NextResponse } from 'next/server';
 
-const PUBLIC_PATHS = ['/login', '/api/login'];
+const PUBLIC_PATHS = ['/login', '/api/login', '/api/version'];
 
 // Public demo (DEMO_MODE=1, interiors-erp.ahromlabs.com; never set on Render): visitors enter through
 // /demo, password login is off, and changes to logins and file uploads (incl. AI bank-statement reading)
