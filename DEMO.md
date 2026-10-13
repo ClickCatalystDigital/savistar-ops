@@ -10,7 +10,7 @@ Added 2026-10-13 on the `workers-demo` branch. Same code as the live Savistar ap
 
 ## Demo-only behaviour (inert without `DEMO_MODE=1`)
 
-- **Made-up names.** `lib/brand.js` (Acme Interiors / Acme Furniture vs Savistar Interiors / Saag Furniture) and `lib/companies.js` (sample letterheads, no logos, an obviously fake GSTIN). Stored keys stay `savistar` / `saag`.
+- **Made-up names.** `lib/brand.js` (product Designer Ops for Acme Interiors / Acme Furniture, vs Savistar Ops for Savistar Interiors / Saag Furniture) and `lib/companies.js` (sample letterheads, no logos, an obviously fake GSTIN). Stored keys stay `savistar` / `saag`.
 - **Entry.** `/demo` → `POST /api/demo/lead` (separate leads DB, `LEADS_TURSO_URL`) → `POST /api/demo/enter` as `owner`, `manager` or `office` (`lib/demo-roles.js`).
 - **Guard.** `middleware.js` `demoGuard`: `/login` → `/demo`, `/api/login` 404, writes to `/api/users`, `/api/attachments` and `/api/documents` refused. `SESSION_SECRET` is required (no fallback) when `DEMO_MODE=1`.
 - **Layout.** Demo banner, GA consent (`components/DemoAnalytics.jsx`, shared ahromlabs.com cookie), noindex except `/demo`. `SKIP_MIGRATE=1`: the demo DB is built ahead of time.
@@ -20,7 +20,7 @@ Added 2026-10-13 on the `workers-demo` branch. Same code as the live Savistar ap
 - **Turso group `savdemo`:** `sav-demo` (what the Worker uses), `sav-demo-golden` (the copy it is reset from), `sav-demo-leads`.
 - **Seeding.** `scripts/demo/seed.mjs` runs against a Node build pointed at an empty golden DB (see the file's header). Always run `scripts/demo/scrub-check.mjs` before publishing a golden DB.
 - **Reset.** `workers/demo-reset-cron` recreates `sav-demo` from golden at 03:30 IST. Deploy with `npx wrangler deploy -c wrangler.jsonc` from its folder. Manual run: `POST https://savistar-ops-demo-reset.pujan-5d8.workers.dev` with header `x-trigger-key` (`RESET_TRIGGER_KEY` in the gitignored `.demo-secrets`).
-- **Deploy the demo:** `npm run cf:deploy` (worker `savistar-ops-interiors-demo`). Secrets: `TURSO_AUTH_TOKEN` (`savdemo` group token) and `SESSION_SECRET` (its own).
+- **Deploy the demo:** `npm run cf:deploy` (worker `savistar-ops-interiors-demo`). It first runs `scripts/demo/migrate.mjs` (the app's own `migrate()` on the golden and live demo DBs), so a schema change in `lib/db.js` reaches the demo and survives the nightly reset. Code changes reach the demo only when this is run. Secrets: `TURSO_AUTH_TOKEN` (`savdemo` group token) and `SESSION_SECRET` (its own).
 - **Dates drift.** Data is dated at seed time; re-seed every month or two.
 
 ## Fix found on the way

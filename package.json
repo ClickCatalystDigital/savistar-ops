@@ -9,7 +9,7 @@
     "lint": "next lint",
     "cf:build": "SAV_TARGET=workers NEXT_PUBLIC_DEMO=1 NEXT_PRIVATE_STANDALONE=true next build && node scripts/demo/strip-route-manifests.mjs && node scripts/demo/patch-yoga.mjs && opennextjs-cloudflare build --skipNextBuild && node scripts/demo/relative-wasm-imports.mjs && rm -rf .open-next/assets/logos .next",
     "cf:preview": "npm run cf:build && opennextjs-cloudflare preview",
-    "cf:deploy": "npm run cf:build && opennextjs-cloudflare deploy"
+    "cf:deploy": "node scripts/demo/migrate.mjs && npm run cf:build && opennextjs-cloudflare deploy"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1101.0",
