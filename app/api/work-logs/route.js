@@ -3,7 +3,7 @@ import { execute } from '@/lib/db';
 import { getUserFromRequest } from '@/lib/auth';
 
 export async function POST(req) {
-  const user = getUserFromRequest(req);
+  const user = await getUserFromRequest(req);
   const b = await req.json();
   if (!b.employee_id || !b.date) {
     return NextResponse.json({ error: 'employee_id and date required' }, { status: 400 });

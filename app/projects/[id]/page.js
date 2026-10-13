@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/select';
 import { ArrowLeftIcon, PlusIcon, PencilIcon, MapPinIcon, SendIcon } from 'lucide-react';
 import { TrashIcon } from '@heroicons/react/24/outline';
+import { BRAND } from '@/lib/brand';
 
 export default function ProjectDetail() {
   const { id } = useParams();
@@ -216,7 +217,7 @@ export default function ProjectDetail() {
         <TabsContent value="orders" className="mt-4">
           <div className="grid gap-4 lg:grid-cols-2">
             <Card>
-              <CardHeader><CardTitle>Saag orders for this project</CardTitle></CardHeader>
+              <CardHeader><CardTitle>{BRAND.workshopShort} orders for this project</CardTitle></CardHeader>
               <CardContent className="flex flex-col gap-2">
                 {p.orders.length === 0 && <p className="text-sm text-muted-foreground">No orders linked. Create one from the Orders tab and pick this project.</p>}
                 {p.orders.map(o => (

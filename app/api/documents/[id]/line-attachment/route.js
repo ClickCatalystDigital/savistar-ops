@@ -5,8 +5,9 @@ import { getDocument } from '@/lib/extract';
 import { uploadToR2, deleteFromR2, isR2Configured } from '@/lib/r2';
 import { getUserFromRequest, requireNonStaff } from '@/lib/auth';
 
-export async function POST(req, { params }) {
-  const guard = requireNonStaff(getUserFromRequest(req));
+export async function POST(req, ctx) {
+  const params = await ctx.params;
+  const guard = requireNonStaff(await getUserFromRequest(req));
   if (guard) return guard;
   if (!isR2Configured()) {
     return NextResponse.json({ error: 'File storage not configured (R2_* env vars missing)' }, { status: 503 });
@@ -26,8 +27,9 @@ export async function POST(req, { params }) {
   return NextResponse.json({ file_url: url });
 }
 
-export async function DELETE(req, { params }) {
-  const guard = requireNonStaff(getUserFromRequest(req));
+export async function DELETE(req, ctx) {
+  const params = await ctx.params;
+  const guard = requireNonStaff(await getUserFromRequest(req));
   if (guard) return guard;
   const { searchParams } = new URL(req.url);
   const index = Number(searchParams.get('line_index'));

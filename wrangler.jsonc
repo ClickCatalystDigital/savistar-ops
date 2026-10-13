@@ -1,0 +1,24 @@
+{
+  // Public demo of Savistar Ops: interiors-erp.ahromlabs.com, made-up companies, sample data reset nightly
+  // (workers/demo-reset-cron). The live app runs on Render from the same code (`next build`/`next start`).
+  // Deploy the demo with `npm run cf:deploy`.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "savistar-ops-interiors-demo",
+  "account_id": "5d8cf246f656006b81d99d734e8c0f40",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-08-27",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+  "routes": [{ "pattern": "interiors-erp.ahromlabs.com", "custom_domain": true }],
+  // Secrets (wrangler secret put): TURSO_AUTH_TOKEN (savdemo group token), SESSION_SECRET (its own).
+  // Never the live deployment's values.
+  "vars": {
+    "DEMO_MODE": "1",
+    "SKIP_MIGRATE": "1",
+    "TURSO_URL": "libsql://sav-demo-pujan.aws-ap-south-1.turso.io",
+    "LEADS_TURSO_URL": "libsql://sav-demo-leads-pujan.aws-ap-south-1.turso.io"
+  },
+  // Run next to the database (Turso, Mumbai): a page makes several sequential queries.
+  "placement": { "mode": "smart" },
+  "observability": { "enabled": true }
+}

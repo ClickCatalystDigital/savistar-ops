@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/table';
 import { ArrowLeftIcon, PlusIcon, PencilIcon, AlertTriangleIcon, PackageCheckIcon } from 'lucide-react';
 import { TrashIcon } from '@heroicons/react/24/outline';
+import { BRAND } from '@/lib/brand';
 
 const BLUE_ICON_BTN = 'text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-950/40';
 const RED_ICON_BTN = 'text-red-600 transition-colors hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-950/40';
@@ -346,7 +347,7 @@ function PosTab({ vendorId, pos, onChanged }) {
                   <DateInput value={form.ordered_on} onChange={v => setForm({ ...form, ordered_on: v })} />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Label>For Saag order</Label>
+                  <Label>For {BRAND.workshopShort} order</Label>
                   <Select value={form.order_id} onValueChange={val => setForm({ ...form, order_id: val })}>
                     <SelectTrigger><SelectValue placeholder="Optional" /></SelectTrigger>
                     <SelectContent>
@@ -562,7 +563,7 @@ function PosTab({ vendorId, pos, onChanged }) {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-2">
-                  <Label>For Saag order</Label>
+                  <Label>For {BRAND.workshopShort} order</Label>
                   <Select value={editForm.order_id} onValueChange={val => setEditForm({ ...editForm, order_id: val })}>
                     <SelectTrigger><SelectValue placeholder="Optional" /></SelectTrigger>
                     <SelectContent>

@@ -3,8 +3,9 @@ import { execute, softDelete } from '@/lib/db';
 import { getDocument } from '@/lib/extract';
 import { getUserFromRequest, requireApprover, requireNonStaff } from '@/lib/auth';
 
-export async function GET(req, { params }) {
-  const guard = requireNonStaff(getUserFromRequest(req));
+export async function GET(req, ctx) {
+  const params = await ctx.params;
+  const guard = requireNonStaff(await getUserFromRequest(req));
   if (guard) return guard;
   const doc = await getDocument(params.id);
   if (!doc) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -12,8 +13,9 @@ export async function GET(req, { params }) {
 }
 
 // Save reviewed header fields and/or edited line items (comments, corrections).
-export async function PUT(req, { params }) {
-  const guard = requireNonStaff(getUserFromRequest(req));
+export async function PUT(req, ctx) {
+  const params = await ctx.params;
+  const guard = requireNonStaff(await getUserFromRequest(req));
   if (guard) return guard;
   const b = await req.json();
   const doc = await getDocument(params.id);
@@ -31,8 +33,9 @@ export async function PUT(req, { params }) {
   return NextResponse.json({ ok: true });
 }
 
-export async function DELETE(req, { params }) {
-  const guard = requireApprover(getUserFromRequest(req));
+export async function DELETE(req, ctx) {
+  const params = await ctx.params;
+  const guard = requireApprover(await getUserFromRequest(req));
   if (guard) return guard;
   const doc = await getDocument(params.id);
   if (!doc) return NextResponse.json({ error: 'Not found' }, { status: 404 });

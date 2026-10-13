@@ -4,7 +4,7 @@ import { queryAll } from '@/lib/db';
 import { getUserFromRequest, isStaff } from '@/lib/auth';
 
 export async function GET(req) {
-  const user = getUserFromRequest(req);
+  const user = await getUserFromRequest(req);
   const { searchParams } = new URL(req.url);
   // Only the task layer is scoped by ?who — milestones, visits and order dates stay visible
   // in both modes so the month never loses its shape.

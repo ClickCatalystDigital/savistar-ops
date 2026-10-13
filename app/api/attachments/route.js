@@ -21,7 +21,7 @@ export async function GET(req) {
   const type = searchParams.get('entity_type');
   const id = searchParams.get('entity_id');
   if (!type || !id) return NextResponse.json({ error: 'entity_type and entity_id required' }, { status: 400 });
-  const guard = await guardCashEntity(getUserFromRequest(req), type, id);
+  const guard = await guardCashEntity(await getUserFromRequest(req), type, id);
   if (guard) return guard;
   const rows = await queryAll(
     `SELECT * FROM attachments WHERE entity_type = ? AND entity_id = ?
@@ -30,7 +30,7 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  const user = getUserFromRequest(req);
+  const user = await getUserFromRequest(req);
   if (!isR2Configured()) {
     return NextResponse.json({ error: 'File storage not configured (R2_* env vars missing)' }, { status: 503 });
   }
@@ -59,7 +59,7 @@ export async function DELETE(req) {
   const id = searchParams.get('id');
   const row = await queryOne('SELECT * FROM attachments WHERE id = ? AND is_deleted_record = 0', [id]);
   if (!row) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  const guard = await guardCashEntity(getUserFromRequest(req), row.entity_type, row.entity_id);
+  const guard = await guardCashEntity(await getUserFromRequest(req), row.entity_type, row.entity_id);
   if (guard) return guard;
   // File stays in R2 so a restored row still resolves.
   await softDelete('attachments', id);

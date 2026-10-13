@@ -4,7 +4,8 @@ import { computeStoredStatus } from '@/lib/po';
 
 // Record a partial delivery and/or return against a PO. Auto-completes the PO once
 // everything ordered has arrived (returns never reopen it — see lib/po.js).
-export async function POST(req, { params }) {
+export async function POST(req, ctx) {
+  const params = await ctx.params;
   const b = await req.json();
   if (!b.date || (!b.qty_delivered && !b.qty_returned)) {
     return NextResponse.json({ error: 'date and a delivered or returned qty required' }, { status: 400 });

@@ -5,7 +5,7 @@ import { getUserFromRequest, isStaff } from '@/lib/auth';
 // Staff only ever see the entries they created themselves — owners/admins/managers see
 // everything. The filter lives here so the UI (CashTab) needs no scoping logic of its own.
 export async function GET(req) {
-  const user = getUserFromRequest(req);
+  const user = await getUserFromRequest(req);
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   const { searchParams } = new URL(req.url);
   const month = searchParams.get('month'); // optional YYYY-MM filter
@@ -31,7 +31,7 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  const user = getUserFromRequest(req);
+  const user = await getUserFromRequest(req);
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   const b = await req.json();
   if (!b.date || !b.kind || !b.amount) {

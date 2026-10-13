@@ -5,7 +5,7 @@ import { execute } from '@/lib/db';
 import { getUserFromRequest } from '@/lib/auth';
 
 export async function POST(req) {
-  const user = getUserFromRequest(req);
+  const user = await getUserFromRequest(req);
   const b = await req.json();
   if (!b.project_id || !b.visit_date) {
     return NextResponse.json({ error: 'project_id and visit_date required' }, { status: 400 });

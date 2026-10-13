@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/table';
 import { ArrowLeftIcon, PencilIcon, SendIcon, PlusIcon, XIcon, DownloadIcon } from 'lucide-react';
 import { TrashIcon } from '@heroicons/react/24/outline';
+import { BRAND } from '@/lib/brand';
 
 const rupees = n => `₹${(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const EMPTY_ITEM = { description: '', hsn: '', gst_pct: 18, qty: 1, unit_price: 0 };
@@ -240,7 +241,7 @@ export default function ClientDetail() {
         {/* Projects & Orders */}
         <div className="flex flex-col gap-4">
           <Card>
-            <CardHeader><CardTitle>Savistar projects</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{BRAND.studioShort} projects</CardTitle></CardHeader>
             <CardContent className="flex flex-col gap-2">
               {client.projects.length === 0 && <p className="text-sm text-muted-foreground">None yet.</p>}
               {client.projects.map(p => (
@@ -252,7 +253,7 @@ export default function ClientDetail() {
             </CardContent>
           </Card>
           <Card>
-            <CardHeader><CardTitle>Saag orders</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{BRAND.workshopShort} orders</CardTitle></CardHeader>
             <CardContent className="flex flex-col gap-2">
               {client.orders.length === 0 && <p className="text-sm text-muted-foreground">None yet.</p>}
               {client.orders.map(o => (
@@ -313,8 +314,8 @@ export default function ClientDetail() {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      <SelectItem value="savistar">Savistar</SelectItem>
-                      <SelectItem value="saag">Saag</SelectItem>
+                      <SelectItem value="savistar">{BRAND.studioShort}</SelectItem>
+                      <SelectItem value="saag">{BRAND.workshopShort}</SelectItem>
                     </SelectGroup>
                   </SelectContent>
                 </Select>

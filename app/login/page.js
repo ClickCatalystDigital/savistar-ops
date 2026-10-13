@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Loader2Icon } from 'lucide-react';
+import { BRAND } from '@/lib/brand';
 
 export default function Login() {
   const router = useRouter();
@@ -34,9 +35,9 @@ export default function Login() {
       <Card className="w-full max-w-sm shadow-lg">
         <CardHeader className="items-center text-center">
           <h1 className="text-2xl font-bold tracking-tight">
-            <span className="text-muted-foreground">SAVISTAR</span><span className="text-primary">OPS</span>
+            <span className="text-muted-foreground">{BRAND.word}</span><span className="text-primary">OPS</span>
           </h1>
-          <p className="text-xs text-muted-foreground">Savistar Interiors · Saag Furniture</p>
+          <p className="text-xs text-muted-foreground">{BRAND.studio} · {BRAND.workshop}</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={submit} className="flex flex-col gap-4">

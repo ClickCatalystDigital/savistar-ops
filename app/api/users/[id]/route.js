@@ -5,8 +5,9 @@ import bcrypt from 'bcryptjs';
 import { execute } from '@/lib/db';
 import { getUserFromRequest, requireApprover } from '@/lib/auth';
 
-export async function PUT(req, { params }) {
-  const user = getUserFromRequest(req);
+export async function PUT(req, ctx) {
+  const params = await ctx.params;
+  const user = await getUserFromRequest(req);
   const guard = requireApprover(user);
   if (guard) return guard;
   const b = await req.json();
@@ -19,8 +20,9 @@ export async function PUT(req, { params }) {
   return NextResponse.json({ ok: true });
 }
 
-export async function DELETE(req, { params }) {
-  const user = getUserFromRequest(req);
+export async function DELETE(req, ctx) {
+  const params = await ctx.params;
+  const user = await getUserFromRequest(req);
   const guard = requireApprover(user);
   if (guard) return guard;
   if (Number(params.id) === user.id) {

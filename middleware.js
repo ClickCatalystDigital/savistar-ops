@@ -5,8 +5,27 @@ import { NextResponse } from 'next/server';
 
 const PUBLIC_PATHS = ['/login', '/api/login'];
 
+// Public demo (DEMO_MODE=1, interiors-erp.ahromlabs.com; never set on Render): visitors enter through
+// /demo, password login is off, and changes to logins and file uploads (incl. AI bank-statement reading)
+// are refused. Same as SB Ops' demoGuard.
+const DEMO_PUBLIC = ['/demo', '/api/demo/lead', '/api/demo/enter'];
+const DEMO_BLOCKED = ['/api/users', '/api/attachments', '/api/documents'];
+function demoGuard(req, pathname) {
+  if (process.env.DEMO_MODE !== '1') return null;
+  if (pathname === '/login') return NextResponse.redirect(new URL('/demo', req.url));
+  if (pathname === '/api/login') return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  if (DEMO_PUBLIC.includes(pathname)) return NextResponse.next();
+  const write = !['GET', 'HEAD', 'OPTIONS'].includes(req.method);
+  if (write && DEMO_BLOCKED.some(p => pathname === p || pathname.startsWith(p + '/'))) {
+    return NextResponse.json({ error: 'Not available in the demo' }, { status: 403 });
+  }
+  return null;
+}
+
 export function middleware(req) {
   const { pathname } = req.nextUrl;
+  const demo = demoGuard(req, pathname);
+  if (demo) return demo;
 
   if (
     PUBLIC_PATHS.some(p => pathname === p) ||
@@ -23,7 +42,7 @@ export function middleware(req) {
     if (pathname.startsWith('/api/')) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
-    return NextResponse.redirect(new URL('/login', req.url));
+    return NextResponse.redirect(new URL(process.env.DEMO_MODE === '1' ? '/demo' : '/login', req.url));
   }
 
   return NextResponse.next();

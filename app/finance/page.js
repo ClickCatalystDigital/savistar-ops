@@ -24,6 +24,7 @@ import {
   Loader2Icon, FileTextIcon, ExternalLinkIcon,
 } from 'lucide-react';
 import { TrashIcon } from '@heroicons/react/24/outline';
+import { BRAND } from '@/lib/brand';
 
 export default function FinancePage() {
   const [me, setMe] = useState(null);
@@ -40,7 +41,7 @@ export default function FinancePage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Finance</h1>
         <p className="text-sm text-muted-foreground">
-          {staff ? 'Cash entries you\'ve added' : 'One combined book — Savistar & Saag'}
+          {staff ? 'Cash entries you\'ve added' : `One combined book — ${BRAND.studioShort} & ${BRAND.workshopShort}`}
         </p>
       </div>
       {staff ? <CashTab scoped /> : (

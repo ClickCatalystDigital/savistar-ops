@@ -1,14 +1,16 @@
 import { NextResponse } from 'next/server';
 import { queryAll, queryOne, execute, softDelete } from '@/lib/db';
 
-export async function GET(req, { params }) {
+export async function GET(req, ctx) {
+  const params = await ctx.params;
   const invoice = await queryOne('SELECT * FROM invoices WHERE id = ? AND is_deleted_record = 0', [params.id]);
   if (!invoice) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   const items = await queryAll('SELECT * FROM invoice_items WHERE invoice_id = ? ORDER BY sort_order', [params.id]);
   return NextResponse.json({ ...invoice, items });
 }
 
-export async function PUT(req, { params }) {
+export async function PUT(req, ctx) {
+  const params = await ctx.params;
   const b = await req.json();
   const items = (b.items || []).filter(i => i.description?.trim());
   if (items.length === 0) return NextResponse.json({ error: 'At least one line item is required' }, { status: 400 });
@@ -30,7 +32,8 @@ export async function PUT(req, { params }) {
   return NextResponse.json({ ok: true });
 }
 
-export async function DELETE(req, { params }) {
+export async function DELETE(req, ctx) {
+  const params = await ctx.params;
   await softDelete('invoices', params.id);
   return NextResponse.json({ ok: true });
 }

@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { execute, softDelete } from '@/lib/db';
 
-export async function PUT(req, { params }) {
+export async function PUT(req, ctx) {
+  const params = await ctx.params;
   const b = await req.json();
   await execute(
     `UPDATE work_logs SET order_id = ?, start_time = ?, end_time = ?, description = ?, rating = ? WHERE id = ?`,
@@ -9,7 +10,8 @@ export async function PUT(req, { params }) {
   return NextResponse.json({ ok: true });
 }
 
-export async function DELETE(req, { params }) {
+export async function DELETE(req, ctx) {
+  const params = await ctx.params;
   await softDelete('work_logs', params.id);
   return NextResponse.json({ ok: true });
 }

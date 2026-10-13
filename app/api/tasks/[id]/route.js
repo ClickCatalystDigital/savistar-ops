@@ -4,8 +4,9 @@ import { NextResponse } from 'next/server';
 import { queryOne, execute, softDelete } from '@/lib/db';
 import { getUserFromRequest, isStaff } from '@/lib/auth';
 
-export async function PUT(req, { params }) {
-  const user = getUserFromRequest(req);
+export async function PUT(req, ctx) {
+  const params = await ctx.params;
+  const user = await getUserFromRequest(req);
   if (isStaff(user)) {
     const task = await queryOne('SELECT assigned_to FROM tasks WHERE id = ? AND is_deleted_record = 0', [params.id]);
     if (!task) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -27,8 +28,9 @@ export async function PUT(req, { params }) {
   return NextResponse.json({ ok: true });
 }
 
-export async function DELETE(req, { params }) {
-  const user = getUserFromRequest(req);
+export async function DELETE(req, ctx) {
+  const params = await ctx.params;
+  const user = await getUserFromRequest(req);
   if (isStaff(user)) {
     const task = await queryOne('SELECT assigned_to FROM tasks WHERE id = ? AND is_deleted_record = 0', [params.id]);
     if (!task) return NextResponse.json({ error: 'Not found' }, { status: 404 });

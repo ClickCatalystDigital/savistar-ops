@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { queryAll, queryOne, execute, softDelete } from '@/lib/db';
 
-export async function GET(req, { params }) {
+export async function GET(req, ctx) {
+  const params = await ctx.params;
   const order = await queryOne(`
     SELECT o.*, c.name AS client_name, p.name AS project_name FROM orders o
     LEFT JOIN clients c ON c.id = o.client_id
@@ -22,7 +23,8 @@ export async function GET(req, { params }) {
   return NextResponse.json({ ...order, workLogs, vendorPos });
 }
 
-export async function PUT(req, { params }) {
+export async function PUT(req, ctx) {
+  const params = await ctx.params;
   const b = await req.json();
   await execute(
     `UPDATE orders SET client_id = ?, project_id = ?, item = ?, qty = ?, description = ?,
@@ -34,7 +36,8 @@ export async function PUT(req, { params }) {
   return NextResponse.json({ ok: true });
 }
 
-export async function DELETE(req, { params }) {
+export async function DELETE(req, ctx) {
+  const params = await ctx.params;
   await softDelete('orders', params.id);
   return NextResponse.json({ ok: true });
 }

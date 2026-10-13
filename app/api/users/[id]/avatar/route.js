@@ -14,8 +14,9 @@ function isWebp(buffer) {
   return buffer.toString('ascii', 0, 4) === 'RIFF' && buffer.toString('ascii', 8, 12) === 'WEBP';
 }
 
-export async function POST(req, { params }) {
-  const guard = requireApprover(getUserFromRequest(req));
+export async function POST(req, ctx) {
+  const params = await ctx.params;
+  const guard = requireApprover(await getUserFromRequest(req));
   if (guard) return guard;
 
   if (!isR2Configured()) {
@@ -44,8 +45,9 @@ export async function POST(req, { params }) {
   return NextResponse.json({ avatar_url: url });
 }
 
-export async function DELETE(req, { params }) {
-  const guard = requireApprover(getUserFromRequest(req));
+export async function DELETE(req, ctx) {
+  const params = await ctx.params;
+  const guard = requireApprover(await getUserFromRequest(req));
   if (guard) return guard;
 
   const rows = await queryAll('SELECT avatar_image_key FROM users WHERE id = ?', [params.id]);

@@ -6,14 +6,14 @@ import { queryAll, execute } from '@/lib/db';
 import { getUserFromRequest, requireApprover } from '@/lib/auth';
 
 export async function GET(req) {
-  const guard = requireApprover(getUserFromRequest(req));
+  const guard = requireApprover(await getUserFromRequest(req));
   if (guard) return guard;
   const rows = await queryAll('SELECT id, username, role, display_name, active, created_at, avatar_color, avatar_font, avatar_image_key AS avatar_url FROM users ORDER BY username');
   return NextResponse.json(rows);
 }
 
 export async function POST(req) {
-  const guard = requireApprover(getUserFromRequest(req));
+  const guard = requireApprover(await getUserFromRequest(req));
   if (guard) return guard;
   const b = await req.json();
   if (!b.username?.trim() || !b.password) {

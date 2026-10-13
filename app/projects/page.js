@@ -16,6 +16,7 @@ import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectItem,
 } from '@/components/ui/select';
 import { PlusIcon } from 'lucide-react';
+import { BRAND } from '@/lib/brand';
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState([]);
@@ -52,7 +53,7 @@ export default function ProjectsPage() {
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Projects</h1>
-          <p className="text-sm text-muted-foreground">Savistar interior design projects</p>
+          <p className="text-sm text-muted-foreground">{BRAND.studioShort} interior design projects</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild><Button><PlusIcon data-icon="inline-start" />New project</Button></DialogTrigger>

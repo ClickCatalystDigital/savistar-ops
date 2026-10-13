@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server';
 import { queryOne, execute, softDelete } from '@/lib/db';
 import { getUserFromRequest, canAccessCash } from '@/lib/auth';
 
-export async function PUT(req, { params }) {
-  const user = getUserFromRequest(req);
+export async function PUT(req, ctx) {
+  const params = await ctx.params;
+  const user = await getUserFromRequest(req);
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   const existing = await queryOne('SELECT created_by FROM cash_transactions WHERE id = ?', [params.id]);
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -17,8 +18,9 @@ export async function PUT(req, { params }) {
   return NextResponse.json({ ok: true });
 }
 
-export async function DELETE(req, { params }) {
-  const user = getUserFromRequest(req);
+export async function DELETE(req, ctx) {
+  const params = await ctx.params;
+  const user = await getUserFromRequest(req);
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   const existing = await queryOne('SELECT created_by FROM cash_transactions WHERE id = ?', [params.id]);
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });

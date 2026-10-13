@@ -19,6 +19,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
+import { BRAND } from '@/lib/brand';
 
 const LINKS = [
   { href: '/', label: 'Home', icon: LayoutDashboardIcon },
@@ -67,7 +68,7 @@ export default function Nav({ user }) {
         <div className="container flex h-14 items-center gap-4">
           <Link href="/" className="flex items-center gap-2">
             <h1 className="text-xl font-bold tracking-tight">
-              <span className="text-muted-foreground">SAVISTAR</span><span className="text-primary">OPS</span>
+              <span className="text-muted-foreground">{BRAND.word}</span><span className="text-primary">OPS</span>
             </h1>
           </Link>
 

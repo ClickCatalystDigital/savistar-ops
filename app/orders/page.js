@@ -21,6 +21,7 @@ import {
   Table, TableHeader, TableRow, TableHead, TableBody, TableCell,
 } from '@/components/ui/table';
 import { PlusIcon } from 'lucide-react';
+import { BRAND } from '@/lib/brand';
 
 const STATUS_VARIANT = { pending: 'outline', in_progress: 'default', done: 'secondary', delivered: 'secondary', cancelled: 'destructive' };
 const EMPTY = { item: '', qty: 1, client_id: '', project_id: '', description: '', start_date: '', due_date: '' };
@@ -68,7 +69,7 @@ export default function OrdersPage() {
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Orders</h1>
-          <p className="text-sm text-muted-foreground">Saag furniture workshop orders</p>
+          <p className="text-sm text-muted-foreground">{BRAND.workshopShort} furniture workshop orders</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild><Button><PlusIcon data-icon="inline-start" />New order</Button></DialogTrigger>
@@ -98,7 +99,7 @@ export default function OrdersPage() {
                   </Select>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Label>Savistar project</Label>
+                  <Label>{BRAND.studioShort} project</Label>
                   <Select value={form.project_id} onValueChange={v => setForm({ ...form, project_id: v })}>
                     <SelectTrigger><SelectValue placeholder="Optional" /></SelectTrigger>
                     <SelectContent>
