@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { queryAll, queryOne, execute, softDelete, vendorExpenseSQL } from '@/lib/db';
 
-export async function GET(req, { params }) {
+export async function GET(req, ctx) {
+  const params = await ctx.params;
   const vendor = await queryOne(
     `SELECT v.*, ${vendorExpenseSQL('v')} AS total_expense FROM vendors v
      WHERE v.id = ? AND v.is_deleted_record = 0`, [params.id]);
@@ -39,14 +40,16 @@ export async function GET(req, { params }) {
   });
 }
 
-export async function PUT(req, { params }) {
+export async function PUT(req, ctx) {
+  const params = await ctx.params;
   const b = await req.json();
   await execute('UPDATE vendors SET name = ?, phone = ?, material = ?, notes = ? WHERE id = ?',
     [b.name, b.phone || null, b.material || null, b.notes || null, params.id]);
   return NextResponse.json({ ok: true });
 }
 
-export async function DELETE(req, { params }) {
+export async function DELETE(req, ctx) {
+  const params = await ctx.params;
   await softDelete('vendors', params.id);
   return NextResponse.json({ ok: true });
 }

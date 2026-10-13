@@ -5,7 +5,7 @@ import { queryAll, execute } from '@/lib/db';
 import { getUserFromRequest, isStaff } from '@/lib/auth';
 
 export async function GET(req) {
-  const user = getUserFromRequest(req);
+  const user = await getUserFromRequest(req);
   const { searchParams } = new URL(req.url);
   const scope = searchParams.get('scope') || 'today';
   const mineOnly = isStaff(user) || searchParams.get('who') === 'mine';
@@ -32,7 +32,7 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  const user = getUserFromRequest(req);
+  const user = await getUserFromRequest(req);
   const b = await req.json();
   if (!b.title?.trim() || !b.due_date) {
     return NextResponse.json({ error: 'title and due_date required' }, { status: 400 });

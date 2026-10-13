@@ -3,7 +3,8 @@ import { execute, softDelete } from '@/lib/db';
 
 // Both edit and delete are open to any logged-in user (incl. staff) — consistent with
 // every other entity's PUT/DELETE routes in the app (clients, orders, projects, vendors…).
-export async function PUT(req, { params }) {
+export async function PUT(req, ctx) {
+  const params = await ctx.params;
   const b = await req.json();
   await execute(
     `UPDATE vendor_pos SET item = ?, qty_ordered = ?, rate = ?, order_id = ?, project_id = ?,
@@ -13,7 +14,8 @@ export async function PUT(req, { params }) {
   return NextResponse.json({ ok: true });
 }
 
-export async function DELETE(req, { params }) {
+export async function DELETE(req, ctx) {
+  const params = await ctx.params;
   await softDelete('vendor_pos', params.id);
   return NextResponse.json({ ok: true });
 }

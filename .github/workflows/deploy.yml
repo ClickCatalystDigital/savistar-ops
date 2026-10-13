@@ -1,0 +1,65 @@
+# One push to main deploys every server, one after another, stopping at the first failure (same as
+# shanti-ops' SB Ops pipeline):
+#   1. checks  - the Node (Render) build compiles
+#   2. demo    - update the demo databases' schema (scripts/demo/migrate.mjs), deploy the demo Worker
+#                (interiors-erp.ahromlabs.com), check it serves this commit
+#   3. client  - wait until the live app on Render serves this commit (Render deploys it by itself on
+#                every push with Auto-Deploy "On Commit"; a red step means that deploy didn't happen or failed)
+#
+# Repository secrets (Settings > Secrets and variables > Actions):
+#   CLOUDFLARE_API_TOKEN  "Edit Cloudflare Workers" on the Ahrom Labs account (the demo)
+#   DEMO_DB_TOKEN         Turso group token for the savdemo group (golden + live demo databases)
+# Repository variable:
+#   CLIENT_URL            the live app's address on Render, e.g. https://savistar-ops.onrender.com
+#                         (the client check is skipped until it is set)
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - name: Node (Render) build compiles
+        run: npx next build
+      - name: Scripts parse
+        run: for f in scripts/demo/*.mjs scripts/wait-for-commit.mjs; do node --check "$f"; done
+
+  demo:
+    needs: checks
+    runs-on: ubuntu-latest
+    environment: demo
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - name: Update the demo databases' schema, build and deploy the demo Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          TURSO_GROUP_TOKEN: ${{ secrets.DEMO_DB_TOKEN }}
+        # One retry: the build downloads Google fonts and npm packages, which occasionally fail.
+        run: npm run cf:deploy || (echo "retrying once" && sleep 20 && npm run cf:deploy)
+      - name: Check the demo serves this commit
+        run: node scripts/wait-for-commit.mjs https://interiors-erp.ahromlabs.com "$GITHUB_SHA" /demo
+
+  client:
+    needs: demo
+    if: vars.CLIENT_URL != ''
+    runs-on: ubuntu-latest
+    environment: client
+    steps:
+      - uses: actions/checkout@v5
+      - name: Wait until the live app serves this commit
+        run: node scripts/wait-for-commit.mjs "${{ vars.CLIENT_URL }}" "$GITHUB_SHA" /login

@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { queryAll, queryOne, execute, softDelete } from '@/lib/db';
 
-export async function GET(req, { params }) {
+export async function GET(req, ctx) {
+  const params = await ctx.params;
   const client = await queryOne('SELECT * FROM clients WHERE id = ? AND is_deleted_record = 0', [params.id]);
   if (!client) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   const [conversations, projects, orders, invoices] = await Promise.all([
@@ -18,7 +19,8 @@ export async function GET(req, { params }) {
   return NextResponse.json({ ...client, conversations, projects, orders, invoices });
 }
 
-export async function PUT(req, { params }) {
+export async function PUT(req, ctx) {
+  const params = await ctx.params;
   const b = await req.json();
   await execute(
     'UPDATE clients SET name = ?, phone = ?, email = ?, address = ?, notes = ? WHERE id = ?',
@@ -26,7 +28,8 @@ export async function PUT(req, { params }) {
   return NextResponse.json({ ok: true });
 }
 
-export async function DELETE(req, { params }) {
+export async function DELETE(req, ctx) {
+  const params = await ctx.params;
   await softDelete('clients', params.id);
   return NextResponse.json({ ok: true });
 }

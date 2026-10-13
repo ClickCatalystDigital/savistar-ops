@@ -2,7 +2,8 @@ import { renderToBuffer } from '@react-pdf/renderer';
 import { queryAll, queryOne } from '@/lib/db';
 import { InvoicePdf } from '@/lib/invoicePdf';
 
-export async function GET(req, { params }) {
+export async function GET(req, ctx) {
+  const params = await ctx.params;
   const invoice = await queryOne('SELECT * FROM invoices WHERE id = ? AND is_deleted_record = 0', [params.id]);
   if (!invoice) return new Response('Not found', { status: 404 });
   const [items, client, project] = await Promise.all([

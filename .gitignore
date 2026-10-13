@@ -4,3 +4,7 @@ node_modules/
 .env.local
 *.db
 .DS_Store
+.open-next/
+.wrangler/
+.dev.vars
+.demo-secrets

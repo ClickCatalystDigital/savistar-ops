@@ -6,7 +6,7 @@ import { execute } from '@/lib/db';
 import { getUserFromRequest } from '@/lib/auth';
 
 export async function PUT(req) {
-  const user = getUserFromRequest(req);
+  const user = await getUserFromRequest(req);
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   const { password } = await req.json();
   if (!password || password.length < 4) {

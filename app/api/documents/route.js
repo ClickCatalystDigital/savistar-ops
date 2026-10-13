@@ -6,7 +6,7 @@ import { runExtraction } from '@/lib/extract';
 import { getUserFromRequest, requireNonStaff } from '@/lib/auth';
 
 export async function GET(req) {
-  const guard = requireNonStaff(getUserFromRequest(req));
+  const guard = requireNonStaff(await getUserFromRequest(req));
   if (guard) return guard;
   // Stale 'reading' rows (server restarted mid-extraction) get failed after 5 min.
   await execute(`UPDATE documents SET status = 'extract_failed', extract_error = 'Timeout'
@@ -20,7 +20,7 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  const user = getUserFromRequest(req);
+  const user = await getUserFromRequest(req);
   const guard = requireNonStaff(user);
   if (guard) return guard;
   const form = await req.formData();

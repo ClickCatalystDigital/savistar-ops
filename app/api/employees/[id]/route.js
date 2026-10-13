@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { queryAll, queryOne, execute, softDelete } from '@/lib/db';
 import { todayMonth } from '@/lib/date';
 
-export async function GET(req, { params }) {
+export async function GET(req, ctx) {
+  const params = await ctx.params;
   const { searchParams } = new URL(req.url);
   const month = searchParams.get('month') || todayMonth();
   const emp = await queryOne('SELECT * FROM employees WHERE id = ? AND is_deleted_record = 0', [params.id]);
@@ -22,7 +23,8 @@ export async function GET(req, { params }) {
   return NextResponse.json({ ...emp, month, attendance, workLogs, expenses, payments });
 }
 
-export async function PUT(req, { params }) {
+export async function PUT(req, ctx) {
+  const params = await ctx.params;
   const b = await req.json();
   await execute(
     `UPDATE employees SET name = ?, profession = ?, phone = ?, pay_type = ?, pay_rate = ?, active = ?, joined_at = ? WHERE id = ?`,
@@ -31,7 +33,8 @@ export async function PUT(req, { params }) {
   return NextResponse.json({ ok: true });
 }
 
-export async function DELETE(req, { params }) {
+export async function DELETE(req, ctx) {
+  const params = await ctx.params;
   await softDelete('employees', params.id);
   return NextResponse.json({ ok: true });
 }
