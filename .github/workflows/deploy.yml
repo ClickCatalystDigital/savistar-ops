@@ -62,4 +62,6 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Wait until the live app serves this commit
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: node scripts/wait-for-commit.mjs "${{ vars.CLIENT_URL }}" "$GITHUB_SHA" /login
