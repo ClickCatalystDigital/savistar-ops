@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { SunIcon, MoonIcon, SettingsIcon, LogOutIcon, KeyRoundIcon } from 'lucide-react';
+import { SunIcon, MoonIcon, SettingsIcon, LogOutIcon, KeyRoundIcon, EllipsisIcon } from 'lucide-react';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { LINKS } from '@/lib/nav';
 import { Wordmark } from '@/components/wordmark';
 import { cn } from '@/lib/utils';
@@ -30,6 +31,7 @@ export default function Nav({ user }) {
   const router = useRouter();
   const [theme, setTheme] = useState('light');
   const [pwOpen, setPwOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const [due, setDue] = useState(null);
   const [today, setToday] = useState(null);
 
@@ -138,20 +140,48 @@ export default function Nav({ user }) {
       {/* Mobile bottom tab bar */}
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 backdrop-blur md:hidden">
         <div className="mx-auto flex max-w-md items-stretch justify-around px-1 pb-[env(safe-area-inset-bottom)]">
-          {links.map(l => {
+          {links.filter(l => l.mobile).map(l => {
             const Icon = l.icon;
             const active = isActive(l);
             return (
               <Link key={l.href} href={l.href}
-                className={cn('flex min-w-0 flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors',
+                className={cn('flex min-w-0 flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-medium transition-colors',
                   active ? 'text-primary' : 'text-muted-foreground')}>
                 <Icon className={cn('size-5', active && 'fill-primary/10')} />
                 <span className={cn('truncate', active && 'marker')}>{l.label}</span>
               </Link>
             );
           })}
+          {(() => {
+            const active = links.some(l => !l.mobile && isActive(l));
+            return (
+              <button type="button" onClick={() => setMoreOpen(true)} aria-haspopup="dialog"
+                className={cn('flex min-w-0 flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-medium transition-colors', active ? 'text-primary' : 'text-muted-foreground')}>
+                <EllipsisIcon className="size-5" />
+                <span className={cn('truncate', active && 'marker')}>More</span>
+              </button>
+            );
+          })()}
         </div>
       </nav>
+
+      {/* The rest of the sections, grouped as on the desktop bar. */}
+      <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
+        <SheetContent side="bottom" className="paper-surface rounded-t-2xl pb-[calc(1rem+env(safe-area-inset-bottom))] md:hidden">
+          <SheetHeader><SheetTitle className="font-hand text-xl font-normal">More</SheetTitle></SheetHeader>
+          <div className="grid grid-cols-3 gap-3 px-4">
+            {links.filter(l => !l.mobile).map(l => {
+              const Icon = l.icon;
+              return (
+                <Link key={l.href} href={l.href} onClick={() => setMoreOpen(false)}
+                  className={cn('flex flex-col items-center gap-1.5 rounded-xl border bg-background/60 py-4 text-sm', isActive(l) ? 'border-primary text-primary' : 'text-foreground')}>
+                  <Icon strokeWidth={1.6} className="size-6" />{l.label}
+                </Link>
+              );
+            })}
+          </div>
+        </SheetContent>
+      </Sheet>
 
       <ChangePasswordDialog open={pwOpen} onOpenChange={setPwOpen} />
     </>
