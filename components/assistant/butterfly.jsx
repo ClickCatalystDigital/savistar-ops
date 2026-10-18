@@ -1,8 +1,8 @@
 import { cn } from '@/lib/utils';
 
 // The assistant's mark: an inked butterfly with a watercolour wash on its wings, drawn like the rest of the app
-// (thin ink line, paper). Wings rest half folded and flap now and then; inside a `.group` they open and flutter on
-// hover (globals.css .butterfly). `open` keeps them open (the panel header).
+// (thin ink line, paper). Wings rest open and flap now and then; inside a `.group` they flutter on hover
+// (globals.css .butterfly). `open` keeps them still (the panel header).
 const RIGHT_WINGS = (
   <>
     {/* forewing, pointed at the tip; hindwing, rounded with a small tail */}
