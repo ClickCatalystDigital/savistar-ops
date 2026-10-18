@@ -105,8 +105,10 @@ export default function ProjectsPage() {
           const materials = projectMaterials(p);
           return (
             <Link key={p.id} href={`/projects/${p.id}`}>
-              <Card className={cn('h-full transition-transform hover:-translate-y-0.5', materials.length && 'pt-0')}>
-                <Swatches items={materials} className="h-10" />
+              <Card className={cn('h-full transition-transform hover:-translate-y-0.5', (p.cover_url || materials.length) && 'pt-0')}>
+                {/* Mood-board top: the newest photo with the palette as a thin band under it. */}
+                {p.cover_url && <img src={p.cover_url} alt="" loading="lazy" className="aspect-[16/9] w-full object-cover" />}
+                <Swatches items={materials} className={p.cover_url ? 'h-2.5' : 'h-10'} />
                 <CardHeader>
                   <div className="flex items-start justify-between gap-2">
                     <CardTitle className="font-sans text-base">{p.name}</CardTitle>

@@ -5,6 +5,7 @@ export async function GET() {
   const rows = await queryAll(`
     SELECT p.*, c.name AS client_name, c.notes AS client_notes,
       (SELECT GROUP_CONCAT(o.item, '; ') FROM orders o WHERE o.project_id = p.id AND o.is_deleted_record = 0) AS order_items,
+      (SELECT a.file_url FROM attachments a WHERE a.entity_type = 'project' AND a.entity_id = p.id AND a.is_deleted_record = 0 ORDER BY a.id DESC LIMIT 1) AS cover_url,
       (SELECT COUNT(*) FROM milestones m WHERE m.project_id = p.id AND m.is_deleted_record = 0) AS milestones_total,
       (SELECT COUNT(*) FROM milestones m WHERE m.project_id = p.id AND m.is_deleted_record = 0 AND m.status = 'done') AS milestones_done,
       (SELECT COUNT(*) FROM orders o WHERE o.project_id = p.id AND o.is_deleted_record = 0) AS orders_count

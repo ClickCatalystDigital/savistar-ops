@@ -27,6 +27,7 @@ import { BRAND } from '@/lib/brand';
 import { StatusStamp } from '@/components/project-art';
 import { StickyNote } from '@/components/sticky-note';
 import { MaterialsEditor } from '@/components/materials-editor';
+import { ProjectPhotos } from '@/components/project-photos';
 import { cn } from '@/lib/utils';
 
 export default function ProjectDetail() {
@@ -189,6 +190,7 @@ export default function ProjectDetail() {
       <Tabs defaultValue="milestones">
         <TabsList>
           <TabsTrigger value="milestones">Milestones</TabsTrigger>
+          <TabsTrigger value="photos">Photos{p.photos.length > 0 && <span className="figures ml-1 text-xs text-muted-foreground">{p.photos.length}</span>}</TabsTrigger>
           <TabsTrigger value="orders">Orders & materials</TabsTrigger>
           <TabsTrigger value="visits">Site visits</TabsTrigger>
           <TabsTrigger value="conversations">Conversations</TabsTrigger>
@@ -231,6 +233,10 @@ export default function ProjectDetail() {
               </ol>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="photos" className="mt-4">
+          <ProjectPhotos projectId={Number(id)} photos={p.photos} onChange={load} />
         </TabsContent>
 
         <TabsContent value="orders" className="mt-4">
