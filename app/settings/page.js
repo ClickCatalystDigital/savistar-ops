@@ -22,6 +22,7 @@ import { KeyRoundIcon, UploadIcon, XIcon, CheckIcon, PaletteIcon } from 'lucide-
 import { TrashIcon } from '@heroicons/react/24/outline';
 import { UserAvatar, AVATAR_FONTS, AVATAR_SWATCHES } from '@/components/user-avatar';
 import { cn } from '@/lib/utils';
+import { AssistantCard } from '@/components/assistant/assistant-card';
 
 const EMPTY = { username: '', password: '', display_name: '', role: 'user' };
 
@@ -167,7 +168,7 @@ export default function SettingsPage() {
       <div className="flex items-center justify-between gap-3">
         <div>
           <PageTitle>Settings</PageTitle>
-          <p className="text-sm text-muted-foreground">Users & access</p>
+          <p className="text-sm text-muted-foreground">Users, access & AI</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild><NewButton label="New user" /></DialogTrigger>
@@ -272,6 +273,8 @@ export default function SettingsPage() {
           </Table>
         </CardContent>
       </Card>
+
+      <AssistantCard />
 
       <Dialog open={!!pwFor} onOpenChange={o => !o && setPwFor(null)}>
         <DialogContent>
