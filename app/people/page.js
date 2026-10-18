@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
+import { StickyNote } from '@/components/sticky-note';
 import { api, showToast, formatMoney, capitalize } from '@/lib/client';
 import { todayISO, todayMonth } from '@/lib/date';
 import { Button } from '@/components/ui/button';
@@ -81,7 +82,7 @@ function Worksheet() {
         </p>
       </div>
       {data.rows.length === 0 && (
-        <p className="py-8 text-center text-muted-foreground">No active employees. Add them in the Employees tab.</p>
+        <StickyNote className="my-6">No active employees. Add them in the Employees tab.</StickyNote>
       )}
       <div className="flex flex-col gap-3">
         {data.rows.map(row => (
@@ -310,7 +311,7 @@ function Employees() {
           </TableHeader>
           <TableBody>
             {employees.length === 0 && (
-              <TableRow><TableCell colSpan={5} className="py-8 text-center text-muted-foreground">No employees yet.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={5} className="py-8"><StickyNote>No employees yet.</StickyNote></TableCell></TableRow>
             )}
             {employees.map(e => (
               <TableRow key={e.id} className={e.active ? '' : 'opacity-50'}>

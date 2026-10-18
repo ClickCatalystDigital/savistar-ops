@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
+import { StickyNote } from '@/components/sticky-note';
 import { useParams, useRouter } from 'next/navigation';
 import { api, showToast, formatDate, capitalize } from '@/lib/client';
 import { todayISO, todayMonth } from '@/lib/date';
@@ -182,7 +183,7 @@ export default function EmployeeDetail() {
         <Card className="lg:col-span-2">
           <CardHeader><CardTitle>Work this month</CardTitle></CardHeader>
           <CardContent>
-            {emp.workLogs.length === 0 && <p className="py-4 text-center text-sm text-muted-foreground">No work logged in {month}.</p>}
+            {emp.workLogs.length === 0 && <StickyNote className="my-6">No work logged in {month}.</StickyNote>}
             {emp.workLogs.length > 0 && (
               <Table>
                 <TableHeader>

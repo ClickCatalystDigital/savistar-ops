@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { StickyNote } from '@/components/sticky-note';
 import { api, showToast, formatDate } from '@/lib/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -97,7 +98,7 @@ export default function ProjectsPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {projects.length === 0 && (
-          <p className="col-span-full py-8 text-center text-muted-foreground">No projects yet.</p>
+          <StickyNote className="col-span-full my-6">No projects yet.</StickyNote>
         )}
         {projects.map(p => {
           const pct = p.milestones_total ? Math.round((p.milestones_done / p.milestones_total) * 100) : 0;

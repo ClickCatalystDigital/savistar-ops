@@ -277,7 +277,7 @@ export default function ClientDetail() {
           <Button size="sm" onClick={openNewInvoice}><PlusIcon data-icon="inline-start" />New invoice</Button>
         </CardHeader>
         <CardContent>
-          {client.invoices.length === 0 && <p className="py-4 text-center text-sm text-muted-foreground">No invoices yet.</p>}
+          {client.invoices.length === 0 && <StickyNote className="my-6">No invoices yet.</StickyNote>}
           {client.invoices.length > 0 && (
             <div className="overflow-x-auto">
             <Table>

@@ -209,7 +209,7 @@ export default function ProjectDetail() {
                   onChange={v => setNewMilestone({ ...newMilestone, due_date: v })} className="sm:w-44" />
                 <Button onClick={addMilestone} disabled={!newMilestone.title.trim()}><PlusIcon data-icon="inline-start" />Add</Button>
               </div>
-              {p.milestones.length === 0 && <p className="py-4 text-center text-sm text-muted-foreground">No milestones yet — add the plan above.</p>}
+              {p.milestones.length === 0 && <StickyNote className="my-6">No milestones yet — add the plan above.</StickyNote>}
               {/* A dotted timeline: filled dot = done, ring = to do, red ring = overdue. */}
               <ol className="relative ml-3 flex flex-col border-l-2 border-dashed border-milestone/40">
                 {p.milestones.map(m => {
@@ -302,7 +302,7 @@ export default function ProjectDetail() {
                 </Dialog>
               </CardHeader>
               <CardContent className="flex flex-col gap-3">
-                {p.visits.length === 0 && <p className="py-4 text-center text-sm text-muted-foreground">No site visits logged.</p>}
+                {p.visits.length === 0 && <StickyNote className="my-6">No site visits logged.</StickyNote>}
                 {p.visits.map(v => (
                   <div key={v.id} className="rounded-lg border p-3">
                     <div className="flex items-center justify-between">

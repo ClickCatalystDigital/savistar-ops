@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { StickyNote } from '@/components/sticky-note';
 import { api, showToast, formatDate, formatMoney, capitalize } from '@/lib/client';
 import { todayISO } from '@/lib/date';
 import { Button } from '@/components/ui/button';
@@ -238,7 +239,7 @@ function CashTab({ scoped = false }) {
           </TableHeader>
           <TableBody>
             {data.rows.length === 0 && (
-              <TableRow><TableCell colSpan={7} className="py-8 text-center text-muted-foreground">No transactions{month ? ` in ${month}` : ''}.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="py-8"><StickyNote>No transactions{month ? ` in ${month}` : ''}.</StickyNote></TableCell></TableRow>
             )}
             {data.rows.map((t, i) => (
               <TableRow key={t.id} className="group">
@@ -444,7 +445,7 @@ function BankTab() {
           </TableHeader>
           <TableBody>
             {docs.length === 0 && (
-              <TableRow><TableCell colSpan={6} className="py-8 text-center text-muted-foreground">No statements uploaded yet.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="py-8"><StickyNote>No statements uploaded yet.</StickyNote></TableCell></TableRow>
             )}
             {docs.map(d => (
               <TableRow key={d.id} className="group">

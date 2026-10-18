@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
+import { StickyNote } from '@/components/sticky-note';
 import { useParams, useRouter } from 'next/navigation';
 import { api, showToast, formatDate, formatMoney } from '@/lib/client';
 import { todayISO } from '@/lib/date';
@@ -378,7 +379,7 @@ function PosTab({ vendorId, pos, onChanged }) {
         </Dialog>
       </div>
 
-      {pos.length === 0 && <p className="py-8 text-center text-muted-foreground">No purchase orders for this vendor.</p>}
+      {pos.length === 0 && <StickyNote className="my-6">No purchase orders for this vendor.</StickyNote>}
 
       {pos.length > 0 && (
         <div className="flex flex-wrap items-end gap-2">
