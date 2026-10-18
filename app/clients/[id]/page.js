@@ -23,6 +23,7 @@ import {
 import { ArrowLeftIcon, PencilIcon, SendIcon, PlusIcon, XIcon, DownloadIcon } from 'lucide-react';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import { BRAND } from '@/lib/brand';
+import { StickyNote } from '@/components/sticky-note';
 
 const rupees = n => `₹${(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const EMPTY_ITEM = { description: '', hsn: '', gst_pct: 18, qty: 1, unit_price: 0 };
@@ -223,18 +224,21 @@ export default function ClientDetail() {
                 </Button>
               </div>
             </div>
-            <div className="flex flex-col gap-3">
-              {client.conversations.length === 0 && <p className="py-4 text-center text-sm text-muted-foreground">No conversations logged yet.</p>}
-              {client.conversations.map(cv => (
-                <div key={cv.id} className="rounded-lg border p-3">
-                  <p className="whitespace-pre-wrap text-sm">{cv.body}</p>
-                  <p className="mt-1.5 text-xs text-muted-foreground">
-                    {cv.created_by || 'unknown'} · {formatDate(cv.created_at)}
-                    {cv.project_name && <> · <Badge variant="outline" className="align-middle">{cv.project_name}</Badge></>}
-                  </p>
+            {client.conversations.length === 0
+              ? <StickyNote className="my-4">No conversations logged yet.</StickyNote>
+              : (
+                <div className="notebook -mx-4">
+                  {client.conversations.map(cv => (
+                    <div key={cv.id} className="notebook-line pr-4">
+                      <span className="figures pr-3 text-right text-[11px] text-muted-foreground">{formatDate(cv.created_at).slice(0, 6)}</span>
+                      <p className="pl-3 font-serif text-sm">
+                        <span className="whitespace-pre-wrap">{cv.body}</span>
+                        <span className="font-sans text-xs text-muted-foreground"> · {cv.created_by || 'unknown'}{cv.project_name && ` · ${cv.project_name}`}</span>
+                      </p>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              )}
           </CardContent>
         </Card>
 

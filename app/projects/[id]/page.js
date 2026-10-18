@@ -24,6 +24,7 @@ import { ArrowLeftIcon, PlusIcon, PencilIcon, MapPinIcon, SendIcon } from 'lucid
 import { TrashIcon } from '@heroicons/react/24/outline';
 import { BRAND } from '@/lib/brand';
 import { StatusStamp } from '@/components/project-art';
+import { StickyNote } from '@/components/sticky-note';
 import { projectMaterials } from '@/lib/materials';
 import { cn } from '@/lib/utils';
 
@@ -331,13 +332,21 @@ export default function ProjectDetail() {
                   <SendIcon data-icon="inline-start" />Log
                 </Button>
               </div>
-              {p.conversations.length === 0 && <p className="py-2 text-center text-sm text-muted-foreground">No conversations for this project yet.</p>}
-              {p.conversations.map(cv => (
-                <div key={cv.id} className="rounded-lg border p-3">
-                  <p className="whitespace-pre-wrap text-sm">{cv.body}</p>
-                  <p className="mt-1.5 text-xs text-muted-foreground">{cv.created_by || 'unknown'} · {formatDate(cv.created_at)}</p>
-                </div>
-              ))}
+              {p.conversations.length === 0
+                ? <StickyNote className="my-4">No conversations for this project yet.</StickyNote>
+                : (
+                  <div className="notebook -mx-4">
+                    {p.conversations.map(cv => (
+                      <div key={cv.id} className="notebook-line pr-4">
+                        <span className="figures pr-3 text-right text-[11px] text-muted-foreground">{formatDate(cv.created_at).slice(0, 6)}</span>
+                        <p className="pl-3 font-serif text-sm">
+                          <span className="whitespace-pre-wrap">{cv.body}</span>
+                          <span className="font-sans text-xs text-muted-foreground"> · {cv.created_by || 'unknown'}</span>
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
             </CardContent>
           </Card>
         </TabsContent>
