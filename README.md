@@ -54,6 +54,24 @@ without `TURSO_URL` data goes to `./savistar-ops-local.db`.
 
 Everyone, regardless of role, can change their own password from the nav menu (⚙ → Change password).
 
+## AI assistant
+
+A paper button in the corner opens **Savistar AI** (Designer AI in the demo), a read-only chat over the
+app's data. Ported from reel-inventory's LS AI: Jev (`typesafe/jev-1.13`, via OpenRouter) only *chooses*
+the kind of question, the look-up, company, period and follow-up; code matches the names (clients,
+projects, orders, vendors, people) and runs a fixed, parameterised query (`lib/assistantTools.js`, 22
+look-ups that use the same maths as the tabs). Answers are ledger tables, optionally with a short
+summary from a writing model. It never changes data.
+
+- **Settings → AI** (owners and admins): OpenRouter key (encrypted with `SETTINGS_ENC_KEY`, only the
+  last 4 shown), credit, model, answer mode, daily question limit, and the switch for data questions
+  (on by default). Until a key is saved there, `OPENROUTER_API_KEY` is used. A list of questions it
+  couldn't answer or that were thumbed down shows what to add next.
+- **Everyone** can ask. Staff get only their own tasks and their own cash entries; payroll and
+  advances are refused. Bank statements are not part of it.
+- Each panel opens with a briefing (today, or tomorrow in the evening) and the person's usual questions.
+- `scripts/assistant-eval.mjs` runs 38 questions against a server with the demo data.
+
 ## Deploy (Render)
 
 Plain Node web service — no Docker:
@@ -61,6 +79,6 @@ Plain Node web service — no Docker:
 - Build command: `npm install && npm run build`
 - Start command: `npm start`
 - Env vars: everything from `env.example` (set `TURSO_URL`/`TURSO_AUTH_TOKEN`, a real
-  `SESSION_SECRET`, the `R2_*` set, `OPENROUTER_API_KEY`)
+  `SESSION_SECRET`, the `R2_*` set, `OPENROUTER_API_KEY`, `SETTINGS_ENC_KEY` for the AI key)
 
 Create a **new** Turso DB and a **new** R2 bucket for this company — do not reuse ls_crm's.
