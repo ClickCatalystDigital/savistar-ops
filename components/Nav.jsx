@@ -46,11 +46,17 @@ export default function Nav({ user }) {
   const [due, setDue] = useState(null);
   const [today, setToday] = useState(null);
 
-  // Open tasks due today or overdue for this login, shown next to the date. Refreshes on navigation.
+  // Open tasks due today or overdue for this login, shown next to the date. Refreshes on navigation
+  // and whenever a task is added, ticked or moved (lib/client.js fires tasks-changed).
   useEffect(() => {
-    const now = new Date();
-    setToday(now);
-    api(`/api/tasks?who=mine&today=${toISODate(now)}`).then(r => setDue(r.length)).catch(() => {});
+    const refresh = () => {
+      const now = new Date();
+      setToday(now);
+      api(`/api/tasks?who=mine&today=${toISODate(now)}`).then(r => setDue(r.length)).catch(() => {});
+    };
+    refresh();
+    window.addEventListener('tasks-changed', refresh);
+    return () => window.removeEventListener('tasks-changed', refresh);
   }, [pathname]);
 
   const isActive = l => (l.href === '/' ? pathname === '/' : pathname.startsWith(l.href));

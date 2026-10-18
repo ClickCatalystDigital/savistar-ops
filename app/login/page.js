@@ -34,8 +34,9 @@ export default function Login() {
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-muted/40 to-background p-4">
       <Card className="w-full max-w-sm shadow-lg">
         <CardHeader className="items-center text-center">
-          <h1 className="text-2xl font-bold tracking-tight">
-            <span className="text-muted-foreground">{BRAND.word}</span><span className="text-primary">OPS</span>
+          <h1 className="flex items-baseline justify-center gap-1.5">
+            <span className="font-hand text-3xl leading-none">{BRAND.word.charAt(0) + BRAND.word.slice(1).toLowerCase()}</span>
+            <span className="text-[11px] font-semibold uppercase tracking-[0.3em] text-primary">Ops</span>
           </h1>
           <p className="text-xs text-muted-foreground">{BRAND.studio} · {BRAND.workshop}</p>
         </CardHeader>

@@ -41,11 +41,13 @@ function WorkerStack({ names }) {
   );
 }
 
-// A workshop job ticket: perforated stub at the bottom with the due date.
+// A workshop job ticket: perforated stub at the bottom with the due date. Drag it to another column
+// to change its status (the order page's status menu does the same without a mouse).
 function Ticket({ o }) {
   const overdue = ['pending', 'in_progress'].includes(o.status) && o.due_date && o.due_date < todayISO();
   return (
-    <Link href={`/orders/${o.id}`} className="paper-surface block rounded-lg transition-transform hover:-translate-y-0.5">
+    <Link href={`/orders/${o.id}`} draggable onDragStart={e => e.dataTransfer.setData('text/order-id', String(o.id))}
+      className="paper-surface block cursor-grab rounded-lg transition-transform hover:-translate-y-0.5 active:cursor-grabbing">
       <div className="flex flex-col gap-1.5 p-3">
         <div className="flex items-start justify-between gap-2">
           <p className="text-sm font-medium leading-snug">{o.item}</p>
@@ -83,6 +85,19 @@ export default function OrdersPage() {
     api('/api/clients').then(setClients).catch(() => {});
     api('/api/projects').then(setProjects).catch(() => {});
   }, []);
+
+  const [over, setOver] = useState(null);
+  async function moveTo(status, e) {
+    setOver(null);
+    const o = orders.find(x => String(x.id) === e.dataTransfer.getData('text/order-id'));
+    if (!o || o.status === status) return;
+    setOrders(orders.map(x => (x.id === o.id ? { ...x, status } : x)));
+    try {
+      await api(`/api/orders/${o.id}`, { method: 'PUT', body: { client_id: o.client_id, project_id: o.project_id, item: o.item, qty: o.qty, description: o.description, status, start_date: o.start_date, due_date: o.due_date } });
+      showToast(`${o.item} → ${capitalize(status)}`);
+    } catch (err) { showToast(err.message, 'error'); }
+    load();
+  }
 
   async function save() {
     setBusy(true);
@@ -198,7 +213,8 @@ export default function OrdersPage() {
           {BOARD.map(s => {
             const col = orders.filter(o => o.status === s);
             return (
-              <section key={s} className="flex flex-col gap-3 rounded-xl bg-muted/40 p-3">
+              <section key={s} onDragOver={e => { e.preventDefault(); setOver(s); }} onDragLeave={() => setOver(null)} onDrop={e => moveTo(s, e)}
+                className={cn('flex flex-col gap-3 rounded-xl bg-muted/40 p-3 transition-colors', over === s && 'bg-accent ring-2 ring-primary/40')}>
                 <h2 className="flex items-center justify-between font-hand text-lg">
                   {capitalize(s)} <span className="figures text-xs text-muted-foreground">{col.length}</span>
                 </h2>
