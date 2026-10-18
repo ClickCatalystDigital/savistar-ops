@@ -4,8 +4,8 @@ Operations platform for **Savistar** (interior design — projects with mileston
 client conversations) and **Saag** (furniture workshop — orders, employees, vendors). Same owners,
 one app, one combined finance book.
 
-Next.js 14 (App Router) · shadcn/ui · Turso (libSQL, local SQLite fallback) · JWT auth ·
-Cloudflare R2 for files · OpenRouter for bank-statement extraction · `@react-pdf/renderer` for
+Next.js 15 (App Router) · shadcn/ui · Turso (libSQL, local SQLite fallback) · JWT auth ·
+Cloudflare R2 for files · OpenRouter for bank-statement extraction and the AI assistant (Jev routing) · `@react-pdf/renderer` for
 invoice PDFs.
 
 ## Run
