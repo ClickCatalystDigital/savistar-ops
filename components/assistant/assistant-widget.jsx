@@ -63,6 +63,22 @@ export function AssistantWidget({ user, aiName }) {
   const inputRef = useRef(null);
   const idRef = useRef(1);
   const contextRef = useRef(null); // what the last table answer was about, for follow-ups ("and last month?")
+
+  // The conversation survives a reload (this tab only, per login; gone when the tab closes). Unsaved reminder/note
+  // drafts are left out, so a restored card can never be saved twice.
+  const chatKey = `ai_chat:${user.username}`;
+  const restored = useRef(false);
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(chatKey) || 'null');
+      if (saved?.msgs?.length) { setMsgs(saved.msgs); contextRef.current = saved.context || null; idRef.current = Math.max(...saved.msgs.map((m) => m.id)) + 1; }
+    } catch { /* storage blocked */ }
+    restored.current = true;
+  }, [chatKey]);
+  useEffect(() => {
+    if (!restored.current) return;
+    try { sessionStorage.setItem(chatKey, JSON.stringify({ msgs: msgs.filter((m) => m.reply?.type !== 'draft').slice(-30), context: contextRef.current })); } catch { /* storage blocked or full */ }
+  }, [msgs, chatKey]);
   const name = (user.display_name || user.username || '').split(' ')[0];
   const isPhone = () => window.matchMedia('(max-width: 767px)').matches;
 

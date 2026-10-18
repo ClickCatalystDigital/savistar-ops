@@ -79,7 +79,7 @@ summary from a writing model. It never changes data.
   notes into `assistant_notes`, visible only to their author). “What did I note about …?” finds them; Settings →
   My assistant lists them with delete. Notes are off in the demo (shared logins).
 - Each panel opens with a briefing (today, or tomorrow in the evening) and the person's usual questions.
-- `scripts/assistant-eval.mjs` runs 38 questions against a server with the demo data.
+- `scripts/assistant-eval.mjs` runs 55 questions (incl. fragments, typos and Hinglish) against a server with the demo data.
 
 ## Deploy (Render)
 

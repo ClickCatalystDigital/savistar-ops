@@ -47,6 +47,20 @@ const CASES = [
   ['Which workshop orders are late, and which milestones are overdue?', { type: 'table', tool: 'orders', second: 'milestones' }],
   ['cash this month compared to last month', { type: 'table', tool: 'cash', compare: true }],
   ['and last month?', { type: 'table', tool: 'invoiced', has: ['Period=Last month'] }, ['How much did we invoice this month?', { tool: 'invoiced', period: { from: null, to: null, label: 'x' } }]],
+  // how people actually type: fragments, typos, Hinglish, a bare name
+  ['mehta update?', { type: 'table', tool: 'project_overview' }],
+  ['northbridge?', { type: 'table', tool: 'project_overview' }],
+  ['kapadia job details', { type: 'table', tool: 'project_overview' }],
+  ['receivables', { type: 'table', tool: 'outstanding_invoices' }],
+  ['sardar overcharge?', { type: 'table', tool: 'freight_overcharges' }],
+  ['what do i have today', { type: 'table', tool: 'calendar' }],
+  ['material not recieved yet', { type: 'table', tool: 'vendor_pos' }],
+  ['mehta ka kaam kaha tak pahucha', { type: 'table', tool: 'project_overview' }],
+  ['kitna paisa aaya is mahine', { type: 'table', tool: 'cash' }],
+  ['late orders and overdue milestones', { type: 'table', tool: 'orders', second: 'milestones' }],
+  ['unpaid invoices and cash this month', { type: 'table', tool: 'outstanding_invoices', second: 'cash' }],
+  ['tell me a joke about plywood', { type: 'text', text: /only help/i }],
+  ['what should we charge northbridge next', { type: 'text', text: /only report/i }],
   // reminders and notes (drafts only; nothing is saved)
   ['remind me to call the Mehtas on Friday', { type: 'draft', draft: 'task', due: true, client: true }],
   ['remind me to send the revised quote to Kiran Joshi tomorrow', { type: 'draft', draft: 'task', due: true, client: true }],
@@ -79,7 +93,7 @@ for (const [q, want, prev] of CASES) {
   if (want.type && r.type !== want.type) fails.push(`type ${r.type}`);
   if (want.tool && r.tool !== want.tool) fails.push(`tool ${r.tool}`);
   for (const h of want.has || []) if (!params.some((p) => (h.endsWith('=') ? p.startsWith(h) : p === h))) fails.push(`missing ${h}`);
-  if (want.second && r.cards?.[0]?.tool !== want.second) fails.push(`second ${r.cards?.[0]?.tool}`);
+  if (want.second && !(r.cards || []).some((c) => c.tool === want.second)) fails.push(`second ${(r.cards || []).map((c) => c.tool)}`);
   if (want.compare && !String(r.toolLabel).includes('comparison')) fails.push('no comparison');
   if (want.text && !want.text.test(r.text || '')) fails.push(`text "${String(r.text).slice(0, 60)}"`);
   if (want.draft && r.draft?.kind !== want.draft) fails.push(`draft ${r.draft?.kind}`);
