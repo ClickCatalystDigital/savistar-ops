@@ -23,6 +23,7 @@ import { TrashIcon } from '@heroicons/react/24/outline';
 import { UserAvatar, AVATAR_FONTS, AVATAR_SWATCHES } from '@/components/user-avatar';
 import { cn } from '@/lib/utils';
 import { AssistantCard } from '@/components/assistant/assistant-card';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 const EMPTY = { username: '', password: '', display_name: '', role: 'user' };
 
@@ -42,6 +43,7 @@ export default function SettingsPage() {
   const [customColorOpen, setCustomColorOpen] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
+  const [me, setMe] = useState(null);
 
   // Local object URL so a newly-chosen file previews immediately, before it's uploaded.
   useEffect(() => {
@@ -65,7 +67,9 @@ export default function SettingsPage() {
       setForbidden(true);
     }
   }
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); api('/api/me').then(setMe).catch(() => {}); }, []);
+  // The AI tab is for owners and admins (the demo hides it: its settings are not open there).
+  const showAi = ['owner', 'admin'].includes(me?.role) && process.env.NEXT_PUBLIC_DEMO !== '1';
 
   async function save() {
     setBusy(true);
@@ -168,7 +172,7 @@ export default function SettingsPage() {
       <div className="flex items-center justify-between gap-3">
         <div>
           <PageTitle>Settings</PageTitle>
-          <p className="text-sm text-muted-foreground">Users, access & AI</p>
+          <p className="text-sm text-muted-foreground">{showAi ? 'Users, access & AI' : 'Users & access'}</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild><NewButton label="New user" /></DialogTrigger>
@@ -214,6 +218,12 @@ export default function SettingsPage() {
         </Dialog>
       </div>
 
+      <Tabs defaultValue="users">
+        <TabsList>
+          <TabsTrigger value="users">Users</TabsTrigger>
+          {showAi && <TabsTrigger value="ai">AI assistant</TabsTrigger>}
+        </TabsList>
+        <TabsContent value="users" className="mt-2">
       <Card>
         <CardHeader>
           <CardTitle>Users</CardTitle>
@@ -273,8 +283,9 @@ export default function SettingsPage() {
           </Table>
         </CardContent>
       </Card>
-
-      <AssistantCard />
+        </TabsContent>
+        {showAi && <TabsContent value="ai" className="mt-2"><AssistantCard /></TabsContent>}
+      </Tabs>
 
       <Dialog open={!!pwFor} onOpenChange={o => !o && setPwFor(null)}>
         <DialogContent>

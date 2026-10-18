@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { CheckIcon, ChevronsUpDownIcon, Loader2Icon, SearchIcon, SparklesIcon } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { CheckIcon, ChevronsUpDownIcon, Loader2Icon, SearchIcon } from 'lucide-react';
+import { Butterfly } from './butterfly';
 import { api, showToast } from '@/lib/client';
 import { cn } from '@/lib/utils';
-import { BRAND } from '@/lib/brand';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -97,10 +98,12 @@ const MODES = [
 // Settings → AI (owners and admins): OpenRouter key, live credit, writing model, answer mode, daily limit,
 // data-questions switch. The decision model (Jev) is fixed on purpose. Port of reel-inventory's AssistantCard.
 export function AssistantCard() {
+  const router = useRouter();
   const [s, setS] = useState(null);
   const [hidden, setHidden] = useState(false);
   const [models, setModels] = useState(null);
   const [keyInput, setKeyInput] = useState('');
+  const [name, setName] = useState('');
   const [model, setModel] = useState('');
   const [mode, setMode] = useState('show');
   const [cap, setCap] = useState('');
@@ -109,7 +112,7 @@ export function AssistantCard() {
   const [test, setTest] = useState(null);
 
   function adopt(next) {
-    setS(next); setModel(next.model); setMode(next.mode); setCap(String(next.cap));
+    setS(next); setName(next.name); setModel(next.model); setMode(next.mode); setCap(String(next.cap));
   }
 
   async function load() {
@@ -134,9 +137,13 @@ export function AssistantCard() {
   async function save() {
     const body = {};
     if (keyInput.trim()) body.key = keyInput.trim();
+    if (name.trim() !== s.name) body.name = name.trim();
     if (model !== s.model) body.model = model;
     if (mode !== s.mode) body.mode = mode;
-    if (await put(body, 'AI settings saved')) setKeyInput('');
+    if (await put(body, 'AI settings saved')) {
+      setKeyInput('');
+      if (body.name) router.refresh(); // the button and panel take the new name
+    }
   }
 
   async function removeKey() {
@@ -157,7 +164,7 @@ export function AssistantCard() {
   if (hidden) return null;
   if (!s) return <Card><CardContent><div className="h-40 animate-pulse rounded-lg bg-muted/50" /></CardContent></Card>;
 
-  const dirty = !!keyInput.trim() || model !== s.model || mode !== s.mode;
+  const dirty = !!keyInput.trim() || name.trim() !== s.name || model !== s.model || mode !== s.mode;
   const lowCredit = s.balance && s.balance.left <= LOW_CREDIT;
   const picked = models?.find((m) => m.id === model);
 
@@ -165,7 +172,7 @@ export function AssistantCard() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
-          <SparklesIcon aria-hidden strokeWidth={1.6} className="size-5 -rotate-6 text-primary/80" /> {BRAND.ai}
+          <span className="group"><Butterfly className="size-7 -rotate-6 text-primary" /></span> {s.name}
         </CardTitle>
         <CardDescription className="max-w-2xl">
           Ask about projects, clients, orders, people, vendors and money in plain words. Jev (the decision model) picks a fixed,
@@ -177,6 +184,12 @@ export function AssistantCard() {
       </CardHeader>
 
       <CardContent className="flex flex-col gap-6">
+        <div className="flex max-w-sm flex-col gap-2">
+          <Label>Name</Label>
+          <Input value={name} maxLength={30} onChange={(e) => setName(e.target.value)} placeholder="Atelier AI" />
+          <p className="text-xs text-muted-foreground">What everyone sees on the button and the chat panel.</p>
+        </div>
+
         <div className="grid gap-6 lg:grid-cols-2">
           <div className="flex flex-col gap-2">
             <Label>OpenRouter key</Label>

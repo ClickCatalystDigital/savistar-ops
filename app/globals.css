@@ -307,3 +307,33 @@
 /* Demo page: the feature links jump to their section below (components/DemoEntry.jsx). */
 html:has(#in-detail) { scroll-behavior: smooth; }
 @media (prefers-reduced-motion: reduce) { html:has(#in-detail) { scroll-behavior: auto; } }
+
+/* The assistant's butterfly (components/assistant/butterfly.jsx): wings rest half folded with a flap now and then,
+   open and flutter when its button is hovered or focused. Both wings fold about the body (x = 12). */
+.butterfly .wing {
+  transform-box: view-box;
+  transform-origin: 12px 12px;
+  transform: scaleX(0.45);
+  transition: transform 0.4s cubic-bezier(0.3, 1.5, 0.5, 1);
+  animation: bf-rest 7s ease-in-out infinite;
+}
+.butterfly-open .wing,
+.group:hover .butterfly .wing,
+.group:focus-visible .butterfly .wing {
+  transform: scaleX(1);
+  animation: bf-unfold 0.35s ease-out, bf-flutter 1.5s ease-in-out 0.35s infinite;
+}
+.butterfly-open .wing { animation: none; }
+@keyframes bf-rest {
+  0%, 86%, 100% { transform: scaleX(0.45); }
+  90% { transform: scaleX(0.18); }
+  94% { transform: scaleX(0.6); }
+}
+@keyframes bf-unfold { from { transform: scaleX(0.45); } to { transform: scaleX(1); } }
+@keyframes bf-flutter {
+  0%, 100% { transform: scaleX(1); }
+  45% { transform: scaleX(0.72); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .butterfly .wing, .group:hover .butterfly .wing, .group:focus-visible .butterfly .wing { animation: none; }
+}

@@ -2,12 +2,11 @@
 
 import { useEffect } from 'react';
 import { ArrowUpRightIcon, XIcon } from 'lucide-react';
-import { BRAND } from '@/lib/brand';
 import { StickyNote } from '@/components/sticky-note';
 
 // Demo only: shown when a visitor has used their free questions (lib/demo-leads.js AI_QUESTIONS), and again each
 // time they click the locked button. Same as reel-inventory's AiLimitOverlay, on paper.
-export function AiLimitOverlay({ limit, onClose }) {
+export function AiLimitOverlay({ name, limit, onClose }) {
   useEffect(() => {
     const onKey = (e) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
@@ -23,7 +22,7 @@ export function AiLimitOverlay({ limit, onClose }) {
         <StickyNote className="mx-0 -rotate-3 px-4 py-2 text-sm">{limit} of {limit} used</StickyNote>
         <h2 id="ai-limit-title" className="mt-4 font-hand text-2xl">That was your {limit} free questions</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          {BRAND.ai} answers from live projects, invoices, workshop orders, people and vendors. To set it up on your own data,
+          {name} answers from live projects, invoices, workshop orders, people and vendors. To set it up on your own data,
           or to ask more here, get in touch with Ahrom Labs.
         </p>
         <a href="https://ahromlabs.com/#contact" target="_blank" rel="noreferrer"

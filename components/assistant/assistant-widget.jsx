@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ArrowUpIcon, ArrowUpRightIcon, ChevronDownIcon, LockIcon, RotateCcwIcon, SparklesIcon, ThumbsDownIcon, ThumbsUpIcon, XIcon } from 'lucide-react';
+import { ArrowUpIcon, ArrowUpRightIcon, ChevronDownIcon, LockIcon, RotateCcwIcon, ThumbsDownIcon, ThumbsUpIcon, XIcon } from 'lucide-react';
+import { Butterfly } from './butterfly';
 import { cn } from '@/lib/utils';
-import { BRAND, DEMO } from '@/lib/brand';
+import { DEMO } from '@/lib/brand';
 import { STARTERS } from '@/lib/assistant-starters';
 import { StickyNote } from '@/components/sticky-note';
 import { track } from '@/components/DemoAnalytics';
@@ -37,7 +38,7 @@ function Thinking() {
 // The assistant: a paper button in the corner opens a sheet with the conversation. Answers come from fixed, read-only
 // look-ups (lib/assistantTools.js); the conversation lives here, in the browser — the server keeps only a one-line
 // question log. Port of reel-inventory's AssistantWidget in the app's paper look.
-export function AssistantWidget({ user }) {
+export function AssistantWidget({ user, aiName }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [msgs, setMsgs] = useState([]);
@@ -158,7 +159,7 @@ export function AssistantWidget({ user }) {
 
   // The demo shows the assistant only when it has its own AI key (and once the visitor's count is known).
   if (DEMO && !demoAi?.enabled) return null;
-  const limitOverlay = limitOpen && demoAi ? <AiLimitOverlay limit={demoAi.limit} onClose={() => setLimitOpen(false)} /> : null;
+  const limitOverlay = limitOpen && demoAi ? <AiLimitOverlay name={aiName} limit={demoAi.limit} onClose={() => setLimitOpen(false)} /> : null;
 
   if (!open) {
     return (
@@ -172,10 +173,15 @@ export function AssistantWidget({ user }) {
             </StickyNote>
           </button>
         )}
-        <button type="button" onClick={() => { setTeaser(false); if (locked) showLimit(); else setOpen(true); }} aria-label={locked ? `${BRAND.ai}: free questions used` : `Open ${BRAND.ai}`} title={BRAND.ai}
-          className={cn('paper-surface group fixed right-4 bottom-[calc(9.5rem+env(safe-area-inset-bottom))] z-40 grid size-14 place-items-center rounded-full transition-all print:hidden',
-            'hover:-translate-y-0.5 active:scale-95 md:right-6 md:bottom-6')}>
-          <SparklesIcon strokeWidth={1.6} className="size-6 -rotate-6 text-primary transition-transform duration-300 group-hover:rotate-12" />
+        {/* A paper disc with a stitched rim; the butterfly opens its wings on hover and the name slides out in hand. */}
+        <button type="button" onClick={() => { setTeaser(false); if (locked) showLimit(); else setOpen(true); }} aria-label={locked ? `${aiName}: free questions used` : `Open ${aiName}`}
+          className={cn('paper-surface group fixed right-4 bottom-[calc(9.5rem+env(safe-area-inset-bottom))] z-40 grid size-14 place-items-center rounded-full transition-all duration-300 print:hidden',
+            'hover:-translate-y-0.5 hover:rotate-[-4deg] active:scale-95 md:right-6 md:bottom-6')}>
+          <span aria-hidden className="pointer-events-none absolute inset-1 rounded-full border border-dashed border-primary/25 transition-colors group-hover:border-primary/45" />
+          <Butterfly className="size-8 text-primary" />
+          <span aria-hidden className="pointer-events-none absolute right-full mr-3 hidden translate-x-2 rotate-[-3deg] whitespace-nowrap rounded-sm bg-[#fbf0b2] px-2.5 py-1 font-hand text-[15px] text-stone-700 opacity-0 shadow-[0_6px_14px_-6px_rgba(0,0,0,0.35)] transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100 md:block dark:bg-[#4d4726] dark:text-stone-100">
+            {aiName}
+          </span>
           {locked && (
             <span className="absolute -top-0.5 -right-0.5 grid size-6 place-items-center rounded-full border-2 border-background bg-foreground text-background">
               <LockIcon className="size-3" />
@@ -191,15 +197,15 @@ export function AssistantWidget({ user }) {
   return (
     <>
     {limitOverlay}
-    <div role="dialog" aria-label={`${BRAND.ai} assistant`}
+    <div role="dialog" aria-label={`${aiName} assistant`}
       className={cn('paper-surface fixed z-50 flex flex-col overflow-hidden print:hidden',
         'inset-0 pt-[env(safe-area-inset-top)] animate-in fade-in slide-in-from-bottom-3 duration-200',
         'md:inset-auto md:right-6 md:bottom-6 md:h-[min(44rem,calc(100dvh-3rem))] md:w-[28rem] md:rounded-xl md:pt-0')}>
       {/* header */}
       <div className="flex items-center gap-2.5 border-b border-dashed px-4 py-2.5">
-        <SparklesIcon aria-hidden strokeWidth={1.6} className="size-6 shrink-0 -rotate-6 text-primary/80" />
+        <Butterfly open className="size-7 shrink-0 -rotate-6 text-primary" />
         <div className="min-w-0 flex-1">
-          <p className="marker w-fit font-hand text-xl leading-tight">{BRAND.ai}</p>
+          <p className="marker w-fit font-hand text-xl leading-tight">{aiName}</p>
           <p className="text-[11px] text-muted-foreground">
             {DEMO && demoAi ? <span className="figures">{demoAi.left} of {demoAi.limit} free questions left</span> : 'Looks things up · never changes anything'}
           </p>

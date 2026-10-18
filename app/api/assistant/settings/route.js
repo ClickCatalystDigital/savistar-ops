@@ -41,6 +41,11 @@ export async function PUT(req) {
 
   const entries = [];
   const detail = {};
+  if (b.name !== undefined) {
+    const name = String(b.name).trim().replace(/\s+/g, ' ');
+    if (!name || name.length > 30) return bad('The name must be 1 to 30 characters.');
+    entries.push(['assistant_name', name]); detail.name = name;
+  }
   if (b.model !== undefined) {
     const model = String(b.model).trim();
     if (!model || model.length > 120) return bad('Pick a model.');
