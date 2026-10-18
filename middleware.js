@@ -9,7 +9,7 @@ const PUBLIC_PATHS = ['/login', '/api/login', '/api/version'];
 // Public demo (DEMO_MODE=1, interiors-erp.ahromlabs.com; never set on Render): visitors enter through
 // /demo, password login is off, and changes to logins and file uploads (incl. AI bank-statement reading)
 // are refused. Same as SB Ops' demoGuard.
-const DEMO_PUBLIC = ['/demo', '/api/demo/lead', '/api/demo/enter'];
+const DEMO_PUBLIC = ['/demo', '/api/demo/lead', '/api/demo/enter', '/api/demo/pass'];
 const DEMO_BLOCKED = ['/api/users', '/api/attachments', '/api/documents'];
 const DEMO_AI_OPEN = ['/api/assistant/chat', '/api/assistant/briefing', '/api/assistant/starters', '/api/assistant/feedback'];
 function demoGuard(req, pathname) {

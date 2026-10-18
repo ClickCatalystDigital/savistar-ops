@@ -160,7 +160,7 @@ export function AssistantWidget({ user, aiName }) {
       });
       const data = await res.json().catch(() => null);
       if (DEMO && res.status === 429 && data?.demoLimit) { setDemoAi((d) => (d ? { ...d, left: 0 } : d)); showLimit(); }
-      if (DEMO && res.ok) { setDemoAi((d) => (d ? { ...d, left: Math.max(0, d.left - 1) } : d)); track('interiors_demo_ai_question'); }
+      if (DEMO && res.ok) { setDemoAi((d) => (d && !d.pass ? { ...d, left: Math.max(0, d.left - 1) } : d)); track('interiors_demo_ai_question'); }
       if (!res.ok || !data?.reply) {
         setMsgs((m) => [...m, { id: idRef.current++, role: 'assistant', error: { text: data?.error || 'Something went wrong. Please try again.', link: data?.link, linkLabel: data?.linkLabel } }]);
       } else {
@@ -231,7 +231,7 @@ export function AssistantWidget({ user, aiName }) {
         <Butterfly open className="size-7 shrink-0 -rotate-6 text-primary" />
         <div className="min-w-0 flex-1">
           <p className="marker w-fit font-hand text-xl leading-tight">{aiName}</p>
-          {DEMO && demoAi && <p className="figures text-[11px] text-muted-foreground">{demoAi.left} of {demoAi.limit} free questions left</p>}
+          {DEMO && demoAi && <p className="figures text-[11px] text-muted-foreground">{demoAi.pass ? 'Owner pass · no limit' : `${demoAi.left} of ${demoAi.limit} free questions left`}</p>}
         </div>
         <button type="button" onClick={reset} disabled={busy || !msgs.length} aria-label="New conversation" title="New conversation"
           className="grid size-8 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-30">
