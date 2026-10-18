@@ -23,6 +23,7 @@ import { TrashIcon } from '@heroicons/react/24/outline';
 import { UserAvatar, AVATAR_FONTS, AVATAR_SWATCHES } from '@/components/user-avatar';
 import { cn } from '@/lib/utils';
 import { AssistantCard } from '@/components/assistant/assistant-card';
+import { PersonaCard } from '@/components/assistant/persona-card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 const EMPTY = { username: '', password: '', display_name: '', role: 'user' };
@@ -44,6 +45,8 @@ export default function SettingsPage() {
   const [dragActive, setDragActive] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [me, setMe] = useState(null);
+  const [aiName, setAiName] = useState('Atelier AI');
+  const [tab, setTab] = useState(null);
 
   // Local object URL so a newly-chosen file previews immediately, before it's uploaded.
   useEffect(() => {
@@ -67,7 +70,11 @@ export default function SettingsPage() {
       setForbidden(true);
     }
   }
-  useEffect(() => { load(); api('/api/me').then(setMe).catch(() => {}); }, []);
+  useEffect(() => {
+    load();
+    api('/api/me').then(setMe).catch(() => {});
+    api('/api/assistant/persona').then((d) => d.name && setAiName(d.name)).catch(() => {});
+  }, []);
   // The AI tab is for owners and admins (the demo hides it: its settings are not open there).
   const showAi = ['owner', 'admin'].includes(me?.role) && process.env.NEXT_PUBLIC_DEMO !== '1';
 
@@ -159,23 +166,18 @@ export default function SettingsPage() {
     } catch (e) { showToast(e.message, 'error'); }
   }
 
-  if (forbidden) {
-    return (
-      <div className="container py-10">
-        <p className="text-center text-muted-foreground">Only owners, admins, and managers can manage users.</p>
-      </div>
-    );
-  }
+  // Users: owners, admins, managers (the users API refuses staff). My assistant: everyone.
+  const canUsers = !forbidden;
 
   return (
     <div className="container flex flex-col gap-4 py-6">
       <div className="flex items-center justify-between gap-3">
         <div>
           <PageTitle>Settings</PageTitle>
-          <p className="text-sm text-muted-foreground">{showAi ? 'Users, access & AI' : 'Users & access'}</p>
+          <p className="text-sm text-muted-foreground">{canUsers ? (showAi ? 'Users, access & AI' : 'Users, access & your assistant') : 'Your assistant'}</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild><NewButton label="New user" /></DialogTrigger>
+          {canUsers && (tab ?? 'users') === 'users' && <DialogTrigger asChild><NewButton label="New user" /></DialogTrigger>}
           <DialogContent>
             <DialogHeader><DialogTitle>New user</DialogTitle></DialogHeader>
             <div className="flex flex-col gap-4">
@@ -218,12 +220,13 @@ export default function SettingsPage() {
         </Dialog>
       </div>
 
-      <Tabs defaultValue="users">
+      <Tabs value={tab ?? (canUsers ? 'users' : 'me')} onValueChange={setTab}>
         <TabsList>
-          <TabsTrigger value="users">Users</TabsTrigger>
+          {canUsers && <TabsTrigger value="users">Users</TabsTrigger>}
           {showAi && <TabsTrigger value="ai">AI assistant</TabsTrigger>}
+          <TabsTrigger value="me">My assistant</TabsTrigger>
         </TabsList>
-        <TabsContent value="users" className="mt-2">
+        {canUsers && <TabsContent value="users" className="mt-2">
       <Card>
         <CardHeader>
           <CardTitle>Users</CardTitle>
@@ -283,8 +286,9 @@ export default function SettingsPage() {
           </Table>
         </CardContent>
       </Card>
-        </TabsContent>
+        </TabsContent>}
         {showAi && <TabsContent value="ai" className="mt-2"><AssistantCard /></TabsContent>}
+        <TabsContent value="me" className="mt-2"><PersonaCard aiName={aiName} /></TabsContent>
       </Tabs>
 
       <Dialog open={!!pwFor} onOpenChange={o => !o && setPwFor(null)}>

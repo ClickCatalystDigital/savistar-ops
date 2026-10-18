@@ -16,7 +16,7 @@ function cell(v, type) {
   if (v === null || v === undefined || v === '') return '—';
   if (type === 'money') return inr(Number(v));
   if (type === 'int') return Number(v).toLocaleString('en-IN');
-  if (type === 'date') return formatDate(String(v));
+  if (type === 'date') { const d = formatDate(String(v)); return d.endsWith(` ${new Date().getFullYear()}`) ? d.slice(0, -5) : d; } // this year's dates without the year
   if (type === 'delta' || type === 'money_delta') {
     const n = Number(v);
     return `${n > 0 ? '+' : n < 0 ? '−' : ''}${type === 'money_delta' ? inr(Math.abs(n)) : Math.abs(n).toLocaleString('en-IN')}`;

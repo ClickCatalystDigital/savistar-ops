@@ -18,7 +18,7 @@ function demoGuard(req, pathname) {
   if (pathname === '/api/login') return NextResponse.json({ error: 'Not found' }, { status: 404 });
   if (DEMO_PUBLIC.includes(pathname)) return NextResponse.next();
   // The assistant: only asking (and its briefing, starters, thumbs) — never its settings, key or logs.
-  if (pathname.startsWith('/api/assistant') && !DEMO_AI_OPEN.includes(pathname)) return NextResponse.json({ error: 'Not available in the demo' }, { status: 403 });
+  if (pathname.startsWith('/api/assistant') && !DEMO_AI_OPEN.includes(pathname) && !(pathname === '/api/assistant/persona' && req.method === 'GET')) return NextResponse.json({ error: 'Not available in the demo' }, { status: 403 });
   const write = !['GET', 'HEAD', 'OPTIONS'].includes(req.method);
   if (write && DEMO_BLOCKED.some(p => pathname === p || pathname.startsWith(p + '/'))) {
     return NextResponse.json({ error: 'Not available in the demo' }, { status: 403 });

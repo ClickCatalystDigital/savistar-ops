@@ -122,11 +122,10 @@ export default function Nav({ user }) {
                   <DropdownMenuItem onSelect={e => { e.preventDefault(); setPwOpen(true); }}>
                     <KeyRoundIcon data-icon="inline-start" />Change password
                   </DropdownMenuItem>
-                  {user?.role !== 'user' && (
-                    <DropdownMenuItem onClick={() => router.push('/settings')}>
-                      <SettingsIcon data-icon="inline-start" />Settings
-                    </DropdownMenuItem>
-                  )}
+                  {/* everyone: staff see only their own assistant settings there */}
+                  <DropdownMenuItem onClick={() => router.push('/settings')}>
+                    <SettingsIcon data-icon="inline-start" />Settings
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={logout} variant="destructive">
                     <LogOutIcon data-icon="inline-start" />Logout
                   </DropdownMenuItem>

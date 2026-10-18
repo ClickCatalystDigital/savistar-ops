@@ -3,10 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ArrowUpIcon, ArrowUpRightIcon, CheckIcon, ChevronDownIcon, LockIcon, RotateCcwIcon, ThumbsDownIcon, ThumbsUpIcon, XIcon } from 'lucide-react';
+import { ArrowUpIcon, ArrowUpRightIcon, ChevronDownIcon, LockIcon, RotateCcwIcon, ThumbsDownIcon, ThumbsUpIcon, XIcon } from 'lucide-react';
 import { Butterfly } from './butterfly';
-import { PERSONAS, PERSONA_BY_KEY } from '@/lib/assistant-personas';
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
+import { PERSONA_BY_KEY } from '@/lib/assistant-personas';
 import { cn } from '@/lib/utils';
 import { DEMO } from '@/lib/brand';
 import { STARTERS } from '@/lib/assistant-starters';
@@ -46,7 +45,6 @@ export function AssistantWidget({ user, aiName }) {
   const [msgs, setMsgs] = useState([]);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
-  const [quota, setQuota] = useState(null);
   const [teaser, setTeaser] = useState(false);
   const [briefing, setBriefing] = useState(null);
   const [briefOpen, setBriefOpen] = useState(true);
@@ -56,7 +54,7 @@ export function AssistantWidget({ user, aiName }) {
   const [demoAi, setDemoAi] = useState(null);
   const [limitOpen, setLimitOpen] = useState(false);
   const locked = DEMO && demoAi?.left === 0;
-  // This person's persona: saved per login on the live app; in the browser on the demo (its logins are shared).
+  // This person's persona (chosen in Settings → My assistant): per login on the live app; in the browser on the demo.
   const [persona, setPersona] = useState('plain');
   const loadedAt = useRef(0); // the briefing is time-aware: reload it when the panel opens after 10+ minutes
   const endRef = useRef(null);
@@ -85,15 +83,12 @@ export function AssistantWidget({ user, aiName }) {
     return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = prev; };
   }, [open]);
 
+  // Read on every open, so a change made in Settings applies straight away.
   useEffect(() => {
-    if (DEMO) { const p = store.get('ai_persona'); if (PERSONA_BY_KEY[p]) setPersona(p); return; }
+    if (!open) return;
+    if (DEMO) { const p = store.get('ai_persona'); setPersona(PERSONA_BY_KEY[p] ? p : 'plain'); return; }
     fetch('/api/assistant/persona').then((r) => (r.ok ? r.json() : null)).then((d) => d && setPersona(d.persona)).catch(() => {});
-  }, []);
-  function choosePersona(key) {
-    setPersona(key);
-    if (DEMO) store.set('ai_persona', key);
-    else fetch('/api/assistant/persona', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ persona: key }) }).catch(() => {});
-  }
+  }, [open]);
 
   useEffect(() => {
     if (!DEMO) return;
@@ -155,7 +150,6 @@ export function AssistantWidget({ user, aiName }) {
         setMsgs((m) => [...m, { id: idRef.current++, role: 'assistant', reply: data.reply, content: replyText(data.reply) }]);
         if (data.reply.type === 'table') contextRef.current = data.reply.context ?? null;
         else if (data.reply.type === 'text') contextRef.current = null;
-        if (data.meta) setQuota({ used: data.meta.used, cap: data.meta.cap });
       }
     } catch {
       setMsgs((m) => [...m, { id: idRef.current++, role: 'assistant', error: { text: 'Could not reach the server. Check your connection and try again.' } }]);
@@ -220,27 +214,7 @@ export function AssistantWidget({ user, aiName }) {
         <Butterfly open className="size-7 shrink-0 -rotate-6 text-primary" />
         <div className="min-w-0 flex-1">
           <p className="marker w-fit font-hand text-xl leading-tight">{aiName}</p>
-          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <DropdownMenu>
-              <DropdownMenuTrigger className="inline-flex items-center gap-0.5 rounded-full border border-dashed px-2 py-px font-hand text-[13px] text-foreground/80 transition-colors hover:border-primary/50 hover:text-primary" aria-label="Choose how the assistant talks">
-                {PERSONA_BY_KEY[persona]?.label || 'Plain'} <ChevronDownIcon className="size-3" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-64">
-                <DropdownMenuLabel className="font-hand text-sm font-normal text-muted-foreground">How should I talk?</DropdownMenuLabel>
-                {PERSONAS.map((p) => (
-                  <DropdownMenuItem key={p.key} onSelect={() => choosePersona(p.key)} className="items-start gap-2">
-                    <CheckIcon className={cn('mt-0.5 size-3.5 shrink-0', p.key === persona ? 'text-primary' : 'opacity-0')} />
-                    <span className="flex flex-col">
-                      <span className="text-[13px]">{p.label}</span>
-                      <span className="text-[11px] text-muted-foreground">{p.blurb}</span>
-                    </span>
-                  </DropdownMenuItem>
-                ))}
-                <p className="px-2 pt-1 pb-1.5 text-[10px] leading-snug text-muted-foreground">A persona adds a short written answer above the table. The numbers always come straight from the data.</p>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            {DEMO && demoAi ? <span className="figures">{demoAi.left} of {demoAi.limit} free questions left</span> : <span>read-only</span>}
-          </div>
+          {DEMO && demoAi && <p className="figures text-[11px] text-muted-foreground">{demoAi.left} of {demoAi.limit} free questions left</p>}
         </div>
         <button type="button" onClick={reset} disabled={busy || !msgs.length} aria-label="New conversation" title="New conversation"
           className="grid size-8 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-30">
@@ -390,7 +364,6 @@ export function AssistantWidget({ user, aiName }) {
             <ArrowUpIcon className="size-4" />
           </button>
         </div>
-        <p className="figures mt-1.5 text-center text-[10px] text-muted-foreground/70">read-only · {DEMO ? 'sample data' : 'live data'}{quota && !DEMO ? ` · ${quota.used}/${quota.cap} today` : ''}</p>
       </form>
     </div>
     </>
