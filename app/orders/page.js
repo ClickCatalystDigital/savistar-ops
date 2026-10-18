@@ -1,5 +1,6 @@
 'use client';
 
+import { PageTitle } from '@/components/page-title';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api, showToast, formatDate, capitalize } from '@/lib/client';
@@ -123,7 +124,7 @@ export default function OrdersPage() {
     <div className="container flex flex-col gap-4 py-6">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="page-title">Orders</h1>
+          <PageTitle>Orders</PageTitle>
           <p className="text-sm text-muted-foreground">{BRAND.workshopShort} furniture workshop orders</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>

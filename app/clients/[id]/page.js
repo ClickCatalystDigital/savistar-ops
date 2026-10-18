@@ -1,5 +1,6 @@
 'use client';
 
+import { PageTitle } from '@/components/page-title';
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -152,7 +153,7 @@ export default function ClientDetail() {
       <div className="flex items-center gap-3">
         <Button asChild variant="ghost" size="icon-sm"><Link href="/clients"><ArrowLeftIcon /></Link></Button>
         <div className="min-w-0 flex-1">
-          <h1 className="page-title truncate">{client.name}</h1>
+          <PageTitle className="truncate">{client.name}</PageTitle>
           <p className="text-sm text-muted-foreground">
             {[client.phone, client.email, client.address].filter(Boolean).join(' · ') || 'No contact details'}
           </p>

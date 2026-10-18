@@ -1,5 +1,6 @@
 'use client';
 
+import { PageTitle } from '@/components/page-title';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { StickyNote } from '@/components/sticky-note';
@@ -56,7 +57,7 @@ export default function ProjectsPage() {
     <div className="container flex flex-col gap-4 py-6">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="page-title">Projects</h1>
+          <PageTitle>Projects</PageTitle>
           <p className="text-sm text-muted-foreground">{BRAND.studioShort} interior design projects</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>

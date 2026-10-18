@@ -1,5 +1,6 @@
 'use client';
 
+import { PageTitle } from '@/components/page-title';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { materialsIn } from '@/lib/materials';
@@ -45,7 +46,7 @@ export default function VendorsPage() {
     <div className="container flex flex-col gap-4 py-6">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="page-title">Vendors</h1>
+          <PageTitle>Vendors</PageTitle>
           <p className="text-sm text-muted-foreground">Material suppliers — orders, deliveries, freight rates</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>

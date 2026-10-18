@@ -1,5 +1,6 @@
 'use client';
 
+import { PageTitle } from '@/components/page-title';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { StickyNote } from '@/components/sticky-note';
 import { api, showToast, formatDate, formatMoney, capitalize } from '@/lib/client';
@@ -41,7 +42,7 @@ export default function FinancePage() {
   return (
     <div className="container flex flex-col gap-4 py-6">
       <div>
-        <h1 className="page-title">Finance</h1>
+        <PageTitle>Finance</PageTitle>
         <p className="text-sm text-muted-foreground">
           {staff ? 'Cash entries you\'ve added' : `One combined book — ${BRAND.studioShort} & ${BRAND.workshopShort}`}
         </p>

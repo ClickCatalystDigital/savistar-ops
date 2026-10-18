@@ -1,5 +1,6 @@
 'use client';
 
+import { PageTitle } from '@/components/page-title';
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { StickyNote } from '@/components/sticky-note';
@@ -36,7 +37,7 @@ export default function PeoplePage() {
   return (
     <div className="container flex flex-col gap-4 py-6">
       <div>
-        <h1 className="page-title">People</h1>
+        <PageTitle>People</PageTitle>
         <p className="text-sm text-muted-foreground">Workshop employees — attendance, daily work, payroll</p>
       </div>
       <Tabs defaultValue="worksheet">

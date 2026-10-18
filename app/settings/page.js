@@ -1,5 +1,6 @@
 'use client';
 
+import { PageTitle } from '@/components/page-title';
 import { useEffect, useState } from 'react';
 import { api, showToast, capitalize } from '@/lib/client';
 import { Button } from '@/components/ui/button';
@@ -164,7 +165,7 @@ export default function SettingsPage() {
     <div className="container flex flex-col gap-4 py-6">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="page-title">Settings</h1>
+          <PageTitle>Settings</PageTitle>
           <p className="text-sm text-muted-foreground">Users & access</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>

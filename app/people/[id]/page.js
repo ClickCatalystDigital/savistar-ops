@@ -1,5 +1,6 @@
 'use client';
 
+import { PageTitle } from '@/components/page-title';
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { StickyNote } from '@/components/sticky-note';
@@ -96,7 +97,7 @@ export default function EmployeeDetail() {
         <Button asChild variant="ghost" size="icon-sm"><Link href="/people"><ArrowLeftIcon /></Link></Button>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h1 className="page-title truncate">{emp.name}</h1>
+            <PageTitle className="truncate">{emp.name}</PageTitle>
             {!emp.active && <Badge variant="outline">Inactive</Badge>}
           </div>
           <p className="text-sm text-muted-foreground">

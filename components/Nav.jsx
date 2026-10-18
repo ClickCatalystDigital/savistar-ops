@@ -3,10 +3,9 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import {
-  SunIcon, MoonIcon, SettingsIcon, LogOutIcon, LayoutDashboardIcon,
-  UsersIcon, FolderKanbanIcon, ArmchairIcon, HardHatIcon, TruckIcon, WalletIcon, KeyRoundIcon,
-} from 'lucide-react';
+import { SunIcon, MoonIcon, SettingsIcon, LogOutIcon, KeyRoundIcon } from 'lucide-react';
+import { LINKS } from '@/lib/nav';
+import { Wordmark } from '@/components/wordmark';
 import { cn } from '@/lib/utils';
 import { api, showToast } from '@/lib/client';
 import { Button } from '@/components/ui/button';
@@ -22,18 +21,6 @@ import {
 import { BRAND } from '@/lib/brand';
 import { UserAvatar } from '@/components/user-avatar';
 import { toISODate } from '@/lib/date';
-
-// Grouped the way the business is: the studio's side, the workshop's side, then money.
-// The desktop bar draws a divider where `group` changes.
-const LINKS = [
-  { href: '/', label: 'Home', icon: LayoutDashboardIcon, group: 'home' },
-  { href: '/clients', label: 'Clients', icon: UsersIcon, group: 'studio' },
-  { href: '/projects', label: 'Projects', icon: FolderKanbanIcon, group: 'studio' },
-  { href: '/orders', label: 'Orders', icon: ArmchairIcon, group: 'workshop' },
-  { href: '/people', label: 'People', icon: HardHatIcon, group: 'workshop' },
-  { href: '/vendors', label: 'Vendors', icon: TruckIcon, group: 'workshop' },
-  { href: '/finance', label: 'Finance', icon: WalletIcon, group: 'money' },
-];
 
 const ROLE_LABELS = { owner: 'Owner', admin: 'Admin', manager: 'Manager', user: 'Staff' };
 
@@ -85,9 +72,8 @@ export default function Nav({ user }) {
       {/* Top bar: a tinted strip with folder tabs; the active tab is cut from the page below. */}
       <header className="sticky top-0 z-40 border-b bg-secondary/80 backdrop-blur supports-[backdrop-filter]:bg-secondary/65">
         <div className="container flex h-14 items-center gap-4">
-          <Link href="/" className="flex items-baseline gap-1.5" aria-label={`${BRAND.app} home`}>
-            <span className="font-hand text-2xl leading-none text-foreground">{BRAND.word.charAt(0) + BRAND.word.slice(1).toLowerCase()}</span>
-            <span className="text-[10px] font-semibold uppercase tracking-[0.3em] text-primary">Ops</span>
+          <Link href="/" className="flex items-center" aria-label={`${BRAND.app} home`}>
+            <Wordmark className="text-2xl" />
           </Link>
 
           {/* Desktop tabs */}

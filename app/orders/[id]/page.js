@@ -1,5 +1,6 @@
 'use client';
 
+import { PageTitle } from '@/components/page-title';
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -79,7 +80,7 @@ export default function OrderDetail() {
       <div className="flex items-center gap-3">
         <Button asChild variant="ghost" size="icon-sm"><Link href="/orders"><ArrowLeftIcon /></Link></Button>
         <div className="min-w-0 flex-1">
-          <h1 className="page-title truncate">{o.item} × {o.qty}</h1>
+          <PageTitle className="truncate">{o.item} × {o.qty}</PageTitle>
           <p className="text-sm text-muted-foreground">
             {o.client_name && <Link href={`/clients/${o.client_id}`} className="text-primary hover:underline">{o.client_name}</Link>}
             {o.client_name && o.project_name && ' · '}

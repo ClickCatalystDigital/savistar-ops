@@ -1,5 +1,6 @@
 'use client';
 
+import { PageTitle } from '@/components/page-title';
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -122,7 +123,7 @@ export default function ProjectDetail() {
         <Button asChild variant="ghost" size="icon-sm"><Link href="/projects"><ArrowLeftIcon /></Link></Button>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h1 className="page-title truncate">{p.name}</h1>
+            <PageTitle className="truncate">{p.name}</PageTitle>
             {p.status === 'active' ? <Badge>Active</Badge> : <StatusStamp status={p.status} className="ml-2 shrink-0" />}
           </div>
           <p className="text-sm text-muted-foreground">

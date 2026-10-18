@@ -1,5 +1,6 @@
 'use client';
 
+import { PageTitle } from '@/components/page-title';
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { StickyNote } from '@/components/sticky-note';
@@ -73,7 +74,7 @@ export default function VendorDetail() {
         <Button asChild variant="ghost" size="icon-sm"><Link href="/vendors"><ArrowLeftIcon /></Link></Button>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-2">
-            <h1 className="page-title truncate">{v.name}</h1>
+            <PageTitle className="truncate">{v.name}</PageTitle>
             <span className="text-lg font-semibold text-muted-foreground">{formatMoney(v.total_expense) || '₹0'}</span>
           </div>
           <p className="text-sm text-muted-foreground">
