@@ -18,7 +18,8 @@ import {
 import {
   Table, TableHeader, TableRow, TableHead, TableBody, TableCell,
 } from '@/components/ui/table';
-import { KeyRoundIcon, UploadIcon, XIcon, CheckIcon, PaletteIcon } from 'lucide-react';
+import { KeyRoundIcon, UploadIcon, XIcon, CheckIcon, PaletteIcon, UsersIcon, SlidersHorizontalIcon } from 'lucide-react';
+import { Butterfly } from '@/components/assistant/butterfly';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import { UserAvatar, AVATAR_FONTS, AVATAR_SWATCHES } from '@/components/user-avatar';
 import { cn } from '@/lib/utils';
@@ -223,15 +224,15 @@ export default function SettingsPage() {
 
       <Tabs value={tab ?? (canUsers ? 'users' : 'me')} onValueChange={setTab}>
         <TabsList>
-          {canUsers && <TabsTrigger value="users">Users</TabsTrigger>}
-          {showAi && <TabsTrigger value="ai">AI assistant</TabsTrigger>}
-          <TabsTrigger value="me">My assistant</TabsTrigger>
+          {canUsers && <TabsTrigger value="users"><UsersIcon data-icon="inline-start" />Users</TabsTrigger>}
+          {showAi && <TabsTrigger value="ai"><SlidersHorizontalIcon data-icon="inline-start" />AI assistant</TabsTrigger>}
+          <TabsTrigger value="me"><Butterfly className="size-4 text-primary" />My assistant</TabsTrigger>
         </TabsList>
         {canUsers && <TabsContent value="users" className="mt-2">
       <Card>
         <CardHeader>
           <CardTitle>Users</CardTitle>
-          <CardDescription>Staff can use every tab except Finance; only owners, admins, and managers can delete records or manage users. Everyone can change their own password from the nav menu.</CardDescription>
+          <CardDescription>Staff can use every tab: on Finance they see only their own cash entries, here only My assistant. Only owners, admins and managers can delete records or manage users. Everyone can change their own password from the nav menu.</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
