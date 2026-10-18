@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DateInput } from '@/components/ui/date-input';
 import { Label } from '@/components/ui/label';
-import { StatusStamp, Swatches } from '@/components/project-art';
+import { StatusStamp, Swatches, BAR } from '@/components/project-art';
 import { projectMaterials } from '@/lib/materials';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import {
@@ -118,7 +118,7 @@ export default function ProjectsPage() {
                 </CardHeader>
                 <CardContent className="flex flex-col gap-2">
                   <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                    <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+                    <div className={cn('h-full rounded-full transition-all', BAR[p.status] || 'bg-primary')} style={{ width: `${pct}%` }} />
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {p.milestones_done}/{p.milestones_total} milestones · {p.orders_count} order{p.orders_count === 1 ? '' : 's'}

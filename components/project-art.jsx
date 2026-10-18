@@ -5,6 +5,10 @@ import { capitalize } from '@/lib/format';
 // gets no mark, so a stamp always means "look at this one".
 const STAMP = { completed: 'text-success', cancelled: 'text-danger', on_hold: 'text-warning' };
 
+// The milestone bar in the stamp's ink (pale, like the stamp), so status reads at a glance;
+// active keeps the brand blue.
+export const BAR = { completed: 'bg-success/75', cancelled: 'bg-danger/75', on_hold: 'bg-warning/60' };
+
 export function StatusStamp({ status, className }) {
   if (!STAMP[status]) return null;
   return (
