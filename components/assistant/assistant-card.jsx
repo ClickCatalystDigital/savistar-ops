@@ -257,6 +257,8 @@ export function AssistantCard() {
           <p className="text-xs text-muted-foreground">
             Decision model: <span className="figures">{s.jevModel}</span> (fixed). It picks the look-up, company and period, matches names,
             and turns down requests to change data or unrelated topics.
+            Anyone who picks a persona in the chat panel (Studio partner, Site supervisor, Finance desk, Gentle guide) gets
+            “Show, then write” for themselves, in that voice; a written answer with a number that isn't in the data is dropped.
           </p>
         </div>
 

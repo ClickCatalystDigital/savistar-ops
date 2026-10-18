@@ -69,6 +69,10 @@ summary from a writing model. It never changes data.
   couldn't answer or that were thumbed down shows what to add next.
 - **Everyone** can ask. Staff get only their own tasks and their own cash entries; payroll and
   advances are refused. Bank statements are not part of it.
+- **Personas**, chosen by each person in the chat panel (saved per login): Plain (default), Studio partner,
+  Site supervisor, Finance desk, Gentle guide (`lib/assistant-personas.js`). A persona turns on a short written answer
+  above the table, in its voice; a written answer with any number not in the data is dropped
+  (`scripts/check-persona-numbers.mjs`).
 - Each panel opens with a briefing (today, or tomorrow in the evening) and the person's usual questions.
 - `scripts/assistant-eval.mjs` runs 38 questions against a server with the demo data.
 
