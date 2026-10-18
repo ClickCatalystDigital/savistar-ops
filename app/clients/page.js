@@ -1,5 +1,7 @@
 'use client';
 
+import { PageTitle } from '@/components/page-title';
+import { NewButton } from '@/components/new-button';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api, showToast, formatDate } from '@/lib/client';
@@ -11,10 +13,9 @@ import { Badge } from '@/components/ui/badge';
 import {
   Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
-import {
-  Table, TableHeader, TableRow, TableHead, TableBody, TableCell,
-} from '@/components/ui/table';
-import { PlusIcon, SearchIcon } from 'lucide-react';
+import { UserAvatar } from '@/components/user-avatar';
+import { StickyNote } from '@/components/sticky-note';
+import { SearchIcon } from 'lucide-react';
 
 const EMPTY = { name: '', phone: '', email: '', address: '', notes: '' };
 
@@ -49,10 +50,10 @@ export default function ClientsPage() {
   return (
     <div className="container flex flex-col gap-4 py-6">
       <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold tracking-tight">Clients</h1>
+        <PageTitle>Clients</PageTitle>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button><PlusIcon data-icon="inline-start" />Add client</Button>
+            <NewButton label="New client" />
           </DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>New client</DialogTitle></DialogHeader>
@@ -93,34 +94,28 @@ export default function ClientsPage() {
         <Input className="pl-8" placeholder="Search by name or phone…" value={q} onChange={e => setQ(e.target.value)} />
       </div>
 
-      <div className="rounded-lg border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Phone</TableHead>
-              <TableHead className="text-center">Projects</TableHead>
-              <TableHead className="text-center">Orders</TableHead>
-              <TableHead>Added</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {clients.length === 0 && (
-              <TableRow><TableCell colSpan={5} className="py-8 text-center text-muted-foreground">No clients yet — add the first one.</TableCell></TableRow>
-            )}
-            {clients.map(c => (
-              <TableRow key={c.id}>
-                <TableCell>
-                  <Link href={`/clients/${c.id}`} className="font-medium text-primary hover:underline">{c.name}</Link>
-                </TableCell>
-                <TableCell className="text-muted-foreground">{c.phone || '—'}</TableCell>
-                <TableCell className="text-center">{c.projects_count > 0 ? <Badge variant="secondary">{c.projects_count}</Badge> : '—'}</TableCell>
-                <TableCell className="text-center">{c.orders_count > 0 ? <Badge variant="secondary">{c.orders_count}</Badge> : '—'}</TableCell>
-                <TableCell className="text-muted-foreground">{formatDate(c.created_at)}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+      {/* A rolodex: one card per client, latest conversation on it. */}
+      {clients.length === 0 && <StickyNote className="my-10">{q ? 'Nobody by that name.' : 'No clients yet. Add the first one.'}</StickyNote>}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {clients.map(c => (
+          <Link key={c.id} href={`/clients/${c.id}`}
+            className="paper-surface flex flex-col gap-3 rounded-xl p-4 transition-transform hover:-translate-y-0.5">
+            <div className="flex items-center gap-3">
+              <UserAvatar user={{ display_name: c.name, username: c.name }} size="size-10" textSize="text-sm" />
+              <div className="min-w-0">
+                <p className="truncate font-medium">{c.name}</p>
+                <p className="figures text-xs text-muted-foreground">{c.phone || 'No phone'}</p>
+              </div>
+            </div>
+            {c.last_note
+              ? <p className="line-clamp-2 font-serif text-sm italic text-muted-foreground">“{c.last_note}”<span className="figures not-italic"> · {formatDate(c.last_note_at)}</span></p>
+              : <p className="text-sm text-muted-foreground/70">No conversations yet</p>}
+            <div className="mt-auto flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              {c.active_project && <Badge variant="outline" className="max-w-full truncate">{c.active_project}</Badge>}
+              <span className="ml-auto">{c.projects_count} project{c.projects_count === 1 ? '' : 's'} · {c.orders_count} order{c.orders_count === 1 ? '' : 's'}</span>
+            </div>
+          </Link>
+        ))}
       </div>
     </div>
   );

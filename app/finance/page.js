@@ -1,6 +1,9 @@
 'use client';
 
+import { PageTitle } from '@/components/page-title';
+import { NewButton } from '@/components/new-button';
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { StickyNote } from '@/components/sticky-note';
 import { api, showToast, formatDate, formatMoney, capitalize } from '@/lib/client';
 import { todayISO } from '@/lib/date';
 import { Button } from '@/components/ui/button';
@@ -20,10 +23,11 @@ import {
   Table, TableHeader, TableRow, TableHead, TableBody, TableCell,
 } from '@/components/ui/table';
 import {
-  PlusIcon, PencilIcon, PaperclipIcon, UploadIcon, ArrowLeftIcon,
+  PencilIcon, PaperclipIcon, UploadIcon, ArrowLeftIcon,
   Loader2Icon, FileTextIcon, ExternalLinkIcon,
 } from 'lucide-react';
 import { TrashIcon } from '@heroicons/react/24/outline';
+import { cn } from '@/lib/utils';
 import { BRAND } from '@/lib/brand';
 
 export default function FinancePage() {
@@ -39,7 +43,7 @@ export default function FinancePage() {
   return (
     <div className="container flex flex-col gap-4 py-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Finance</h1>
+        <PageTitle>Finance</PageTitle>
         <p className="text-sm text-muted-foreground">
           {staff ? 'Cash entries you\'ve added' : `One combined book — ${BRAND.studioShort} & ${BRAND.workshopShort}`}
         </p>
@@ -145,6 +149,11 @@ function CashTab({ scoped = false }) {
 
   if (!data) return <p className="py-8 text-center text-muted-foreground">Loading…</p>;
 
+  // Balance after each row: rows are newest first and, without a month filter, complete,
+  // so walk back from the all-time balance.
+  let after = data.balance;
+  const running = data.rows.map(t => { const b = after; after -= t.kind === 'credit' ? t.amount : -t.amount; return b; });
+
   const monthCredit = data.rows.filter(r => r.kind === 'credit').reduce((s, r) => s + r.amount, 0);
   const monthDebit = data.rows.filter(r => r.kind === 'debit').reduce((s, r) => s + r.amount, 0);
 
@@ -170,7 +179,7 @@ function CashTab({ scoped = false }) {
         {month && <Button variant="ghost" size="sm" onClick={() => setMonth('')}>All months</Button>}
         <Dialog open={open} onOpenChange={o => { setOpen(o); if (!o) { setEditing(null); setForm(EMPTY_TXN); } }}>
           <DialogTrigger asChild>
-            <Button className="ml-auto"><PlusIcon data-icon="inline-start" />Add transaction</Button>
+            <NewButton label="New transaction" className="ml-auto" />
           </DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>{editing ? 'Edit transaction' : 'New cash transaction'}</DialogTitle></DialogHeader>
@@ -217,7 +226,7 @@ function CashTab({ scoped = false }) {
         </Dialog>
       </div>
 
-      <div className="rounded-lg border">
+      <div className="paper-surface overflow-hidden rounded-lg">
         <Table>
           <TableHeader>
             <TableRow>
@@ -225,15 +234,16 @@ function CashTab({ scoped = false }) {
               <TableHead>Party / description</TableHead>
               <TableHead className="text-right">Credit</TableHead>
               <TableHead className="text-right">Debit</TableHead>
+              {!month && <TableHead className="text-right">Balance</TableHead>}
               <TableHead className="text-right">Files</TableHead>
               <TableHead className="text-right" aria-label="Actions" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {data.rows.length === 0 && (
-              <TableRow><TableCell colSpan={6} className="py-8 text-center text-muted-foreground">No transactions{month ? ` in ${month}` : ''}.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="py-8"><StickyNote>No transactions{month ? ` in ${month}` : ''}.</StickyNote></TableCell></TableRow>
             )}
-            {data.rows.map(t => (
+            {data.rows.map((t, i) => (
               <TableRow key={t.id} className="group">
                 <TableCell className="whitespace-nowrap">{formatDate(t.date)}</TableCell>
                 <TableCell>
@@ -243,9 +253,14 @@ function CashTab({ scoped = false }) {
                 <TableCell className="text-right font-medium text-green-700 dark:text-green-500">
                   {t.kind === 'credit' ? `₹${t.amount.toLocaleString('en-IN')}` : ''}
                 </TableCell>
-                <TableCell className="text-right font-medium">
+                <TableCell className="text-right font-medium text-red-700 dark:text-red-400">
                   {t.kind === 'debit' ? `₹${t.amount.toLocaleString('en-IN')}` : ''}
                 </TableCell>
+                {!month && (
+                  <TableCell className={cn('text-right text-muted-foreground', running[i] < 0 && 'text-destructive')}>
+                    {running[i] < 0 ? '−' : ''}₹{Math.abs(running[i]).toLocaleString('en-IN')}
+                  </TableCell>
+                )}
                 <TableCell className="text-right">
                   <Button variant="ghost" size="sm" onClick={() => setAttachFor(t)}>
                     <PaperclipIcon data-icon="inline-start" />{t.attachment_count || ''}
@@ -418,7 +433,7 @@ function BankTab() {
         </CardContent>
       </Card>
 
-      <div className="rounded-lg border">
+      <div className="paper-surface overflow-hidden rounded-lg">
         <Table>
           <TableHeader>
             <TableRow>
@@ -432,7 +447,7 @@ function BankTab() {
           </TableHeader>
           <TableBody>
             {docs.length === 0 && (
-              <TableRow><TableCell colSpan={6} className="py-8 text-center text-muted-foreground">No statements uploaded yet.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="py-8"><StickyNote>No statements uploaded yet.</StickyNote></TableCell></TableRow>
             )}
             {docs.map(d => (
               <TableRow key={d.id} className="group">
@@ -548,7 +563,7 @@ function StatementReview({ docId, onBack }) {
         ))}
       </div>
 
-      <div className="rounded-lg border">
+      <div className="paper-surface overflow-hidden rounded-lg">
         <Table>
           <TableHeader>
             <TableRow>

@@ -1,7 +1,10 @@
 'use client';
 
+import { PageTitle } from '@/components/page-title';
+import { NewButton } from '@/components/new-button';
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
+import { StickyNote } from '@/components/sticky-note';
 import { useParams, useRouter } from 'next/navigation';
 import { api, showToast, formatDate, formatMoney } from '@/lib/client';
 import { todayISO } from '@/lib/date';
@@ -72,7 +75,7 @@ export default function VendorDetail() {
         <Button asChild variant="ghost" size="icon-sm"><Link href="/vendors"><ArrowLeftIcon /></Link></Button>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-2">
-            <h1 className="truncate text-2xl font-bold tracking-tight">{v.name}</h1>
+            <PageTitle className="truncate">{v.name}</PageTitle>
             <span className="text-lg font-semibold text-muted-foreground">{formatMoney(v.total_expense) || '₹0'}</span>
           </div>
           <p className="text-sm text-muted-foreground">
@@ -319,7 +322,7 @@ function PosTab({ vendorId, pos, onChanged }) {
     <div className="flex flex-col gap-4">
       <div className="flex justify-end">
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild><Button><PlusIcon data-icon="inline-start" />New PO</Button></DialogTrigger>
+          <DialogTrigger asChild><NewButton label="New PO" /></DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>New purchase order</DialogTitle></DialogHeader>
             <div className="flex flex-col gap-4">
@@ -378,7 +381,7 @@ function PosTab({ vendorId, pos, onChanged }) {
         </Dialog>
       </div>
 
-      {pos.length === 0 && <p className="py-8 text-center text-muted-foreground">No purchase orders for this vendor.</p>}
+      {pos.length === 0 && <StickyNote className="my-6">No purchase orders for this vendor.</StickyNote>}
 
       {pos.length > 0 && (
         <div className="flex flex-wrap items-end gap-2">
@@ -652,7 +655,7 @@ function FreightTab({ vendorId, rates, freight, onChanged }) {
   }
 
   return (
-    <div className="grid gap-4 lg:grid-cols-5">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
       <Card className="lg:col-span-2">
         <CardHeader>
           <CardTitle>Rate card</CardTitle>

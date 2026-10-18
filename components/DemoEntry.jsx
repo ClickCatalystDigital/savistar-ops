@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '@/lib/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,6 +22,23 @@ export default function DemoEntry({ roles, hasLead }) {
   const [form, setForm] = useState({});
   const [busy, setBusy] = useState(null);
   const [error, setError] = useState('');
+
+  // Owner pass (lib/demo-leads.js): /demo#pass=… goes straight to the roles. The secret is wiped from the address bar
+  // and is only ever sent in a POST body.
+  const [passOpen, setPassOpen] = useState(false);
+  const [pin, setPin] = useState('');
+  async function usePass(pass) {
+    setBusy('pass'); setError('');
+    try { await api('/api/demo/pass', { method: 'POST', body: { pass } }); setStep('roles'); }
+    catch (e) { setError(e.message); setPin(''); }
+    finally { setBusy(null); }
+  }
+  useEffect(() => {
+    const pass = new URLSearchParams(window.location.hash.slice(1)).get('pass');
+    if (!pass) return;
+    history.replaceState(null, '', window.location.pathname);
+    usePass(pass);
+  }, []);
 
   async function submit(e) {
     e.preventDefault();
@@ -46,7 +63,10 @@ export default function DemoEntry({ roles, hasLead }) {
     {/* Slim header: who made this and where to read more (not the full ahromlabs.com navbar, so the form stays the focus). */}
     <header className="border-b">
       <div className="container flex h-14 items-center justify-between gap-4 text-sm">
-        <a href="https://ahromlabs.com" className="font-semibold tracking-tight">Ahrom Labs</a>
+        <a href="https://ahromlabs.com" title="Ahrom Labs" className="inline-flex items-center">
+          {/* eslint-disable-next-line @next/next/no-img-element -- a 1 KB static mark; next/image adds nothing here */}
+          <img src="/ahrom-labs-mark.webp" alt="Ahrom Labs" width={28} height={28} className="size-7 dark:invert" />
+        </a>
         <nav className="flex items-center gap-4 text-muted-foreground sm:gap-6">
           <a href="https://ahromlabs.com/industries/interior-design-and-furniture" className="hover:text-foreground">How it was built</a>
           <a href="https://ahromlabs.com/#contact" className="hover:text-foreground">Contact</a>
@@ -105,6 +125,18 @@ export default function DemoEntry({ roles, hasLead }) {
                 {busy === 'form' ? <Loader2Icon className="animate-spin" /> : <ArrowRightIcon />} Continue
               </Button>
               <p className="text-xs text-muted-foreground">We use these details only to follow up about this system.</p>
+              {/* Owner pass (lib/demo-leads.js): a PIN skips the form and lifts the assistant's limit for this browser. */}
+              {passOpen ? (
+                <div className="flex items-center gap-2 border-t pt-3">
+                  <Input type="password" inputMode="numeric" autoComplete="off" aria-label="Demo pass" placeholder="Demo pass" maxLength={12} value={pin}
+                    onChange={e => setPin(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (pin) usePass(pin); } }} className="h-9 w-36" autoFocus />
+                  <Button type="button" variant="outline" size="sm" disabled={!pin || busy === 'pass'} onClick={() => usePass(pin)}>
+                    {busy === 'pass' ? <Loader2Icon className="animate-spin" /> : 'Enter'}
+                  </Button>
+                </div>
+              ) : (
+                <button type="button" onClick={() => setPassOpen(true)} className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline">Have a demo pass?</button>
+              )}
             </form>
           ) : (
             <div className="grid gap-2 sm:grid-cols-2">

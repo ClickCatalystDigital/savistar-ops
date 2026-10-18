@@ -1,5 +1,6 @@
 'use client';
 
+import { PageTitle } from '@/components/page-title';
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -79,7 +80,7 @@ export default function OrderDetail() {
       <div className="flex items-center gap-3">
         <Button asChild variant="ghost" size="icon-sm"><Link href="/orders"><ArrowLeftIcon /></Link></Button>
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-2xl font-bold tracking-tight">{o.item} × {o.qty}</h1>
+          <PageTitle className="truncate">{o.item} × {o.qty}</PageTitle>
           <p className="text-sm text-muted-foreground">
             {o.client_name && <Link href={`/clients/${o.client_id}`} className="text-primary hover:underline">{o.client_name}</Link>}
             {o.client_name && o.project_name && ' · '}
@@ -93,7 +94,7 @@ export default function OrderDetail() {
           <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              {STATUSES.map(s => <SelectItem key={s} value={s}>{capitalize(s).replace('_', ' ')}</SelectItem>)}
+              {STATUSES.map(s => <SelectItem key={s} value={s}>{capitalize(s)}</SelectItem>)}
             </SelectGroup>
           </SelectContent>
         </Select>
@@ -142,7 +143,7 @@ export default function OrderDetail() {
 
       {o.description && <p className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">{o.description}</p>}
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Work history</CardTitle>

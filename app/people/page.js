@@ -1,7 +1,10 @@
 'use client';
 
+import { PageTitle } from '@/components/page-title';
+import { NewButton } from '@/components/new-button';
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
+import { StickyNote } from '@/components/sticky-note';
 import { api, showToast, formatMoney, capitalize } from '@/lib/client';
 import { todayISO, todayMonth } from '@/lib/date';
 import { Button } from '@/components/ui/button';
@@ -22,12 +25,20 @@ import {
 } from '@/components/ui/table';
 import { PlusIcon, CheckIcon } from 'lucide-react';
 import { TrashIcon } from '@heroicons/react/24/outline';
+import { UserAvatar } from '@/components/user-avatar';
+import { cn } from '@/lib/utils';
+
+const ATTENDANCE = [
+  { value: 'present', short: 'P', label: 'Present', on: 'bg-success text-white' },
+  { value: 'half', short: '½', label: 'Half day', on: 'bg-warning text-white' },
+  { value: 'absent', short: 'A', label: 'Absent', on: 'bg-danger text-white' },
+];
 
 export default function PeoplePage() {
   return (
     <div className="container flex flex-col gap-4 py-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">People</h1>
+        <PageTitle>People</PageTitle>
         <p className="text-sm text-muted-foreground">Workshop employees — attendance, daily work, payroll</p>
       </div>
       <Tabs defaultValue="worksheet">
@@ -73,7 +84,7 @@ function Worksheet() {
         </p>
       </div>
       {data.rows.length === 0 && (
-        <p className="py-8 text-center text-muted-foreground">No active employees. Add them in the Employees tab.</p>
+        <StickyNote className="my-6">No active employees. Add them in the Employees tab.</StickyNote>
       )}
       <div className="flex flex-col gap-3">
         {data.rows.map(row => (
@@ -130,19 +141,22 @@ function WorksheetRow({ row, date, orders, onSaved }) {
     <Card>
       <CardContent className="flex flex-col gap-3 pt-4">
         <div className="flex flex-wrap items-center gap-3">
-          <Link href={`/people/${e.id}`} className="min-w-32 font-medium text-primary hover:underline">{e.name}</Link>
+          <Link href={`/people/${e.id}`} className="flex min-w-40 items-center gap-2 font-medium text-primary hover:underline">
+            <UserAvatar user={{ display_name: e.name, username: e.name }} size="size-7" />{e.name}
+          </Link>
           <span className="text-xs text-muted-foreground">{e.profession || '—'}</span>
           <div className="ml-auto flex items-center gap-2">
-            <Select value={att.status} onValueChange={v => { setAtt({ ...att, status: v }); saveAttendance({ ...att, status: v }); }}>
-              <SelectTrigger className="w-32"><SelectValue placeholder="Mark…" /></SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectItem value="present">Present</SelectItem>
-                  <SelectItem value="half">Half day</SelectItem>
-                  <SelectItem value="absent">Absent</SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
+            {/* One tap, like ticking a register: P / ½ / A. */}
+            <div role="radiogroup" aria-label={`Attendance for ${e.name}`} className="flex overflow-hidden rounded-md border">
+              {ATTENDANCE.map(a => (
+                <button key={a.value} type="button" role="radio" aria-checked={att.status === a.value} title={a.label}
+                  onClick={() => { setAtt({ ...att, status: a.value }); saveAttendance({ ...att, status: a.value }); }}
+                  className={cn('figures w-9 py-1.5 text-sm transition-colors focus-visible:relative focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+                    att.status === a.value ? a.on : 'text-muted-foreground hover:bg-muted')}>
+                  {a.short}
+                </button>
+              ))}
+            </div>
             {!absent && att.status && (
               <>
                 <Input type="time" value={att.in_time} onChange={ev => setAtt({ ...att, in_time: ev.target.value })}
@@ -236,7 +250,7 @@ function Employees() {
     <div className="flex flex-col gap-4">
       <div className="flex justify-end">
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild><Button><PlusIcon data-icon="inline-start" />Add employee</Button></DialogTrigger>
+          <DialogTrigger asChild><NewButton label="New employee" /></DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>New employee</DialogTitle></DialogHeader>
             <div className="flex flex-col gap-4">
@@ -286,7 +300,7 @@ function Employees() {
           </DialogContent>
         </Dialog>
       </div>
-      <div className="rounded-lg border">
+      <div className="paper-surface overflow-hidden rounded-lg">
         <Table>
           <TableHeader>
             <TableRow>
@@ -299,7 +313,7 @@ function Employees() {
           </TableHeader>
           <TableBody>
             {employees.length === 0 && (
-              <TableRow><TableCell colSpan={5} className="py-8 text-center text-muted-foreground">No employees yet.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={5} className="py-8"><StickyNote>No employees yet.</StickyNote></TableCell></TableRow>
             )}
             {employees.map(e => (
               <TableRow key={e.id} className={e.active ? '' : 'opacity-50'}>
@@ -358,7 +372,7 @@ function Payroll() {
   return (
     <div className="flex flex-col gap-4">
       <Input type="month" value={period} onChange={e => setPeriod(e.target.value)} className="w-44" />
-      <div className="rounded-lg border">
+      <div className="paper-surface overflow-hidden rounded-lg">
         <Table>
           <TableHeader>
             <TableRow>

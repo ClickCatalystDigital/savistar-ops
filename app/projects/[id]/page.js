@@ -1,5 +1,6 @@
 'use client';
 
+import { PageTitle } from '@/components/page-title';
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -12,7 +13,6 @@ import { DateInput } from '@/components/ui/date-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
@@ -24,6 +24,11 @@ import {
 import { ArrowLeftIcon, PlusIcon, PencilIcon, MapPinIcon, SendIcon } from 'lucide-react';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import { BRAND } from '@/lib/brand';
+import { StatusStamp } from '@/components/project-art';
+import { StickyNote } from '@/components/sticky-note';
+import { MaterialsEditor } from '@/components/materials-editor';
+import { ProjectPhotos } from '@/components/project-photos';
+import { cn } from '@/lib/utils';
 
 export default function ProjectDetail() {
   const { id } = useParams();
@@ -82,6 +87,14 @@ export default function ProjectDetail() {
     setBusy(false);
   }
 
+  // Materials are edited in place (MaterialsEditor); PUT takes the whole project, so send the rest unchanged.
+  async function saveMaterials(materials) {
+    try {
+      await api(`/api/projects/${id}`, { method: 'PUT', body: { client_id: p.client_id, name: p.name, status: p.status, start_date: p.start_date, notes: p.notes, address: p.address, materials } });
+      load();
+    } catch (e) { showToast(e.message, 'error'); }
+  }
+
   async function saveEdit() {
     setBusy(true);
     try {
@@ -111,15 +124,15 @@ export default function ProjectDetail() {
         <Button asChild variant="ghost" size="icon-sm"><Link href="/projects"><ArrowLeftIcon /></Link></Button>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h1 className="truncate text-2xl font-bold tracking-tight">{p.name}</h1>
-            <Badge variant={p.status === 'active' ? 'default' : 'secondary'}>{capitalize(p.status)}</Badge>
+            <PageTitle className="truncate">{p.name}</PageTitle>
+            <StatusStamp status={p.status} className="ml-2 shrink-0" />
           </div>
           <p className="text-sm text-muted-foreground">
             {p.client_name ? <Link href={`/clients/${p.client_id}`} className="text-primary hover:underline">{p.client_name}</Link> : 'No client'}
             {' '}· started {formatDate(p.start_date)} · {done}/{p.milestones.length} milestones done
           </p>
         </div>
-        <Dialog open={editOpen} onOpenChange={o => { setEditOpen(o); if (o) setEdit({ client_id: p.client_id, name: p.name, status: p.status, start_date: p.start_date || '', notes: p.notes || '', address: p.address || '' }); }}>
+        <Dialog open={editOpen} onOpenChange={o => { setEditOpen(o); if (o) setEdit({ client_id: p.client_id, name: p.name, status: p.status, start_date: p.start_date || '', notes: p.notes || '', address: p.address || '', materials: p.materials || '' }); }}>
           <DialogTrigger asChild><Button variant="outline" size="sm"><PencilIcon data-icon="inline-start" />Edit</Button></DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>Edit project</DialogTitle></DialogHeader>
@@ -170,11 +183,14 @@ export default function ProjectDetail() {
         </Dialog>
       </div>
 
+      <MaterialsEditor project={{ ...p, order_items: p.orders.map(o => o.item).join('; ') }} onSave={saveMaterials} />
+
       {p.notes && <p className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">{p.notes}</p>}
 
       <Tabs defaultValue="milestones">
         <TabsList>
           <TabsTrigger value="milestones">Milestones</TabsTrigger>
+          <TabsTrigger value="photos">Photos{p.photos.length > 0 && <span className="figures ml-1 text-xs text-muted-foreground">{p.photos.length}</span>}</TabsTrigger>
           <TabsTrigger value="orders">Orders & materials</TabsTrigger>
           <TabsTrigger value="visits">Site visits</TabsTrigger>
           <TabsTrigger value="conversations">Conversations</TabsTrigger>
@@ -190,32 +206,41 @@ export default function ProjectDetail() {
                   onChange={v => setNewMilestone({ ...newMilestone, due_date: v })} className="sm:w-44" />
                 <Button onClick={addMilestone} disabled={!newMilestone.title.trim()}><PlusIcon data-icon="inline-start" />Add</Button>
               </div>
-              <div className="flex flex-col gap-1">
-                {p.milestones.length === 0 && <p className="py-4 text-center text-sm text-muted-foreground">No milestones yet — add the plan above.</p>}
+              {p.milestones.length === 0 && <StickyNote className="my-6">No milestones yet — add the plan above.</StickyNote>}
+              {/* A dotted timeline: filled dot = done, ring = to do, red ring = overdue. */}
+              <ol className="relative ml-3 flex flex-col border-l-2 border-dashed border-milestone/40">
                 {p.milestones.map(m => {
                   const overdue = m.status !== 'done' && m.due_date && m.due_date < todayISO();
+                  const isDone = m.status === 'done';
                   return (
-                    <div key={m.id} className="group flex items-center gap-3 rounded-md px-2 py-2 hover:bg-muted">
-                      <Checkbox checked={m.status === 'done'} onCheckedChange={() => toggleMilestone(m)} />
-                      <span className={m.status === 'done' ? 'flex-1 text-sm text-muted-foreground line-through' : 'flex-1 text-sm'}>{m.title}</span>
+                    <li key={m.id} className="group relative flex items-center gap-3 rounded-md py-2 pl-6 pr-2 hover:bg-muted/60">
+                      <button type="button" role="checkbox" aria-checked={isDone} aria-label={`Mark "${m.title}" ${isDone ? 'not done' : 'done'}`}
+                        onClick={() => toggleMilestone(m)}
+                        className={cn('absolute -left-[9px] flex size-4 items-center justify-center rounded-full border-2 bg-background transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+                          isDone ? 'border-milestone bg-milestone' : overdue ? 'border-destructive' : 'border-milestone hover:bg-milestone/30')} />
+                      <span className={isDone ? 'flex-1 text-sm text-muted-foreground line-through' : 'flex-1 text-sm'}>{m.title}</span>
                       {m.due_date && (
-                        <span className={overdue ? 'text-xs font-medium text-destructive' : 'text-xs text-muted-foreground'}>
+                        <span className={cn('figures text-xs', overdue ? 'font-medium text-destructive' : 'text-muted-foreground')}>
                           {formatDate(m.due_date)}
                         </span>
                       )}
                       <Button variant="ghost" size="icon-sm" className="text-muted-foreground/60 transition-colors hover:bg-destructive/10 hover:text-destructive dark:hover:bg-destructive/20" onClick={() => deleteMilestone(m.id)} aria-label="Delete milestone">
                         <TrashIcon />
                       </Button>
-                    </div>
+                    </li>
                   );
                 })}
-              </div>
+              </ol>
             </CardContent>
           </Card>
         </TabsContent>
 
+        <TabsContent value="photos" className="mt-4">
+          <ProjectPhotos projectId={Number(id)} photos={p.photos} onChange={load} />
+        </TabsContent>
+
         <TabsContent value="orders" className="mt-4">
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <Card>
               <CardHeader><CardTitle>{BRAND.workshopShort} orders for this project</CardTitle></CardHeader>
               <CardContent className="flex flex-col gap-2">
@@ -223,7 +248,7 @@ export default function ProjectDetail() {
                 {p.orders.map(o => (
                   <Link key={o.id} href={`/orders/${o.id}`} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm hover:bg-muted">
                     <span className="truncate font-medium">{o.item} × {o.qty}</span>
-                    <Badge variant={o.status === 'delivered' ? 'secondary' : 'default'}>{capitalize(o.status).replace('_', ' ')}</Badge>
+                    <Badge variant={o.status === 'delivered' ? 'secondary' : 'default'}>{capitalize(o.status)}</Badge>
                   </Link>
                 ))}
               </CardContent>
@@ -252,7 +277,7 @@ export default function ProjectDetail() {
         </TabsContent>
 
         <TabsContent value="visits" className="mt-4">
-          <div className="grid gap-4 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             <Card className="lg:col-span-2">
               <CardHeader className="flex-row items-center justify-between">
                 <CardTitle>Site visits</CardTitle>
@@ -278,7 +303,7 @@ export default function ProjectDetail() {
                 </Dialog>
               </CardHeader>
               <CardContent className="flex flex-col gap-3">
-                {p.visits.length === 0 && <p className="py-4 text-center text-sm text-muted-foreground">No site visits logged.</p>}
+                {p.visits.length === 0 && <StickyNote className="my-6">No site visits logged.</StickyNote>}
                 {p.visits.map(v => (
                   <div key={v.id} className="rounded-lg border p-3">
                     <div className="flex items-center justify-between">
@@ -308,13 +333,21 @@ export default function ProjectDetail() {
                   <SendIcon data-icon="inline-start" />Log
                 </Button>
               </div>
-              {p.conversations.length === 0 && <p className="py-2 text-center text-sm text-muted-foreground">No conversations for this project yet.</p>}
-              {p.conversations.map(cv => (
-                <div key={cv.id} className="rounded-lg border p-3">
-                  <p className="whitespace-pre-wrap text-sm">{cv.body}</p>
-                  <p className="mt-1.5 text-xs text-muted-foreground">{cv.created_by || 'unknown'} · {formatDate(cv.created_at)}</p>
-                </div>
-              ))}
+              {p.conversations.length === 0
+                ? <StickyNote className="my-4">No conversations for this project yet.</StickyNote>
+                : (
+                  <div className="notebook -mx-4">
+                    {p.conversations.map(cv => (
+                      <div key={cv.id} className="notebook-line pr-4">
+                        <span className="figures pr-3 text-right text-[11px] text-muted-foreground">{formatDate(cv.created_at).slice(0, 6)}</span>
+                        <p className="pl-3 font-serif text-sm">
+                          <span className="whitespace-pre-wrap">{cv.body}</span>
+                          <span className="font-sans text-xs text-muted-foreground"> · {cv.created_by || 'unknown'}</span>
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
             </CardContent>
           </Card>
         </TabsContent>

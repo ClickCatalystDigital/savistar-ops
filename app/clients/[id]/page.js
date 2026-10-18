@@ -1,5 +1,6 @@
 'use client';
 
+import { PageTitle } from '@/components/page-title';
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -23,6 +24,7 @@ import {
 import { ArrowLeftIcon, PencilIcon, SendIcon, PlusIcon, XIcon, DownloadIcon } from 'lucide-react';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import { BRAND } from '@/lib/brand';
+import { StickyNote } from '@/components/sticky-note';
 
 const rupees = n => `₹${(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const EMPTY_ITEM = { description: '', hsn: '', gst_pct: 18, qty: 1, unit_price: 0 };
@@ -151,7 +153,7 @@ export default function ClientDetail() {
       <div className="flex items-center gap-3">
         <Button asChild variant="ghost" size="icon-sm"><Link href="/clients"><ArrowLeftIcon /></Link></Button>
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-2xl font-bold tracking-tight">{client.name}</h1>
+          <PageTitle className="truncate">{client.name}</PageTitle>
           <p className="text-sm text-muted-foreground">
             {[client.phone, client.email, client.address].filter(Boolean).join(' · ') || 'No contact details'}
           </p>
@@ -199,7 +201,7 @@ export default function ClientDetail() {
 
       {client.notes && <p className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">{client.notes}</p>}
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {/* Conversations */}
         <Card className="lg:col-span-2">
           <CardHeader><CardTitle>Conversations</CardTitle></CardHeader>
@@ -223,18 +225,21 @@ export default function ClientDetail() {
                 </Button>
               </div>
             </div>
-            <div className="flex flex-col gap-3">
-              {client.conversations.length === 0 && <p className="py-4 text-center text-sm text-muted-foreground">No conversations logged yet.</p>}
-              {client.conversations.map(cv => (
-                <div key={cv.id} className="rounded-lg border p-3">
-                  <p className="whitespace-pre-wrap text-sm">{cv.body}</p>
-                  <p className="mt-1.5 text-xs text-muted-foreground">
-                    {cv.created_by || 'unknown'} · {formatDate(cv.created_at)}
-                    {cv.project_name && <> · <Badge variant="outline" className="align-middle">{cv.project_name}</Badge></>}
-                  </p>
+            {client.conversations.length === 0
+              ? <StickyNote className="my-4">No conversations logged yet.</StickyNote>
+              : (
+                <div className="notebook -mx-4">
+                  {client.conversations.map(cv => (
+                    <div key={cv.id} className="notebook-line pr-4">
+                      <span className="figures pr-3 text-right text-[11px] text-muted-foreground">{formatDate(cv.created_at).slice(0, 6)}</span>
+                      <p className="pl-3 font-serif text-sm">
+                        <span className="whitespace-pre-wrap">{cv.body}</span>
+                        <span className="font-sans text-xs text-muted-foreground"> · {cv.created_by || 'unknown'}{cv.project_name && ` · ${cv.project_name}`}</span>
+                      </p>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              )}
           </CardContent>
         </Card>
 
@@ -259,7 +264,7 @@ export default function ClientDetail() {
               {client.orders.map(o => (
                 <Link key={o.id} href={`/orders/${o.id}`} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm hover:bg-muted">
                   <span className="truncate font-medium">{o.item} × {o.qty}</span>
-                  <Badge variant={o.status === 'delivered' ? 'secondary' : 'default'}>{capitalize(o.status).replace('_', ' ')}</Badge>
+                  <Badge variant={o.status === 'delivered' ? 'secondary' : 'default'}>{capitalize(o.status)}</Badge>
                 </Link>
               ))}
             </CardContent>
@@ -273,7 +278,7 @@ export default function ClientDetail() {
           <Button size="sm" onClick={openNewInvoice}><PlusIcon data-icon="inline-start" />New invoice</Button>
         </CardHeader>
         <CardContent>
-          {client.invoices.length === 0 && <p className="py-4 text-center text-sm text-muted-foreground">No invoices yet.</p>}
+          {client.invoices.length === 0 && <StickyNote className="my-6">No invoices yet.</StickyNote>}
           {client.invoices.length > 0 && (
             <div className="overflow-x-auto">
             <Table>

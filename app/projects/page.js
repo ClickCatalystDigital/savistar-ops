@@ -1,13 +1,17 @@
 'use client';
 
+import { PageTitle } from '@/components/page-title';
+import { NewButton } from '@/components/new-button';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { api, showToast, formatDate, capitalize } from '@/lib/client';
+import { StickyNote } from '@/components/sticky-note';
+import { api, showToast, formatDate } from '@/lib/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DateInput } from '@/components/ui/date-input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
+import { StatusStamp, Swatches, BAR } from '@/components/project-art';
+import { projectMaterials } from '@/lib/materials';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import {
   Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -15,14 +19,14 @@ import {
 import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectItem,
 } from '@/components/ui/select';
-import { PlusIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { BRAND } from '@/lib/brand';
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState([]);
   const [clients, setClients] = useState([]);
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ name: '', client_id: '', start_date: '', notes: '' });
+  const [form, setForm] = useState({ name: '', client_id: '', start_date: '', notes: '', materials: '' });
   const [busy, setBusy] = useState(false);
 
   async function load() {
@@ -42,7 +46,7 @@ export default function ProjectsPage() {
       });
       showToast('Project created');
       setOpen(false);
-      setForm({ name: '', client_id: '', start_date: '', notes: '' });
+      setForm({ name: '', client_id: '', start_date: '', notes: '', materials: '' });
       load();
     } catch (e) { showToast(e.message, 'error'); }
     setBusy(false);
@@ -52,11 +56,11 @@ export default function ProjectsPage() {
     <div className="container flex flex-col gap-4 py-6">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Projects</h1>
+          <PageTitle>Projects</PageTitle>
           <p className="text-sm text-muted-foreground">{BRAND.studioShort} interior design projects</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild><Button><PlusIcon data-icon="inline-start" />New project</Button></DialogTrigger>
+          <DialogTrigger asChild><NewButton label="New project" /></DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>New project</DialogTitle></DialogHeader>
             <div className="flex flex-col gap-4">
@@ -79,6 +83,10 @@ export default function ProjectsPage() {
                 <Label>Start date</Label>
                 <DateInput value={form.start_date} onChange={v => setForm({ ...form, start_date: v })} />
               </div>
+              <div className="flex flex-col gap-2">
+                <Label>Materials</Label>
+                <Input value={form.materials} onChange={e => setForm({ ...form, materials: e.target.value })} placeholder="e.g. warm oak, brass, white lacquer" />
+              </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
@@ -88,25 +96,29 @@ export default function ProjectsPage() {
         </Dialog>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {projects.length === 0 && (
-          <p className="col-span-full py-8 text-center text-muted-foreground">No projects yet.</p>
+          <StickyNote className="col-span-full my-6">No projects yet.</StickyNote>
         )}
         {projects.map(p => {
           const pct = p.milestones_total ? Math.round((p.milestones_done / p.milestones_total) * 100) : 0;
+          const materials = projectMaterials(p);
           return (
             <Link key={p.id} href={`/projects/${p.id}`}>
-              <Card className="h-full transition-colors hover:bg-muted/50">
+              <Card className={cn('h-full transition-transform hover:-translate-y-0.5', (p.cover_url || materials.length) && 'pt-0')}>
+                {/* Mood-board top: the newest photo with the palette as a thin band under it. */}
+                {p.cover_url && <img src={p.cover_url} alt="" loading="lazy" className="aspect-[16/9] w-full object-cover" />}
+                <Swatches items={materials} className={p.cover_url ? 'h-2.5' : 'h-10'} />
                 <CardHeader>
                   <div className="flex items-start justify-between gap-2">
-                    <CardTitle className="text-base">{p.name}</CardTitle>
-                    <Badge variant={p.status === 'active' ? 'default' : 'secondary'}>{capitalize(p.status)}</Badge>
+                    <CardTitle className="font-sans text-base">{p.name}</CardTitle>
+                    <StatusStamp status={p.status} className="mt-1 shrink-0" />
                   </div>
                   <CardDescription>{p.client_name || 'No client'} · started {formatDate(p.start_date)}</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-2">
                   <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                    <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+                    <div className={cn('h-full rounded-full transition-all', BAR[p.status] || 'bg-primary')} style={{ width: `${pct}%` }} />
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {p.milestones_done}/{p.milestones_total} milestones · {p.orders_count} order{p.orders_count === 1 ? '' : 's'}
