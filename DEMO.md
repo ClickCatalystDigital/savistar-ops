@@ -21,7 +21,27 @@ Added 2026-10-13 on the `workers-demo` branch. Same code as the live Savistar ap
 - **Seeding.** `scripts/demo/seed.mjs` runs against a Node build pointed at an empty golden DB (see the file's header). Always run `scripts/demo/scrub-check.mjs` before publishing a golden DB.
 - **Reset.** `workers/demo-reset-cron` recreates `sav-demo` from golden at 03:30 IST. Deploy with `npx wrangler deploy -c wrangler.jsonc` from its folder. Manual run: `POST https://savistar-ops-demo-reset.pujan-5d8.workers.dev` with header `x-trigger-key` (`RESET_TRIGGER_KEY` in the gitignored `.demo-secrets`).
 - **Deploy the demo:** `npm run cf:deploy` (worker `savistar-ops-interiors-demo`). It first runs `scripts/demo/migrate.mjs` (the app's own `migrate()` on the golden and live demo DBs), so a schema change in `lib/db.js` reaches the demo and survives the nightly reset. Once this branch is merged, a push to `main` runs `.github/workflows/deploy.yml`: the Node build, then the demo (migrate + deploy), then a check that Render serves the same commit, each confirmed through the public `/api/version`. Secrets and the `CLIENT_URL` variable are listed at the top of the workflow. Secrets: `TURSO_AUTH_TOKEN` (`savdemo` group token) and `SESSION_SECRET` (its own).
-- **Dates drift.** Data is dated at seed time; re-seed every month or two.
+- **Dates stay current.** The seed writes its date to `demo_meta.seeded_on`; after each reset the Worker moves every ISO date (and `YYYY-MM` payroll period) in every table forward by today − `seeded_on`, keeping times. Dates written inside free text and the FY in invoice numbers (`AI/26-27/…`) don't move: re-seed after 1 April. The worker needs the `TURSO_API_TOKEN` to be allowed to mint database tokens.
+
+## Walking the demo
+
+Every login lands on Home (tasks and calendar). Records worth opening:
+
+| Where | What it shows |
+|---|---|
+| Clients → Anand & Priya Mehta | Conversation log, two invoices (stage 1 paid, stage 2 sent and outstanding), linked cash receipt |
+| Projects → Mehta bungalow | Milestones half done, site visits, workshop orders, vendor POs, site address |
+| Projects → Kapadia living room | Completed end to end: delivered order, paid invoice, matching final payment |
+| Projects → Vora penthouse / Trivedi clinic | Cancelled and on-hold projects, with the reason in conversations |
+| Orders | Pending, in progress, done, delivered and cancelled; work logs per order |
+| Vendors → Shree Plywood Traders | Partial delivery with a return, open PO, payments linked so the balance is net |
+| Vendors → Sardar Transport | Freight against a rate card; the Gandhinagar trip is overcharged on purpose |
+| People | Attendance, work logs, advances, last month's payroll (Imran's advance recovered) |
+| Finance → Cash | Receipts that match invoice totals; `office` sees only its own entries |
+| Invoice PDF | Acme Interiors / Acme Furniture sample letterheads |
+
+- **owner** (Meera Shah) and **manager** (Rohan Desai) see everything; **office** (Kavya Patel) has its own task due today and only its own cash entries.
+- Not in the app, so not in the demo: quotations, and recording a payment against an invoice. Bank statements and attachments are blocked in the demo (uploads).
 
 ## Fix found on the way
 

@@ -52,18 +52,24 @@ await db.batch([
 for (const u of ['owner', 'manager', 'office']) await login(u, PASSWORD);
 
 // --- 2. Clients --------------------------------------------------------------------------------------
+// Phone numbers are 99999 000xx so none can belong to a real person.
 const CLIENTS = [
-  ['Anand & Priya Mehta', '9824000101', 'Bungalow 14, Shivalik Greens, Bodakdev', '3BHK bungalow, full interiors; prefers warm oak and brass.'],
-  ['Kiran Joshi', '9824000102', 'B-902, Sky Heights, Prahlad Nagar', 'Kitchen and wardrobes only; tight timeline before Diwali.'],
-  ['Brewnest Cafe LLP', '9824000103', 'Ground floor, Sindhu Bhavan Road', 'Second outlet; same palette as their first cafe.'],
-  ['Northbridge Consultants Pvt Ltd', '9824000104', '7th floor, Venus Atlantis, Satellite', 'Office fit-out for 40 seats, two meeting rooms.'],
-  ['Dr. Nisha Trivedi', '9824000105', 'Clinic, Navrangpura', 'Dental clinic reception and two cabins.'],
-  ['Sahil & Ritu Kapadia', '9824000106', 'A-301, Riverview Residency, Usmanpura', 'Living room and study; furniture only.'],
-  ['Greenleaf Montessori', '9824000107', 'Thaltej', 'Child-safe furniture for three classrooms.'],
-  ['Vikram Rathod', '9824000108', 'Farmhouse, Gandhinagar Highway', 'Enquiry: farmhouse refurbishment, budget pending.'],
+  ['Anand & Priya Mehta', '9999900101', 'Bungalow 14, Green Meadows, Bodakdev', '3BHK bungalow, full interiors; prefers warm oak and brass.'],
+  ['Kiran Joshi', '9999900102', 'B-902, Sky Heights, Prahlad Nagar', 'Kitchen and wardrobes only; tight timeline before Diwali.'],
+  ['Brewnest Cafe LLP', '9999900103', 'Ground floor, Sindhu Bhavan Road', 'Second outlet; same palette as their first cafe.'],
+  ['Northbridge Consultants Pvt Ltd', '9999900104', '7th floor, Northbridge House, Satellite', 'Office fit-out for 40 seats, two meeting rooms.'],
+  ['Dr. Nisha Trivedi', '9999900105', 'Clinic, Navrangpura', 'Dental clinic reception and two cabins.'],
+  ['Sahil & Ritu Kapadia', '9999900106', 'A-301, Riverview Residency, Usmanpura', 'Living room and study; furniture only.'],
+  ['Greenleaf Montessori', '9999900107', 'Thaltej', 'Child-safe furniture for three classrooms.'],
+  ['Vikram Rathod', '9999900108', 'Farmhouse, Gandhinagar Highway', 'Enquiry: farmhouse refurbishment, budget pending.'],
+  ['Harsh & Komal Vora', '9999900109', 'Penthouse, Lake View Towers, Vastrapur', 'Penthouse interiors; cancelled after design stage (moved city).'],
 ];
 const client = {};
-for (const [name, phone, address, notes] of CLIENTS) client[name] = idOf(await api('owner', 'POST', '/api/clients', { name, phone, address, notes, email: `${name.split(/[ &.]/)[0].toLowerCase()}@example.com` }));
+const clientAddress = {};
+for (const [name, phone, address, notes] of CLIENTS) {
+  client[name] = idOf(await api('owner', 'POST', '/api/clients', { name, phone, address, notes, email: `${name.split(/[ &.]/)[0].toLowerCase()}@example.com` }));
+  clientAddress[name] = address;
+}
 
 // --- 3. Projects (design studio) with milestones and site visits ---------------------------------------
 // [client, name, status, started (days ago), milestones [title, due (days from now), done]]
@@ -74,14 +80,21 @@ const PROJECTS = [
   ['Kiran Joshi', 'Joshi apartment — kitchen and wardrobes', 'active', 20, [['Measurements', -18, true], ['Kitchen carcass install', 4, false], ['Shutters and hardware', 12, false]]],
   ['Dr. Nisha Trivedi', 'Trivedi dental clinic', 'on_hold', 50, [['Design sign-off', -35, true], ['Approval from society', 30, false]]],
   ['Sahil & Ritu Kapadia', 'Kapadia living room', 'completed', 120, [['Design sign-off', -110, true], ['Installation', -70, true], ['Handover', -65, true]]],
+  ['Harsh & Komal Vora', 'Vora penthouse interiors', 'cancelled', 90, [['Concept presentation', -80, true], ['Design sign-off', -60, false]]],
 ];
 const project = {};
 for (const [c, name, status, ago, milestones] of PROJECTS) {
   const id = idOf(await api('owner', 'POST', '/api/projects', { client_id: client[c], name, status, start_date: day(-ago), notes: 'Site supervisor: Imran.' }));
   project[name] = id;
+  // Creating a project takes no address (it's added later from the project page), so set it here.
+  await db.execute({ sql: 'UPDATE projects SET address = ? WHERE id = ?', args: [clientAddress[c], id] });
   for (const [title, due, done] of milestones) {
     const m = idOf(await api('manager', 'POST', '/api/milestones', { project_id: id, title, due_date: day(due) }));
-    if (done) await api('manager', 'PUT', `/api/milestones/${m}`, { status: 'done' });
+    if (done) {
+      await api('manager', 'PUT', `/api/milestones/${m}`, { status: 'done' });
+      // The API stamps completed_at with "now"; a milestone done 60 days ago should say so.
+      await db.execute({ sql: 'UPDATE milestones SET completed_at = ? WHERE id = ?', args: [`${day(due)} 17:00:00`, m] });
+    }
   }
 }
 const VISITS = [
@@ -96,12 +109,13 @@ for (const [p, d, by, notes] of VISITS) await api('manager', 'POST', '/api/site-
 // --- 4. Workshop people ----------------------------------------------------------------------------------
 // [name, profession, pay_type, rate, joined (days ago)]
 const PEOPLE = [
-  ['Ramesh Prajapati', 'Carpenter (head)', 'monthly', 32000, 900], ['Suresh Chauhan', 'Carpenter', 'daily', 950, 600],
-  ['Imran Shaikh', 'Site supervisor', 'monthly', 28000, 700], ['Mahesh Solanki', 'Polish and finishing', 'daily', 850, 420],
+  ['Ramesh Prajapati', 'Carpenter (head)', 'salary', 32000, 900], ['Suresh Chauhan', 'Carpenter', 'daily', 950, 600],
+  ['Imran Shaikh', 'Site supervisor', 'salary', 28000, 700], ['Mahesh Solanki', 'Polish and finishing', 'daily', 850, 420],
   ['Dinesh Parmar', 'Helper', 'daily', 600, 200], ['Javed Mansuri', 'Fitter', 'daily', 900, 350],
 ];
 const emp = {};
-for (const [name, profession, pay_type, pay_rate, ago] of PEOPLE) emp[name] = idOf(await api('owner', 'POST', '/api/employees', { name, profession, pay_type, pay_rate, joined_at: day(-ago), phone: '9879000000' }));
+let phoneNo = 201;
+for (const [name, profession, pay_type, pay_rate, ago] of PEOPLE) emp[name] = idOf(await api('owner', 'POST', '/api/employees', { name, profession, pay_type, pay_rate, joined_at: day(-ago), phone: `9999900${phoneNo++}` }));
 
 // --- 5. Workshop orders (furniture) and who worked on them ------------------------------------------------
 // [client, project or null, item, qty, status, started (days ago), due (days from now)]
@@ -112,10 +126,14 @@ const ORDERS = [
   ['Brewnest Cafe LLP', 'Brewnest cafe, Sindhu Bhavan Road', 'Cafe counter with fluted front', 1, 'in_progress', 6, 3],
   ['Greenleaf Montessori', null, 'Low activity tables, rounded edges', 12, 'pending', 0, 21],
   ['Sahil & Ritu Kapadia', 'Kapadia living room', 'TV unit and study table', 2, 'delivered', 95, -72],
+  ['Kiran Joshi', 'Joshi apartment — kitchen and wardrobes', 'Kitchen carcasses, 14 units', 14, 'done', 12, -1],
+  ['Harsh & Komal Vora', 'Vora penthouse interiors', 'Walk-in wardrobe, lacquered', 1, 'cancelled', 70, -40],
 ];
 const order = {};
 for (const [c, p, item, qty, status, start, due] of ORDERS) {
   order[item] = idOf(await api('owner', 'POST', '/api/orders', { client_id: client[c], project_id: p ? project[p] : null, item, qty, status, start_date: day(-start), due_date: day(due), description: `${item} — ${qty} no(s)` }));
+  // POST doesn't stamp delivered_at (only a status change does, with today's date); delivered on its due date.
+  if (status === 'delivered') await db.execute({ sql: 'UPDATE orders SET delivered_at = ? WHERE id = ?', args: [day(due), order[item]] });
 }
 
 // Three weeks of attendance and work logs (Mon-Sat), so the daily worksheet and payroll have history.
@@ -129,7 +147,7 @@ const WORK = {
 const TASKS = ['Carcass assembly', 'Edge banding', 'Veneer pressing', 'Sanding and first coat', 'Hardware fitting', 'Shutter alignment'];
 for (let d = -20; d <= 0; d++) {
   const date = day(d);
-  if (new Date(date).getDay() === 0) continue; // Sunday off
+  if (new Date(date).getUTCDay() === 0) continue; // Sunday off
   let k = 0;
   for (const [name, id] of Object.entries(emp)) {
     const absent = (d + name.length) % 11 === 0;
@@ -142,9 +160,12 @@ for (let d = -20; d <= 0; d++) {
 await api('office', 'POST', '/api/expenses', { employee_id: emp['Imran Shaikh'], date: day(-4), amount: 1450, kind: 'expense', description: 'Auto and parking for site visits' });
 await api('office', 'POST', '/api/expenses', { employee_id: emp['Suresh Chauhan'], date: day(-9), amount: 3000, kind: 'advance', description: 'Advance against salary' });
 await api('office', 'POST', '/api/expenses', { employee_id: emp['Dinesh Parmar'], date: day(-12), amount: 1500, kind: 'advance', description: 'Advance against salary' });
-const lastMonth = day(-20).slice(0, 7);
-await api('owner', 'POST', '/api/payroll', { employee_id: emp['Ramesh Prajapati'], period: lastMonth, gross: 32000, deductions: 0, net: 32000, paid_on: day(-12), notes: 'Paid by bank transfer' });
-await api('owner', 'POST', '/api/payroll', { employee_id: emp['Imran Shaikh'], period: lastMonth, gross: 28000, deductions: 1000, net: 27000, paid_on: day(-12), notes: 'Advance recovered' });
+await api('office', 'POST', '/api/expenses', { employee_id: emp['Imran Shaikh'], date: day(-38), amount: 1000, kind: 'advance', description: 'Advance against salary' });
+// Salaries for last calendar month, paid on the 1st of this one.
+const payDay = `${day(0).slice(0, 7)}-01`;
+const lastMonth = day(-new Date().getUTCDate()).slice(0, 7);
+await api('owner', 'POST', '/api/payroll', { employee_id: emp['Ramesh Prajapati'], period: lastMonth, gross: 32000, deductions: 0, net: 32000, paid_on: payDay, notes: 'Paid by bank transfer' });
+await api('owner', 'POST', '/api/payroll', { employee_id: emp['Imran Shaikh'], period: lastMonth, gross: 28000, deductions: 1000, net: 27000, paid_on: payDay, notes: 'Advance recovered' });
 
 // --- 6. Vendors, POs, deliveries, freight ---------------------------------------------------------------
 const VENDORS = [
@@ -153,7 +174,7 @@ const VENDORS = [
   ['Sardar Transport', 'Transport', 'Tempo and pickup, Ahmedabad and Gandhinagar'],
 ];
 const vendor = {};
-for (const [name, material, notes] of VENDORS) vendor[name] = idOf(await api('owner', 'POST', '/api/vendors', { name, material, notes, phone: '9898000000' }));
+for (const [name, material, notes] of VENDORS) vendor[name] = idOf(await api('owner', 'POST', '/api/vendors', { name, material, notes, phone: `9999900${phoneNo++}` }));
 // [vendor, item, qty, rate, for project, for order, ordered (days ago), [delivered qty, days ago, returned]]
 const POS = [
   ['Shree Plywood Traders', 'BWP plywood 18 mm (8x4)', 40, 2650, 'Mehta bungalow — full interiors', 'Master bedroom wardrobe, oak veneer', 18, [[25, 15, 0], [15, 8, 1]]],
@@ -178,42 +199,91 @@ await api('manager', 'POST', '/api/freight', { vendor_id: vendor['Sardar Transpo
 await api('manager', 'POST', '/api/freight', { vendor_id: vendor['Sardar Transport'], from_loc: 'Vatva', to_loc: 'Gandhinagar', amount: 3400, date: day(-3), notes: 'Sample furniture for farmhouse enquiry' });
 
 // --- 7. Money: invoices and the cash book ------------------------------------------------------------------
-await api('owner', 'POST', '/api/invoices', {
-  client_id: client['Anand & Priya Mehta'], project_id: project['Mehta bungalow — full interiors'], company: 'savistar', invoice_no: 'AI/26-27/014', title: 'Interior design and execution — stage 2',
-  submitted_on: day(-10), due_date: day(5), payment_terms: '50% on stage completion', status: 'sent',
-  items: [{ description: 'Design and supervision fee, stage 2', hsn: '998391', gst_pct: 18, qty: 1, unit_price: 185000 }, { description: 'False ceiling and painting works', hsn: '995461', gst_pct: 18, qty: 1, unit_price: 342000 }],
-});
-await api('owner', 'POST', '/api/invoices', {
-  client_id: client['Sahil & Ritu Kapadia'], project_id: project['Kapadia living room'], company: 'saag', invoice_no: 'AF/26-27/031', title: 'TV unit and study table',
-  submitted_on: day(-70), due_date: day(-55), payment_terms: 'On delivery', status: 'paid',
-  items: [{ description: 'TV unit, walnut veneer, 2400 mm', hsn: '9403', gst_pct: 18, qty: 1, unit_price: 96000 }, { description: 'Study table with drawers', hsn: '9403', gst_pct: 18, qty: 1, unit_price: 38000 }],
-});
-await api('owner', 'POST', '/api/invoices', {
-  client_id: client['Northbridge Consultants Pvt Ltd'], project_id: project['Northbridge office fit-out, 40 seats'], company: 'saag', invoice_no: 'AF/26-27/036', title: 'Workstations — first lot',
-  submitted_on: day(-1), due_date: day(14), payment_terms: '30 days', status: 'draft',
-  items: [{ description: 'Linear workstation, 4-seater module', hsn: '9403', gst_pct: 18, qty: 5, unit_price: 64000 }],
-});
-// [date, kind, amount, party, description, by]
+// Every client receipt in the cash book matches an invoice total (base + 18% GST) to the rupee.
+// [client, project, company, no, title, submitted (days ago, null = draft), due (days from now), terms, status, items [desc, hsn, qty, unit]]
+const INVOICES = [
+  ['Anand & Priya Mehta', 'Mehta bungalow — full interiors', 'savistar', 'AI/26-27/009', 'Interior design and execution — stage 1', -45, -38, '50% on stage completion', 'paid',
+    [['Design and supervision fee, stage 1', '998391', 1, 120000], ['Civil and electrical works', '995461', 1, 92000]]], // 2,50,160
+  ['Brewnest Cafe LLP', 'Brewnest cafe, Sindhu Bhavan Road', 'savistar', 'AI/26-27/011', 'Advance — counter and seating', -27, -26, 'Advance', 'paid',
+    [['Advance against counter and seating fabrication', '995461', 1, 100000]]], // 1,18,000
+  ['Anand & Priya Mehta', 'Mehta bungalow — full interiors', 'savistar', 'AI/26-27/014', 'Interior design and execution — stage 2', -10, 5, '50% on stage completion', 'sent',
+    [['Design and supervision fee, stage 2', '998391', 1, 185000], ['False ceiling and painting works', '995461', 1, 342000]]], // 6,21,860 outstanding
+  ['Sahil & Ritu Kapadia', 'Kapadia living room', 'saag', 'AF/26-27/031', 'TV unit and study table', -70, -55, 'On delivery', 'paid',
+    [['TV unit, walnut veneer, 2400 mm', '9403', 1, 96000], ['Study table with drawers', '9403', 1, 38000]]], // 1,58,120
+  ['Northbridge Consultants Pvt Ltd', 'Northbridge office fit-out, 40 seats', 'saag', 'AF/26-27/033', 'Mobilisation advance', -31, -24, 'Advance', 'paid',
+    [['Mobilisation advance, 40-seat office fit-out', '9403', 1, 250000]]], // 2,95,000
+  ['Northbridge Consultants Pvt Ltd', 'Northbridge office fit-out, 40 seats', 'saag', 'AF/26-27/036', 'Workstations — first lot', null, 14, '30 days', 'draft',
+    [['Linear workstation, 4-seater module', '9403', 5, 64000]]],
+];
+for (const [c, p, company, invoice_no, title, sub, due, payment_terms, status, items] of INVOICES) {
+  await api('owner', 'POST', '/api/invoices', {
+    client_id: client[c], project_id: project[p], company, invoice_no, title, payment_terms, status,
+    submitted_on: sub === null ? null : day(sub), due_date: day(due),
+    items: items.map(([description, hsn, qty, unit_price]) => ({ description, hsn, gst_pct: 18, qty, unit_price })),
+  });
+}
+// [date, kind, amount, party, party type, description, by]; party type links the entry to that client or vendor.
 const CASH = [
-  [-62, 'credit', 160000, 'Sahil & Ritu Kapadia', 'Final payment, living room', 'owner'], [-41, 'credit', 250000, 'Anand & Priya Mehta', 'Stage 1 payment', 'owner'],
-  [-30, 'credit', 300000, 'Northbridge Consultants Pvt Ltd', 'Mobilisation advance', 'owner'], [-26, 'credit', 120000, 'Brewnest Cafe LLP', 'Advance for counter and seating', 'owner'],
-  [-15, 'debit', 66250, 'Shree Plywood Traders', 'Plywood, first delivery', 'manager'], [-12, 'debit', 59000, 'Payroll', 'Monthly salaries', 'owner'],
-  [-11, 'debit', 95200, 'Crystal Glass Works', 'Partition glass', 'manager'], [-8, 'debit', 28800, 'Kalpana Hardware', 'Hinges', 'manager'],
-  [-7, 'debit', 1800, 'Sardar Transport', 'Freight, Vatva to Bodakdev', 'office'], [-5, 'debit', 1600, 'Sardar Transport', 'Freight, Vatva to Satellite', 'office'],
-  [-4, 'debit', 2350, 'Workshop', 'Sandpaper, glue and fevicol', 'office'], [-2, 'debit', 780, 'Office', 'Tea and courier', 'office'],
+  [day(-62), 'credit', 158120, 'Sahil & Ritu Kapadia', 'client', 'Final payment, invoice AF/26-27/031', 'owner'],
+  [day(-41), 'credit', 250160, 'Anand & Priya Mehta', 'client', 'Stage 1 payment, invoice AI/26-27/009', 'owner'],
+  [day(-30), 'credit', 295000, 'Northbridge Consultants Pvt Ltd', 'client', 'Mobilisation advance, invoice AF/26-27/033', 'owner'],
+  [day(-26), 'credit', 118000, 'Brewnest Cafe LLP', 'client', 'Advance, invoice AI/26-27/011', 'owner'],
+  [day(-15), 'debit', 66250, 'Shree Plywood Traders', 'vendor', 'Plywood, first delivery', 'manager'],
+  [payDay, 'debit', 59000, 'Payroll', null, 'Monthly salaries', 'owner'],
+  [day(-11), 'debit', 95200, 'Crystal Glass Works', 'vendor', 'Partition glass', 'manager'],
+  [day(-8), 'debit', 28800, 'Kalpana Hardware', 'vendor', 'Hinges', 'manager'],
+  [day(-7), 'debit', 1800, 'Sardar Transport', 'vendor', 'Freight, Vatva to Bodakdev', 'office'],
+  [day(-5), 'debit', 1600, 'Sardar Transport', 'vendor', 'Freight, Vatva to Satellite', 'office'],
+  [day(-4), 'debit', 2350, 'Workshop', null, 'Sandpaper, glue and fevicol', 'office'],
+  [day(-2), 'debit', 780, 'Office', null, 'Tea and courier', 'office'],
 ];
-for (const [d, kind, amount, party, description, by] of CASH) await api(by, 'POST', '/api/cash', { date: day(d), kind, amount, party, description });
+for (const [date, kind, amount, party, party_type, description, by] of CASH) {
+  const party_id = party_type === 'client' ? client[party] : party_type === 'vendor' ? vendor[party] : null;
+  await api(by, 'POST', '/api/cash', { date, kind, amount, party, party_type, party_id, description });
+}
 
-// --- 8. Tasks on the calendar ----------------------------------------------------------------------------
-const TASK_LIST = [
-  ['Confirm handle finish with Mehta family', 0, 'manager', 'Anand & Priya Mehta'], ['Send revised counter drawing to Brewnest', 1, 'owner', 'Brewnest Cafe LLP'],
-  ['Collect cheque from Northbridge', 3, 'office', 'Northbridge Consultants Pvt Ltd'], ['Follow up farmhouse budget', 2, 'owner', 'Vikram Rathod'],
-  ['Book glass delivery slot', -1, 'manager', null], ['Society NOC for Trivedi clinic', 7, 'manager', 'Dr. Nisha Trivedi'],
+// --- 8. Client conversations ------------------------------------------------------------------------------
+// [client, project or null, days ago, by, message]
+const CONVERSATIONS = [
+  ['Anand & Priya Mehta', 'Mehta bungalow — full interiors', 70, 'owner', 'Kick-off at site. Priya wants warm oak throughout, brass accents only in the dining area.'],
+  ['Anand & Priya Mehta', 'Mehta bungalow — full interiors', 17, 'owner', 'Walk-through done. Brass handles approved for wardrobes; dining table moved to teak.'],
+  ['Anand & Priya Mehta', 'Mehta bungalow — full interiors', 3, 'manager', 'Shared paint touch-up schedule on WhatsApp; Anand confirmed Saturday access.'],
+  ['Northbridge Consultants Pvt Ltd', 'Northbridge office fit-out, 40 seats', 38, 'owner', 'Layout signed off by their admin head. Two meeting rooms need acoustic panels.'],
+  ['Northbridge Consultants Pvt Ltd', 'Northbridge office fit-out, 40 seats', 2, 'manager', 'Electrician delay on cable trays; told them workstations shift by two days.'],
+  ['Brewnest Cafe LLP', 'Brewnest cafe, Sindhu Bhavan Road', 25, 'owner', 'Concept board approved. Same terrazzo as the first outlet; fluted counter front.'],
+  ['Brewnest Cafe LLP', 'Brewnest cafe, Sindhu Bhavan Road', 6, 'owner', 'New coffee machine is 40 mm wider; counter drawing to be revised.'],
+  ['Kiran Joshi', 'Joshi apartment — kitchen and wardrobes', 19, 'manager', 'Measurements taken. Kiran needs the kitchen working before Diwali guests arrive.'],
+  ['Dr. Nisha Trivedi', 'Trivedi dental clinic', 30, 'owner', 'On hold: society wants an NOC before any work in the commercial wing.'],
+  ['Sahil & Ritu Kapadia', 'Kapadia living room', 64, 'owner', 'Handover done; Ritu asked about a matching shoe cabinet later in the year.'],
+  ['Harsh & Komal Vora', 'Vora penthouse interiors', 58, 'owner', 'Harsh is relocating to Pune for work; project cancelled after design. Concept fee settled.'],
+  ['Vikram Rathod', null, 9, 'owner', 'First call: farmhouse refurbishment, 4 rooms and a verandah. Waiting on his budget.'],
+  ['Greenleaf Montessori', null, 14, 'manager', 'Principal wants rounded edges and non-toxic finish on all tables; sample to be shown.'],
 ];
-for (const [title, due, to, c] of TASK_LIST) await api('owner', 'POST', '/api/tasks', { title, due_date: day(due), assigned_to: to, client_id: c ? client[c] : null });
+for (const [c, p, ago, by, body] of CONVERSATIONS) {
+  const id = idOf(await api(by, 'POST', `/api/clients/${client[c]}/conversations`, { project_id: p ? project[p] : null, body }));
+  await db.execute({ sql: 'UPDATE client_conversations SET created_at = ? WHERE id = ?', args: [`${day(-ago)} 11:30:00`, id] });
+}
+
+// --- 9. Tasks on the calendar ----------------------------------------------------------------------------
+// [title, due (days from now), assigned to, client, done]
+const TASK_LIST = [
+  ['Confirm handle finish with Mehta family', 0, 'manager', 'Anand & Priya Mehta', false], ['Send revised counter drawing to Brewnest', 1, 'owner', 'Brewnest Cafe LLP', false],
+  ['Collect cheque from Northbridge', 3, 'office', 'Northbridge Consultants Pvt Ltd', false], ['Follow up farmhouse budget', 2, 'owner', 'Vikram Rathod', false],
+  ['Book glass delivery slot', -1, 'manager', null, true], ['Society NOC for Trivedi clinic', 7, 'manager', 'Dr. Nisha Trivedi', false],
+  ['Courier stage 2 invoice copy to Mehta family', 0, 'office', 'Anand & Priya Mehta', false], ['File plywood bills from site', -3, 'office', null, true],
+];
+for (const [title, due, to, c, done] of TASK_LIST) {
+  const id = idOf(await api('owner', 'POST', '/api/tasks', { title, due_date: day(due), assigned_to: to, client_id: c ? client[c] : null }));
+  if (done) await api(to, 'PUT', `/api/tasks/${id}`, { status: 'done' });
+}
+
+// The nightly reset (workers/demo-reset-cron) moves every date forward by (today − seeded_on).
+await db.batch(['CREATE TABLE IF NOT EXISTS demo_meta (seeded_on TEXT NOT NULL)', 'DELETE FROM demo_meta', { sql: 'INSERT INTO demo_meta VALUES (?)', args: [day(0)] }], 'write');
 
 const counts = {};
-for (const t of ['users', 'clients', 'projects', 'milestones', 'site_visits', 'orders', 'employees', 'attendance', 'work_logs', 'vendors', 'vendor_pos', 'vendor_deliveries', 'freight_charges', 'employee_expenses', 'payroll_payments', 'invoices', 'cash_transactions', 'tasks']) {
+for (const t of ['users', 'clients', 'client_conversations', 'projects', 'milestones', 'site_visits', 'orders', 'employees', 'attendance', 'work_logs', 'vendors', 'vendor_pos', 'vendor_deliveries', 'freight_charges', 'employee_expenses', 'payroll_payments', 'invoices', 'invoice_items', 'cash_transactions', 'tasks']) {
   counts[t] = Number((await db.execute(`SELECT COUNT(*) n FROM ${t}`).catch(() => ({ rows: [{ n: -1 }] }))).rows[0].n);
 }
 console.log('Acme Interiors / Acme Furniture demo data seeded:', counts);
+const empty = Object.entries(counts).filter(([, n]) => n <= 0).map(([t]) => t);
+if (empty.length) throw new Error(`Empty tables after seeding: ${empty.join(', ')}`);
