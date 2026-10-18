@@ -79,7 +79,7 @@ export default function OrderDetail() {
       <div className="flex items-center gap-3">
         <Button asChild variant="ghost" size="icon-sm"><Link href="/orders"><ArrowLeftIcon /></Link></Button>
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-2xl font-bold tracking-tight">{o.item} × {o.qty}</h1>
+          <h1 className="page-title truncate">{o.item} × {o.qty}</h1>
           <p className="text-sm text-muted-foreground">
             {o.client_name && <Link href={`/clients/${o.client_id}`} className="text-primary hover:underline">{o.client_name}</Link>}
             {o.client_name && o.project_name && ' · '}
@@ -93,7 +93,7 @@ export default function OrderDetail() {
           <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              {STATUSES.map(s => <SelectItem key={s} value={s}>{capitalize(s).replace('_', ' ')}</SelectItem>)}
+              {STATUSES.map(s => <SelectItem key={s} value={s}>{capitalize(s)}</SelectItem>)}
             </SelectGroup>
           </SelectContent>
         </Select>

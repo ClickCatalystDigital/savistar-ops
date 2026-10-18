@@ -209,6 +209,20 @@
     0 20px 40px -20px var(--paper-shadow-2);
 }
 
+/* Page and card titles share Home's handwritten chrome font, with a marker stroke under
+   page titles. In a layer so a page can still override with a utility (e.g. font-sans). */
+@layer components {
+  .page-title {
+    width: fit-content;
+    max-width: 100%;
+    font-family: var(--font-hand), cursive;
+    font-size: 1.75rem;
+    line-height: 1.3;
+    background: linear-gradient(transparent 64%, color-mix(in oklab, var(--milestone) 30%, transparent) 64% 90%, transparent 90%);
+  }
+  [data-slot=card-title] { font-family: var(--font-hand), cursive; }
+}
+
 .scrollbar-none {
   scrollbar-width: none;       /* Firefox */
   -ms-overflow-style: none;    /* old Edge/IE */

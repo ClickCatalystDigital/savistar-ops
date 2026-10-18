@@ -49,7 +49,7 @@ export default function ClientsPage() {
   return (
     <div className="container flex flex-col gap-4 py-6">
       <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold tracking-tight">Clients</h1>
+        <h1 className="page-title">Clients</h1>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button><PlusIcon data-icon="inline-start" />Add client</Button>
@@ -93,7 +93,7 @@ export default function ClientsPage() {
         <Input className="pl-8" placeholder="Search by name or phone…" value={q} onChange={e => setQ(e.target.value)} />
       </div>
 
-      <div className="rounded-lg border">
+      <div className="paper-surface overflow-hidden rounded-lg">
         <Table>
           <TableHeader>
             <TableRow>

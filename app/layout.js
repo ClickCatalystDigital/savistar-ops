@@ -5,6 +5,10 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { getSessionUser } from '@/lib/auth';
 import DemoAnalytics from '@/components/DemoAnalytics';
 import { BRAND } from '@/lib/brand';
+import { Architects_Daughter } from 'next/font/google';
+
+// Home's chrome font (app/page.js), exposed as --font-hand for page and card titles (globals.css).
+const hand = Architects_Daughter({ weight: '400', subsets: ['latin'], display: 'swap', variable: '--font-hand' });
 
 export const metadata = {
   title: BRAND.app,
@@ -19,7 +23,7 @@ const themeInit = `(function(){try{var t=localStorage.getItem('theme');if(t)docu
 export default async function RootLayout({ children }) {
   const user = await getSessionUser();
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={hand.variable} suppressHydrationWarning>
       <head><script dangerouslySetInnerHTML={{ __html: themeInit }} /></head>
       <body className="min-h-screen bg-background text-foreground">
         <TooltipProvider delayDuration={200}>

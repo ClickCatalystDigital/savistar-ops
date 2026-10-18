@@ -72,7 +72,7 @@ export default function VendorDetail() {
         <Button asChild variant="ghost" size="icon-sm"><Link href="/vendors"><ArrowLeftIcon /></Link></Button>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-2">
-            <h1 className="truncate text-2xl font-bold tracking-tight">{v.name}</h1>
+            <h1 className="page-title truncate">{v.name}</h1>
             <span className="text-lg font-semibold text-muted-foreground">{formatMoney(v.total_expense) || '₹0'}</span>
           </div>
           <p className="text-sm text-muted-foreground">

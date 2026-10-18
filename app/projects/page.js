@@ -52,7 +52,7 @@ export default function ProjectsPage() {
     <div className="container flex flex-col gap-4 py-6">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Projects</h1>
+          <h1 className="page-title">Projects</h1>
           <p className="text-sm text-muted-foreground">{BRAND.studioShort} interior design projects</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
@@ -96,10 +96,10 @@ export default function ProjectsPage() {
           const pct = p.milestones_total ? Math.round((p.milestones_done / p.milestones_total) * 100) : 0;
           return (
             <Link key={p.id} href={`/projects/${p.id}`}>
-              <Card className="h-full transition-colors hover:bg-muted/50">
+              <Card className="h-full transition-transform hover:-translate-y-0.5">
                 <CardHeader>
                   <div className="flex items-start justify-between gap-2">
-                    <CardTitle className="text-base">{p.name}</CardTitle>
+                    <CardTitle className="font-sans text-base">{p.name}</CardTitle>
                     <Badge variant={p.status === 'active' ? 'default' : 'secondary'}>{capitalize(p.status)}</Badge>
                   </div>
                   <CardDescription>{p.client_name || 'No client'} · started {formatDate(p.start_date)}</CardDescription>

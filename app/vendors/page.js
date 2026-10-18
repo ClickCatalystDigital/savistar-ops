@@ -43,7 +43,7 @@ export default function VendorsPage() {
     <div className="container flex flex-col gap-4 py-6">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Vendors</h1>
+          <h1 className="page-title">Vendors</h1>
           <p className="text-sm text-muted-foreground">Material suppliers — orders, deliveries, freight rates</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
@@ -78,7 +78,7 @@ export default function VendorsPage() {
         </Dialog>
       </div>
 
-      <div className="rounded-lg border">
+      <div className="paper-surface overflow-hidden rounded-lg">
         <Table>
           <TableHeader>
             <TableRow>

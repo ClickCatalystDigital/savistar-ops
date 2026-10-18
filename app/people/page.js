@@ -27,7 +27,7 @@ export default function PeoplePage() {
   return (
     <div className="container flex flex-col gap-4 py-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">People</h1>
+        <h1 className="page-title">People</h1>
         <p className="text-sm text-muted-foreground">Workshop employees — attendance, daily work, payroll</p>
       </div>
       <Tabs defaultValue="worksheet">
@@ -286,7 +286,7 @@ function Employees() {
           </DialogContent>
         </Dialog>
       </div>
-      <div className="rounded-lg border">
+      <div className="paper-surface overflow-hidden rounded-lg">
         <Table>
           <TableHeader>
             <TableRow>
@@ -358,7 +358,7 @@ function Payroll() {
   return (
     <div className="flex flex-col gap-4">
       <Input type="month" value={period} onChange={e => setPeriod(e.target.value)} className="w-44" />
-      <div className="rounded-lg border">
+      <div className="paper-surface overflow-hidden rounded-lg">
         <Table>
           <TableHeader>
             <TableRow>

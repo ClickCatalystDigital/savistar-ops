@@ -68,7 +68,7 @@ export default function OrdersPage() {
     <div className="container flex flex-col gap-4 py-6">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Orders</h1>
+          <h1 className="page-title">Orders</h1>
           <p className="text-sm text-muted-foreground">{BRAND.workshopShort} furniture workshop orders</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
@@ -143,7 +143,7 @@ export default function OrdersPage() {
         </TabsList>
       </Tabs>
 
-      <div className="rounded-lg border">
+      <div className="paper-surface overflow-hidden rounded-lg">
         <Table>
           <TableHeader>
             <TableRow>
@@ -169,7 +169,7 @@ export default function OrdersPage() {
                     {o.client_name || '—'}{o.project_name ? ` · ${o.project_name}` : ''}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={STATUS_VARIANT[o.status] || 'outline'}>{capitalize(o.status).replace('_', ' ')}</Badge>
+                    <Badge variant={STATUS_VARIANT[o.status] || 'outline'}>{capitalize(o.status)}</Badge>
                   </TableCell>
                   <TableCell className={overdue ? 'font-medium text-destructive' : 'text-muted-foreground'}>{formatDate(o.due_date)}</TableCell>
                   <TableCell className="max-w-48 truncate text-muted-foreground">{o.recent_workers || '—'}</TableCell>

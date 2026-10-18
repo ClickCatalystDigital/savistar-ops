@@ -95,7 +95,7 @@ export default function EmployeeDetail() {
         <Button asChild variant="ghost" size="icon-sm"><Link href="/people"><ArrowLeftIcon /></Link></Button>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h1 className="truncate text-2xl font-bold tracking-tight">{emp.name}</h1>
+            <h1 className="page-title truncate">{emp.name}</h1>
             {!emp.active && <Badge variant="outline">Inactive</Badge>}
           </div>
           <p className="text-sm text-muted-foreground">

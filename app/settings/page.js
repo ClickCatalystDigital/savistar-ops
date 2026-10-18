@@ -164,7 +164,7 @@ export default function SettingsPage() {
     <div className="container flex flex-col gap-4 py-6">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
+          <h1 className="page-title">Settings</h1>
           <p className="text-sm text-muted-foreground">Users & access</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>

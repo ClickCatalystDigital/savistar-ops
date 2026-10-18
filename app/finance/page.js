@@ -39,7 +39,7 @@ export default function FinancePage() {
   return (
     <div className="container flex flex-col gap-4 py-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Finance</h1>
+        <h1 className="page-title">Finance</h1>
         <p className="text-sm text-muted-foreground">
           {staff ? 'Cash entries you\'ve added' : `One combined book — ${BRAND.studioShort} & ${BRAND.workshopShort}`}
         </p>
@@ -217,7 +217,7 @@ function CashTab({ scoped = false }) {
         </Dialog>
       </div>
 
-      <div className="rounded-lg border">
+      <div className="paper-surface overflow-hidden rounded-lg">
         <Table>
           <TableHeader>
             <TableRow>
@@ -418,7 +418,7 @@ function BankTab() {
         </CardContent>
       </Card>
 
-      <div className="rounded-lg border">
+      <div className="paper-surface overflow-hidden rounded-lg">
         <Table>
           <TableHeader>
             <TableRow>
@@ -548,7 +548,7 @@ function StatementReview({ docId, onBack }) {
         ))}
       </div>
 
-      <div className="rounded-lg border">
+      <div className="paper-surface overflow-hidden rounded-lg">
         <Table>
           <TableHeader>
             <TableRow>

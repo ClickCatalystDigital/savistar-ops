@@ -111,7 +111,7 @@ export default function ProjectDetail() {
         <Button asChild variant="ghost" size="icon-sm"><Link href="/projects"><ArrowLeftIcon /></Link></Button>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h1 className="truncate text-2xl font-bold tracking-tight">{p.name}</h1>
+            <h1 className="page-title truncate">{p.name}</h1>
             <Badge variant={p.status === 'active' ? 'default' : 'secondary'}>{capitalize(p.status)}</Badge>
           </div>
           <p className="text-sm text-muted-foreground">
@@ -223,7 +223,7 @@ export default function ProjectDetail() {
                 {p.orders.map(o => (
                   <Link key={o.id} href={`/orders/${o.id}`} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm hover:bg-muted">
                     <span className="truncate font-medium">{o.item} × {o.qty}</span>
-                    <Badge variant={o.status === 'delivered' ? 'secondary' : 'default'}>{capitalize(o.status).replace('_', ' ')}</Badge>
+                    <Badge variant={o.status === 'delivered' ? 'secondary' : 'default'}>{capitalize(o.status)}</Badge>
                   </Link>
                 ))}
               </CardContent>
