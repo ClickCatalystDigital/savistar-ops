@@ -92,12 +92,28 @@ const MATERIALS = {
   'Kapadia living room': 'teak, linen, olive, brass',
   'Vora penthouse interiors': 'marble, walnut, brass, velvet',
 };
+// [caption, Unsplash photo id] per project.
+const PHOTOS = {
+  "Mehta bungalow — full interiors": [["Master bedroom wardrobe, reference", "1760072513393-b9d81f65dd7e"], ["Living room, oak and brass", "1787390629829-abb32b3025c5"], ["Living room concept", "1745429523617-0d837856ca35"]],
+  "Northbridge office fit-out, 40 seats": [["Glass partitions, reference", "1497366754035-f200968a6e72"], ["Workstation zone", "1497366811353-6870744d04b2"]],
+  "Brewnest cafe, Sindhu Bhavan Road": [["Pendant lights, first outlet", "1511081692775-05d0f180a065"], ["Curved counter concept", "1567880905822-56f8e06fe630"]],
+  "Joshi apartment — kitchen and wardrobes": [["Wardrobe shutters, reference", "1752407828514-660d6945d392"], ["Kitchen render", "1745429523635-ad375f836bf2"]],
+  "Trivedi dental clinic": [["Cabin layout, reference", "1704455306251-b4634215d98f"]],
+  "Kapadia living room": [["Living room, handed over", "1745429523637-60f5986cc1db"]],
+  "Vora penthouse interiors": [["Lounge, city view", "1760611655987-d348d6d28174"], ["Living room concept", "1758448755778-90ebf4d0f1e7"]],
+};
 const project = {};
 for (const [c, name, status, ago, milestones] of PROJECTS) {
   const id = idOf(await api('owner', 'POST', '/api/projects', { client_id: client[c], name, status, start_date: day(-ago), notes: 'Site supervisor: Imran.', materials: MATERIALS[name] }));
   project[name] = id;
   // Creating a project takes no address (it's added later from the project page), so set it here.
   await db.execute({ sql: 'UPDATE projects SET address = ? WHERE id = ?', args: [clientAddress[c], id] });
+  // Sample photos (uploads are off in the demo, so written straight in). Free Unsplash images,
+  // linked rather than copied as Unsplash asks; the last one listed is the card's cover.
+  for (const [caption, photo] of PHOTOS[name] || []) {
+    await db.execute({ sql: "INSERT INTO attachments (entity_type, entity_id, file_url, name, uploaded_by) VALUES ('project', ?, ?, ?, 'owner')",
+      args: [id, `https://images.unsplash.com/photo-${photo}?w=1200&q=70&auto=format&fit=crop`, caption] });
+  }
   for (const [title, due, done] of milestones) {
     const m = idOf(await api('manager', 'POST', '/api/milestones', { project_id: id, title, due_date: day(due) }));
     if (done) {
