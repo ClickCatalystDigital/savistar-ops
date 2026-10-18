@@ -1,7 +1,8 @@
 // middleware.js
-// Edge runtime: only checks that a session cookie is present — full JWT verification
-// (needs Node crypto) happens in route handlers via lib/auth.js.
+// Edge runtime: checks the session cookie's signature and expiry with Web Crypto (lib/session.js);
+// route handlers read the user through lib/auth.js.
 import { NextResponse } from 'next/server';
+import { validSession } from '@/lib/session';
 
 const PUBLIC_PATHS = ['/login', '/api/login', '/api/version'];
 
@@ -22,7 +23,7 @@ function demoGuard(req, pathname) {
   return null;
 }
 
-export function middleware(req) {
+export async function middleware(req) {
   const { pathname } = req.nextUrl;
   const demo = demoGuard(req, pathname);
   if (demo) return demo;
@@ -38,7 +39,7 @@ export function middleware(req) {
 
   const token = req.cookies.get('token')?.value;
 
-  if (!token) {
+  if (!token || !(await validSession(token))) {
     if (pathname.startsWith('/api/')) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
