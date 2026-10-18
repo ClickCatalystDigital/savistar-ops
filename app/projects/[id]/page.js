@@ -12,7 +12,6 @@ import { DateInput } from '@/components/ui/date-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
@@ -24,6 +23,9 @@ import {
 import { ArrowLeftIcon, PlusIcon, PencilIcon, MapPinIcon, SendIcon } from 'lucide-react';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import { BRAND } from '@/lib/brand';
+import { StatusStamp } from '@/components/project-art';
+import { projectMaterials } from '@/lib/materials';
+import { cn } from '@/lib/utils';
 
 export default function ProjectDetail() {
   const { id } = useParams();
@@ -104,6 +106,7 @@ export default function ProjectDetail() {
   if (!p) return <div className="container py-10 text-muted-foreground">Loading…</div>;
 
   const done = p.milestones.filter(m => m.status === 'done').length;
+  const materials = projectMaterials({ ...p, order_items: p.orders.map(o => o.item).join('; ') });
 
   return (
     <div className="container flex flex-col gap-4 py-6">
@@ -112,14 +115,14 @@ export default function ProjectDetail() {
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <h1 className="page-title truncate">{p.name}</h1>
-            <Badge variant={p.status === 'active' ? 'default' : 'secondary'}>{capitalize(p.status)}</Badge>
+            {p.status === 'active' ? <Badge>Active</Badge> : <StatusStamp status={p.status} className="ml-2 shrink-0" />}
           </div>
           <p className="text-sm text-muted-foreground">
             {p.client_name ? <Link href={`/clients/${p.client_id}`} className="text-primary hover:underline">{p.client_name}</Link> : 'No client'}
             {' '}· started {formatDate(p.start_date)} · {done}/{p.milestones.length} milestones done
           </p>
         </div>
-        <Dialog open={editOpen} onOpenChange={o => { setEditOpen(o); if (o) setEdit({ client_id: p.client_id, name: p.name, status: p.status, start_date: p.start_date || '', notes: p.notes || '', address: p.address || '' }); }}>
+        <Dialog open={editOpen} onOpenChange={o => { setEditOpen(o); if (o) setEdit({ client_id: p.client_id, name: p.name, status: p.status, start_date: p.start_date || '', notes: p.notes || '', address: p.address || '', materials: p.materials || '' }); }}>
           <DialogTrigger asChild><Button variant="outline" size="sm"><PencilIcon data-icon="inline-start" />Edit</Button></DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>Edit project</DialogTitle></DialogHeader>
@@ -154,6 +157,10 @@ export default function ProjectDetail() {
                   <Textarea placeholder="Shown in the Site visits tab" value={edit.address} onChange={e => setEdit({ ...edit, address: e.target.value })} />
                 </div>
                 <div className="flex flex-col gap-2">
+                  <Label>Materials</Label>
+                  <Input placeholder="e.g. warm oak, brass, white lacquer" value={edit.materials} onChange={e => setEdit({ ...edit, materials: e.target.value })} />
+                </div>
+                <div className="flex flex-col gap-2">
                   <Label>Notes</Label>
                   <Textarea value={edit.notes} onChange={e => setEdit({ ...edit, notes: e.target.value })} />
                 </div>
@@ -169,6 +176,17 @@ export default function ProjectDetail() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {materials.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {materials.map(m => (
+            <span key={m.name} className="paper-surface flex items-center gap-2 rounded-md py-1 pl-1 pr-2.5 text-xs">
+              <span className="size-5 rounded-sm ring-1 ring-black/10" style={{ backgroundColor: m.hex }} />
+              <span className="font-hand">{m.name}</span>
+            </span>
+          ))}
+        </div>
+      )}
 
       {p.notes && <p className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">{p.notes}</p>}
 
@@ -190,26 +208,31 @@ export default function ProjectDetail() {
                   onChange={v => setNewMilestone({ ...newMilestone, due_date: v })} className="sm:w-44" />
                 <Button onClick={addMilestone} disabled={!newMilestone.title.trim()}><PlusIcon data-icon="inline-start" />Add</Button>
               </div>
-              <div className="flex flex-col gap-1">
-                {p.milestones.length === 0 && <p className="py-4 text-center text-sm text-muted-foreground">No milestones yet — add the plan above.</p>}
+              {p.milestones.length === 0 && <p className="py-4 text-center text-sm text-muted-foreground">No milestones yet — add the plan above.</p>}
+              {/* A dotted timeline: filled dot = done, ring = to do, red ring = overdue. */}
+              <ol className="relative ml-3 flex flex-col border-l-2 border-dashed border-milestone/40">
                 {p.milestones.map(m => {
                   const overdue = m.status !== 'done' && m.due_date && m.due_date < todayISO();
+                  const isDone = m.status === 'done';
                   return (
-                    <div key={m.id} className="group flex items-center gap-3 rounded-md px-2 py-2 hover:bg-muted">
-                      <Checkbox checked={m.status === 'done'} onCheckedChange={() => toggleMilestone(m)} />
-                      <span className={m.status === 'done' ? 'flex-1 text-sm text-muted-foreground line-through' : 'flex-1 text-sm'}>{m.title}</span>
+                    <li key={m.id} className="group relative flex items-center gap-3 rounded-md py-2 pl-6 pr-2 hover:bg-muted/60">
+                      <button type="button" role="checkbox" aria-checked={isDone} aria-label={`Mark "${m.title}" ${isDone ? 'not done' : 'done'}`}
+                        onClick={() => toggleMilestone(m)}
+                        className={cn('absolute -left-[9px] flex size-4 items-center justify-center rounded-full border-2 bg-background transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+                          isDone ? 'border-milestone bg-milestone' : overdue ? 'border-destructive' : 'border-milestone hover:bg-milestone/30')} />
+                      <span className={isDone ? 'flex-1 text-sm text-muted-foreground line-through' : 'flex-1 text-sm'}>{m.title}</span>
                       {m.due_date && (
-                        <span className={overdue ? 'text-xs font-medium text-destructive' : 'text-xs text-muted-foreground'}>
+                        <span className={cn('figures text-xs', overdue ? 'font-medium text-destructive' : 'text-muted-foreground')}>
                           {formatDate(m.due_date)}
                         </span>
                       )}
                       <Button variant="ghost" size="icon-sm" className="text-muted-foreground/60 transition-colors hover:bg-destructive/10 hover:text-destructive dark:hover:bg-destructive/20" onClick={() => deleteMilestone(m.id)} aria-label="Delete milestone">
                         <TrashIcon />
                       </Button>
-                    </div>
+                    </li>
                   );
                 })}
-              </div>
+              </ol>
             </CardContent>
           </Card>
         </TabsContent>

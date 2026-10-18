@@ -4,7 +4,7 @@ import { queryAll, queryOne, execute, softDelete } from '@/lib/db';
 export async function GET(req, ctx) {
   const params = await ctx.params;
   const project = await queryOne(`
-    SELECT p.*, c.name AS client_name FROM projects p
+    SELECT p.*, c.name AS client_name, c.notes AS client_notes FROM projects p
     LEFT JOIN clients c ON c.id = p.client_id
     WHERE p.id = ? AND p.is_deleted_record = 0`, [params.id]);
   if (!project) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -26,8 +26,8 @@ export async function PUT(req, ctx) {
   const params = await ctx.params;
   const b = await req.json();
   await execute(
-    'UPDATE projects SET client_id = ?, name = ?, status = ?, start_date = ?, notes = ?, address = ? WHERE id = ?',
-    [b.client_id || null, b.name, b.status, b.start_date || null, b.notes || null, b.address || null, params.id]);
+    'UPDATE projects SET client_id = ?, name = ?, status = ?, start_date = ?, notes = ?, address = ?, materials = ? WHERE id = ?',
+    [b.client_id || null, b.name, b.status, b.start_date || null, b.notes || null, b.address || null, b.materials?.trim() || null, params.id]);
   return NextResponse.json({ ok: true });
 }
 

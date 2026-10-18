@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { api, showToast, formatDate, capitalize } from '@/lib/client';
+import { api, showToast, formatDate } from '@/lib/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DateInput } from '@/components/ui/date-input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { StatusStamp, Swatches } from '@/components/project-art';
+import { projectMaterials } from '@/lib/materials';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import {
   Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -16,13 +18,14 @@ import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectItem,
 } from '@/components/ui/select';
 import { PlusIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { BRAND } from '@/lib/brand';
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState([]);
   const [clients, setClients] = useState([]);
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ name: '', client_id: '', start_date: '', notes: '' });
+  const [form, setForm] = useState({ name: '', client_id: '', start_date: '', notes: '', materials: '' });
   const [busy, setBusy] = useState(false);
 
   async function load() {
@@ -42,7 +45,7 @@ export default function ProjectsPage() {
       });
       showToast('Project created');
       setOpen(false);
-      setForm({ name: '', client_id: '', start_date: '', notes: '' });
+      setForm({ name: '', client_id: '', start_date: '', notes: '', materials: '' });
       load();
     } catch (e) { showToast(e.message, 'error'); }
     setBusy(false);
@@ -79,6 +82,10 @@ export default function ProjectsPage() {
                 <Label>Start date</Label>
                 <DateInput value={form.start_date} onChange={v => setForm({ ...form, start_date: v })} />
               </div>
+              <div className="flex flex-col gap-2">
+                <Label>Materials</Label>
+                <Input value={form.materials} onChange={e => setForm({ ...form, materials: e.target.value })} placeholder="e.g. warm oak, brass, white lacquer" />
+              </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
@@ -94,13 +101,15 @@ export default function ProjectsPage() {
         )}
         {projects.map(p => {
           const pct = p.milestones_total ? Math.round((p.milestones_done / p.milestones_total) * 100) : 0;
+          const materials = projectMaterials(p);
           return (
             <Link key={p.id} href={`/projects/${p.id}`}>
-              <Card className="h-full transition-transform hover:-translate-y-0.5">
+              <Card className={cn('h-full transition-transform hover:-translate-y-0.5', materials.length && 'pt-0')}>
+                <Swatches items={materials} className="h-10" />
                 <CardHeader>
                   <div className="flex items-start justify-between gap-2">
                     <CardTitle className="font-sans text-base">{p.name}</CardTitle>
-                    <Badge variant={p.status === 'active' ? 'default' : 'secondary'}>{capitalize(p.status)}</Badge>
+                    {p.status === 'active' ? <Badge>Active</Badge> : <StatusStamp status={p.status} className="mt-1 shrink-0" />}
                   </div>
                   <CardDescription>{p.client_name || 'No client'} · started {formatDate(p.start_date)}</CardDescription>
                 </CardHeader>
