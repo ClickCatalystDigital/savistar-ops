@@ -12,6 +12,7 @@ import { STARTERS } from '@/lib/assistant-starters';
 import { StickyNote } from '@/components/sticky-note';
 import { track } from '@/components/DemoAnalytics';
 import { ResultCard, safePath } from './result-card';
+import { DraftCard } from './draft-card';
 import { AiLimitOverlay } from './ai-limit-overlay';
 
 const greeting = () => {
@@ -321,6 +322,11 @@ export function AssistantWidget({ user, aiName }) {
                       );
                     })}
                   </div>
+                </>
+              ) : m.reply?.type === 'draft' ? (
+                <>
+                  <p className="text-[13.5px]">{m.reply.text}</p>
+                  <DraftCard draft={m.reply.draft} user={user.username} onNavigate={closeOnPhone} />
                 </>
               ) : m.reply ? (
                 <>

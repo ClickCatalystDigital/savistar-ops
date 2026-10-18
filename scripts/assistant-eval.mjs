@@ -47,6 +47,11 @@ const CASES = [
   ['Which workshop orders are late, and which milestones are overdue?', { type: 'table', tool: 'orders', second: 'milestones' }],
   ['cash this month compared to last month', { type: 'table', tool: 'cash', compare: true }],
   ['and last month?', { type: 'table', tool: 'invoiced', has: ['Period=Last month'] }, ['How much did we invoice this month?', { tool: 'invoiced', period: { from: null, to: null, label: 'x' } }]],
+  // reminders and notes (drafts only; nothing is saved)
+  ['remind me to call the Mehtas on Friday', { type: 'draft', draft: 'task', due: true, client: true }],
+  ['remind me to send the revised quote to Kiran Joshi tomorrow', { type: 'draft', draft: 'task', due: true, client: true }],
+  ['note that Mrs Mehta prefers WhatsApp', { type: 'draft', draft: 'note', client: true }],
+  ['what did I note about the Mehtas?', { type: 'table', tool: 'my_notes' }],
   // not data
   ['how do I log a site visit?', { type: 'text', text: /site visit/i }],
   ['how is payroll worked out?', { type: 'text', text: /days/i }],
@@ -77,8 +82,11 @@ for (const [q, want, prev] of CASES) {
   if (want.second && r.cards?.[0]?.tool !== want.second) fails.push(`second ${r.cards?.[0]?.tool}`);
   if (want.compare && !String(r.toolLabel).includes('comparison')) fails.push('no comparison');
   if (want.text && !want.text.test(r.text || '')) fails.push(`text "${String(r.text).slice(0, 60)}"`);
+  if (want.draft && r.draft?.kind !== want.draft) fails.push(`draft ${r.draft?.kind}`);
+  if (want.due && !r.draft?.due) fails.push('no due date');
+  if (want.client && !r.draft?.client) fails.push('no client');
   if (!fails.length) pass++;
-  console.log(`${fails.length ? 'FAIL' : 'ok  '}  ${q}${fails.length ? `\n      ${fails.join('; ')}\n      ${(d.meta?.trace || []).join(' | ')}` : `  →  ${r.summary || String(r.text).slice(0, 70)}`}`);
+  console.log(`${fails.length ? 'FAIL' : 'ok  '}  ${q}${fails.length ? `\n      ${fails.join('; ')}\n      ${(d.meta?.trace || []).join(' | ')}` : `  →  ${r.draft ? JSON.stringify(r.draft) : r.summary || String(r.text).slice(0, 70)}`}`);
 }
 console.log(`\n${pass}/${CASES.length} passed`);
 process.exit(pass === CASES.length ? 0 : 1);

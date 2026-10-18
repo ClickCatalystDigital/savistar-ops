@@ -74,6 +74,10 @@ summary from a writing model. It never changes data.
   Site supervisor, Finance desk, Gentle guide (`lib/assistant-personas.js`). A persona turns on a short written answer
   above the table, in its voice; a written answer with any number not in the data is dropped
   (`scripts/check-persona-numbers.mjs`).
+- **Reminders and notes** (kept light): “remind me to call the Mehtas on Friday” drafts a task and “note that …”
+  drafts a private note; nothing is saved until the person presses Save (tasks go through the normal Tasks API,
+  notes into `assistant_notes`, visible only to their author). “What did I note about …?” finds them; Settings →
+  My assistant lists them with delete. Notes are off in the demo (shared logins).
 - Each panel opens with a briefing (today, or tomorrow in the evening) and the person's usual questions.
 - `scripts/assistant-eval.mjs` runs 38 questions against a server with the demo data.
 

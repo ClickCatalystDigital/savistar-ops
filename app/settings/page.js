@@ -24,6 +24,7 @@ import { UserAvatar, AVATAR_FONTS, AVATAR_SWATCHES } from '@/components/user-ava
 import { cn } from '@/lib/utils';
 import { AssistantCard } from '@/components/assistant/assistant-card';
 import { PersonaCard } from '@/components/assistant/persona-card';
+import { NotesCard } from '@/components/assistant/notes-card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 const EMPTY = { username: '', password: '', display_name: '', role: 'user' };
@@ -288,7 +289,7 @@ export default function SettingsPage() {
       </Card>
         </TabsContent>}
         {showAi && <TabsContent value="ai" className="mt-2"><AssistantCard /></TabsContent>}
-        <TabsContent value="me" className="mt-2"><PersonaCard aiName={aiName} /></TabsContent>
+        <TabsContent value="me" className="mt-2 flex flex-col gap-4"><PersonaCard aiName={aiName} />{process.env.NEXT_PUBLIC_DEMO !== '1' && <NotesCard aiName={aiName} />}</TabsContent>
       </Tabs>
 
       <Dialog open={!!pwFor} onOpenChange={o => !o && setPwFor(null)}>
