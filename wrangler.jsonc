@@ -12,7 +12,7 @@
   "routes": [{ "pattern": "interiors-erp.ahromlabs.com", "custom_domain": true }],
   // Secrets (wrangler secret put): TURSO_AUTH_TOKEN (savdemo group token), SESSION_SECRET (its own),
   // OPENROUTER_API_KEY (the demo's own credit-capped key for the assistant; without it the assistant is hidden),
-  // DEMO_PASS (24+ characters: the owner pass, /demo#pass=…; see DEMO.md).
+  // DEMO_PASS (the owner-pass PIN, 4+ characters; see DEMO.md).
   // Never the live deployment's values.
   "vars": {
     "DEMO_MODE": "1",
