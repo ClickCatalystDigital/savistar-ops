@@ -82,9 +82,19 @@ const PROJECTS = [
   ['Sahil & Ritu Kapadia', 'Kapadia living room', 'completed', 120, [['Design sign-off', -110, true], ['Installation', -70, true], ['Handover', -65, true]]],
   ['Harsh & Komal Vora', 'Vora penthouse interiors', 'cancelled', 90, [['Concept presentation', -80, true], ['Design sign-off', -60, false]]],
 ];
+// Material palettes for the project cards' swatch strips (projects.materials, savistar-ops PR #2).
+// Trivedi is left empty on purpose: it shows a project with no palette yet.
+const MATERIALS = {
+  'Mehta bungalow — full interiors': 'warm oak, brass, teak, ivory',
+  'Northbridge office fit-out, 40 seats': 'ash, charcoal, glass, steel',
+  'Brewnest cafe, Sindhu Bhavan Road': 'terrazzo, cane, sage, black',
+  'Joshi apartment — kitchen and wardrobes': 'white lacquer, quartz, oak, brass',
+  'Kapadia living room': 'teak, linen, olive, brass',
+  'Vora penthouse interiors': 'marble, walnut, brass, velvet',
+};
 const project = {};
 for (const [c, name, status, ago, milestones] of PROJECTS) {
-  const id = idOf(await api('owner', 'POST', '/api/projects', { client_id: client[c], name, status, start_date: day(-ago), notes: 'Site supervisor: Imran.' }));
+  const id = idOf(await api('owner', 'POST', '/api/projects', { client_id: client[c], name, status, start_date: day(-ago), notes: 'Site supervisor: Imran.', materials: MATERIALS[name] }));
   project[name] = id;
   // Creating a project takes no address (it's added later from the project page), so set it here.
   await db.execute({ sql: 'UPDATE projects SET address = ? WHERE id = ?', args: [clientAddress[c], id] });
