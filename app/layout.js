@@ -7,6 +7,7 @@ import DemoAnalytics from '@/components/DemoAnalytics';
 import { BRAND } from '@/lib/brand';
 import { Architects_Daughter, Fira_Code } from 'next/font/google';
 import { queryOne } from '@/lib/db';
+import { AssistantWidget } from '@/components/assistant/assistant-widget';
 
 // Home's type system (app/page.js) for every page: --font-hand for titles and labels,
 // --font-figures for dates and money (globals.css .font-hand / .figures).
@@ -38,6 +39,7 @@ export default async function RootLayout({ children }) {
           {user && <Nav user={user} />}
           {/* Extra bottom padding on mobile so content clears the fixed bottom tab bar. */}
           <div className={user ? 'pb-20 md:pb-0' : ''}>{children}</div>
+          {user && <AssistantWidget user={{ username: user.username, display_name: user.display_name }} />}
           {process.env.DEMO_MODE === '1' && user && (
             <div className="fixed bottom-20 left-1/2 z-50 -translate-x-1/2 rounded-full border bg-background/95 px-3 py-1.5 text-xs text-muted-foreground shadow-md backdrop-blur md:bottom-4 print:hidden">
               Demo · sample data, resets nightly ·{' '}
