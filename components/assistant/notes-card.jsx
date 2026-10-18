@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { TrashIcon } from '@heroicons/react/24/outline';
+import { NotebookPenIcon } from 'lucide-react';
 import { api, showToast } from '@/lib/client';
 import { formatDate } from '@/lib/format';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -20,7 +21,7 @@ export function NotesCard({ aiName = 'the assistant' }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">Your notes</CardTitle>
+        <CardTitle className="flex items-center gap-2 text-lg"><NotebookPenIcon aria-hidden strokeWidth={1.6} className="size-6 -rotate-3 text-primary/80" /> Your notes</CardTitle>
         <CardDescription>Things you asked {aiName} to note (“note that …”). Only you can see them; ask “what did I note about …?” to find one.</CardDescription>
       </CardHeader>
       <CardContent>

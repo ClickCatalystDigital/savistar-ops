@@ -18,7 +18,7 @@ import {
 import {
   Table, TableHeader, TableRow, TableHead, TableBody, TableCell,
 } from '@/components/ui/table';
-import { KeyRoundIcon, UploadIcon, XIcon, CheckIcon, PaletteIcon, UsersIcon, SlidersHorizontalIcon } from 'lucide-react';
+import { KeyRoundIcon, UploadIcon, XIcon, CheckIcon, PaletteIcon, UsersIcon } from 'lucide-react';
 import { Butterfly } from '@/components/assistant/butterfly';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import { UserAvatar, AVATAR_FONTS, AVATAR_SWATCHES } from '@/components/user-avatar';
@@ -77,7 +77,7 @@ export default function SettingsPage() {
     api('/api/me').then(setMe).catch(() => {});
     api('/api/assistant/persona').then((d) => d.name && setAiName(d.name)).catch(() => {});
   }, []);
-  // The AI tab is for owners and admins (the demo hides it: its settings are not open there).
+  // The team-wide AI setup (on My assistant) is for owners and admins; the demo hides it (its settings are not open there).
   const showAi = ['owner', 'admin'].includes(me?.role) && process.env.NEXT_PUBLIC_DEMO !== '1';
 
   async function save() {
@@ -176,7 +176,7 @@ export default function SettingsPage() {
       <div className="flex items-center justify-between gap-3">
         <div>
           <PageTitle>Settings</PageTitle>
-          <p className="text-sm text-muted-foreground">{canUsers ? (showAi ? 'Users, access & AI' : 'Users, access & your assistant') : 'Your assistant'}</p>
+          <p className="text-sm text-muted-foreground">{canUsers ? 'Users, access & your assistant' : 'Your assistant'}</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           {canUsers && (tab ?? 'users') === 'users' && <DialogTrigger asChild><NewButton label="New user" /></DialogTrigger>}
@@ -225,13 +225,12 @@ export default function SettingsPage() {
       <Tabs value={tab ?? (canUsers ? 'users' : 'me')} onValueChange={setTab}>
         <TabsList>
           {canUsers && <TabsTrigger value="users"><UsersIcon data-icon="inline-start" />Users</TabsTrigger>}
-          {showAi && <TabsTrigger value="ai"><SlidersHorizontalIcon data-icon="inline-start" />AI assistant</TabsTrigger>}
           <TabsTrigger value="me"><Butterfly className="size-4 text-primary" />My assistant</TabsTrigger>
         </TabsList>
         {canUsers && <TabsContent value="users" className="mt-2">
       <Card>
         <CardHeader>
-          <CardTitle>Users</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-lg"><UsersIcon aria-hidden strokeWidth={1.6} className="size-6 -rotate-3 text-primary/80" /> Users</CardTitle>
           <CardDescription>Staff can use every tab: on Finance they see only their own cash entries, here only My assistant. Only owners, admins and managers can delete records or manage users. Everyone can change their own password from the nav menu.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -289,8 +288,12 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
         </TabsContent>}
-        {showAi && <TabsContent value="ai" className="mt-2"><AssistantCard /></TabsContent>}
-        <TabsContent value="me" className="mt-2 flex flex-col gap-4"><PersonaCard aiName={aiName} />{process.env.NEXT_PUBLIC_DEMO !== '1' && <NotesCard aiName={aiName} />}</TabsContent>
+        {/* Everything about the assistant: your voice and notes; owners and admins also set it up for the team here. */}
+        <TabsContent value="me" className="mt-2 flex flex-col gap-4">
+          <PersonaCard aiName={aiName} />
+          {process.env.NEXT_PUBLIC_DEMO !== '1' && <NotesCard aiName={aiName} />}
+          {showAi && <AssistantCard />}
+        </TabsContent>
       </Tabs>
 
       <Dialog open={!!pwFor} onOpenChange={o => !o && setPwFor(null)}>

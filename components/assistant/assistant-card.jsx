@@ -95,7 +95,7 @@ const MODES = [
   { value: 'write', title: 'Show, then write', body: 'Same look-up, then the writing model adds a short summary of the rows above the table.' },
 ];
 
-// Settings → AI (owners and admins): OpenRouter key, live credit, writing model, answer mode, daily limit,
+// Settings → My assistant (owners and admins): OpenRouter key, live credit, writing model, answer mode, daily limit,
 // data-questions switch. The decision model (Jev) is fixed on purpose. Port of reel-inventory's AssistantCard.
 export function AssistantCard() {
   const router = useRouter();
@@ -172,10 +172,10 @@ export function AssistantCard() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
-          <span className="group"><Butterfly className="size-7 -rotate-6 text-primary" /></span> {s.name}
+          <span className="group"><Butterfly className="size-7 -rotate-6 text-primary" /></span> {s.name} for the team
         </CardTitle>
         <CardDescription className="max-w-2xl">
-          Ask about projects, clients, orders, people, vendors and money in plain words. Jev (the decision model) picks a fixed,
+          Owners and admins only: setup that applies to everyone. Ask about projects, clients, orders, people, vendors and money in plain words. Jev (the decision model) picks a fixed,
           read-only look-up; it never writes queries or changes anything. Everyone can use it; staff only see what their tabs show them.
         </CardDescription>
         <CardAction>

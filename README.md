@@ -56,14 +56,14 @@ Everyone, regardless of role, can change their own password from the nav menu (�
 
 ## AI assistant
 
-A butterfly button in the corner opens **Atelier AI** (owners can rename it in Settings → AI), a read-only chat over the
+A butterfly button in the corner opens **Atelier AI** (owners can rename it in Settings → My assistant), a read-only chat over the
 app's data. Ported from reel-inventory's LS AI: Jev (`typesafe/jev-1.13`, via OpenRouter) only *chooses*
 the kind of question, the look-up, company, period and follow-up; code matches the names (clients,
 projects, orders, vendors, people) and runs a fixed, parameterised query (`lib/assistantTools.js`, 22
 look-ups that use the same maths as the tabs). Answers are ledger tables, optionally with a short
 summary from a writing model. It never changes data.
 
-- **Settings → AI assistant tab** (owners and admins): name, OpenRouter key (encrypted with `SETTINGS_ENC_KEY`, only the
+- **Settings → My assistant** (owners and admins): name, OpenRouter key (encrypted with `SETTINGS_ENC_KEY`, only the
   last 4 shown), credit, model, answer mode, daily question limit, and the switch for data questions
   (on by default). Until a key is saved there, `OPENROUTER_API_KEY` is used. A list of questions it
   couldn't answer or that were thumbed down shows what to add next.

@@ -157,7 +157,7 @@ export function AssistantWidget({ user, aiName }) {
     } finally { setBusy(false); }
   }, [msgs, text, busy, pathname, locked, persona]);
 
-  // Thumbs on an answer: one log row; a thumbs-down also lands in Settings → AI → "Questions it couldn't answer".
+  // Thumbs on an answer: one log row; a thumbs-down also lands in Settings → My assistant → "Questions it couldn't answer".
   const rate = useCallback((id, question, tool, good) => {
     setMsgs((m) => m.map((x) => (x.id === id ? { ...x, fb: good } : x)));
     fetch('/api/assistant/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question, tool, good }) }).catch(() => {});

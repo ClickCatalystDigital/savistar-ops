@@ -1,4 +1,4 @@
-// Settings → AI (owner/admin): OpenRouter key, model, answer mode, daily limit, data-questions switch.
+// Settings → My assistant (owner/admin): OpenRouter key, model, answer mode, daily limit, data-questions switch.
 // The key is write-only: responses carry `hasKey` + the last 4 characters, never the key.
 import { NextResponse } from 'next/server';
 import { getUserFromRequest } from '@/lib/auth';

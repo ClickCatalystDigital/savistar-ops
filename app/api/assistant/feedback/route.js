@@ -1,5 +1,5 @@
 // Thumbs up/down on an answer: one assistant_log row (kind 'feedback'), no new table. A thumbs-down also drops the
-// question from "your usual" and lands in Settings → AI → "Questions it couldn't answer".
+// question from "your usual" and lands in Settings → My assistant → "Questions it couldn't answer".
 import { NextResponse } from 'next/server';
 import { getUserFromRequest } from '@/lib/auth';
 import { logAsk } from '@/lib/assistant';
