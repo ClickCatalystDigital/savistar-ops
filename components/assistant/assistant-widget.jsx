@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ArrowUpIcon, ArrowUpRightIcon, RotateCcwIcon, SparklesIcon, XIcon } from 'lucide-react';
+import { ArrowUpIcon, ArrowUpRightIcon, ChevronDownIcon, RotateCcwIcon, SparklesIcon, XIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { BRAND } from '@/lib/brand';
 import { STARTERS } from '@/lib/assistant-starters';
@@ -43,6 +43,11 @@ export function AssistantWidget({ user }) {
   const [busy, setBusy] = useState(false);
   const [quota, setQuota] = useState(null);
   const [teaser, setTeaser] = useState(false);
+  const [briefing, setBriefing] = useState(null);
+  const [briefOpen, setBriefOpen] = useState(true);
+  const [usual, setUsual] = useState([]);
+  const [defaults, setDefaults] = useState(STARTERS);
+  const loadedAt = useRef(0); // the briefing is time-aware: reload it when the panel opens after 10+ minutes
   const endRef = useRef(null);
   const lastAnswerRef = useRef(null);
   const inputRef = useRef(null);
@@ -76,6 +81,29 @@ export function AssistantWidget({ user }) {
     const off = setTimeout(() => setTeaser(false), 11000);
     return () => { clearTimeout(on); clearTimeout(off); };
   }, []);
+
+  // Briefing + "your usual" questions load when the panel opens.
+  useEffect(() => {
+    if (!open || Date.now() - loadedAt.current < 600000) return;
+    loadedAt.current = Date.now();
+    fetch('/api/assistant/briefing').then((r) => (r.ok ? r.json() : null)).then((b) => {
+      if (!b) return;
+      setBriefing(b);
+      setBriefOpen(store.get('ai_brief_hidden') !== `${b.day}|${b.part}`);
+    }).catch(() => {});
+    fetch('/api/assistant/starters').then((r) => (r.ok ? r.json() : null)).then((d) => {
+      if (!d) return;
+      setUsual(d.usual ?? []);
+      if (d.defaults?.length) setDefaults(d.defaults);
+    }).catch(() => {});
+  }, [open]);
+
+  function toggleBrief() {
+    setBriefOpen((o) => {
+      if (briefing) store.set('ai_brief_hidden', o ? `${briefing.day}|${briefing.part}` : '');
+      return !o;
+    });
+  }
 
   const send = useCallback(async (raw) => {
     const q = (raw ?? text).trim();
@@ -114,7 +142,7 @@ export function AssistantWidget({ user }) {
           <button type="button" onClick={() => { setTeaser(false); setOpen(true); }}
             className="fixed right-20 bottom-[calc(9.75rem+env(safe-area-inset-bottom))] z-40 animate-in fade-in slide-in-from-right-2 duration-300 md:right-24 md:bottom-7 print:hidden">
             <StickyNote className="max-w-[13rem] px-4 py-3 text-left text-[15px]">
-              {greeting()}, {name}! Ask me what's late, who owes us, or how a project is going.
+              {greeting()}, {name}! Your briefing is ready — or ask me how a project is going.
             </StickyNote>
           </button>
         )}
@@ -159,10 +187,51 @@ export function AssistantWidget({ user }) {
               <p className="font-hand text-2xl">{greeting()}, {name}</p>
               <p className="mt-0.5 text-[13px] text-muted-foreground">Ask about projects, clients, orders, people, vendors or money.</p>
             </div>
+            {briefing && (
+              <div className="-rotate-[0.6deg] rounded-sm bg-[#fbf0b2] text-stone-700 shadow-[0_6px_14px_-6px_rgba(0,0,0,0.35)] dark:bg-[#4d4726] dark:text-stone-100">
+                <button type="button" onClick={toggleBrief} aria-expanded={briefOpen} className="flex w-full items-center gap-2 px-3.5 py-2.5 text-left">
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-hand text-[15px]">{briefing.part === 'morning' ? 'Morning' : briefing.part === 'afternoon' ? 'Afternoon' : 'Evening'} briefing</span>
+                    <span className="block text-[13px] leading-snug opacity-80">{briefing.headline}</span>
+                  </span>
+                  <ChevronDownIcon className={cn('size-4 shrink-0 opacity-60 transition-transform', briefOpen && 'rotate-180')} />
+                </button>
+                {briefOpen && (
+                  <ul className="border-t border-stone-700/15 px-1 pb-1 text-[13px] dark:border-stone-100/15">
+                    {briefing.items.map((it) => {
+                      const row = (
+                        <>
+                          <span className="flex-1 opacity-80">{it.label}</span>
+                          <span className={cn('figures text-[12px]', it.tone === 'warn' && 'text-[#b4521c] dark:text-[#f0a46b]')}>{it.value}</span>
+                          {safePath(it.link) && <ArrowUpRightIcon className="size-3 shrink-0 opacity-40" />}
+                        </>
+                      );
+                      return (
+                        <li key={it.label}>
+                          {safePath(it.link)
+                            ? <Link href={it.link} onClick={closeOnPhone} className="flex items-center gap-2 rounded px-2.5 py-1.5 transition-colors hover:bg-stone-700/5 dark:hover:bg-stone-100/5">{row}</Link>
+                            : <div className="flex items-center gap-2 px-2.5 py-1.5">{row}</div>}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            )}
             <div>
+              {usual.length > 0 && (
+                <>
+                  <p className="mb-1.5 font-hand text-sm text-muted-foreground">Your usual</p>
+                  <div className="mb-3 flex flex-wrap gap-1.5">
+                    {usual.map((q) => (
+                      <button key={q} type="button" onClick={() => send(q)} className="rounded-full bg-primary px-3 py-1.5 text-left text-xs text-primary-foreground transition-opacity hover:opacity-85">{q}</button>
+                    ))}
+                  </div>
+                </>
+              )}
               <p className="mb-1 font-hand text-sm text-muted-foreground">Try asking</p>
               <div className="flex flex-col">
-                {STARTERS.map((q) => (
+                {defaults.filter((q) => !usual.includes(q)).map((q) => (
                   <button key={q} type="button" onClick={() => send(q)}
                     className="group flex items-center gap-2 border-b border-[color-mix(in_oklab,var(--info)_14%,transparent)] py-2 text-left text-[13.5px]">
                     <span className="flex-1 text-foreground/80 transition-colors group-hover:text-primary">{q}</span>
