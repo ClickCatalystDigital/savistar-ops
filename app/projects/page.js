@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DateInput } from '@/components/ui/date-input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { StatusStamp, Swatches } from '@/components/project-art';
 import { projectMaterials } from '@/lib/materials';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -111,7 +110,7 @@ export default function ProjectsPage() {
                 <CardHeader>
                   <div className="flex items-start justify-between gap-2">
                     <CardTitle className="font-sans text-base">{p.name}</CardTitle>
-                    {p.status === 'active' ? <Badge>Active</Badge> : <StatusStamp status={p.status} className="mt-1 shrink-0" />}
+                    <StatusStamp status={p.status} className="mt-1 shrink-0" />
                   </div>
                   <CardDescription>{p.client_name || 'No client'} · started {formatDate(p.start_date)}</CardDescription>
                 </CardHeader>

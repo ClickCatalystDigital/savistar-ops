@@ -124,7 +124,7 @@ export default function ProjectDetail() {
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <PageTitle className="truncate">{p.name}</PageTitle>
-            {p.status === 'active' ? <Badge>Active</Badge> : <StatusStamp status={p.status} className="ml-2 shrink-0" />}
+            <StatusStamp status={p.status} className="ml-2 shrink-0" />
           </div>
           <p className="text-sm text-muted-foreground">
             {p.client_name ? <Link href={`/clients/${p.client_id}`} className="text-primary hover:underline">{p.client_name}</Link> : 'No client'}

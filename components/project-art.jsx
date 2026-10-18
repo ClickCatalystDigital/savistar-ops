@@ -1,7 +1,8 @@
 import { cn } from '@/lib/utils';
 import { capitalize } from '@/lib/format';
 
-// A rubber stamp for projects that are no longer simply active.
+// A rubber stamp for projects that are no longer simply active. Active is the normal state and
+// gets no mark, so a stamp always means "look at this one".
 const STAMP = { completed: 'text-success', cancelled: 'text-danger', on_hold: 'text-warning' };
 
 export function StatusStamp({ status, className }) {

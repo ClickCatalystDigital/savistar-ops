@@ -71,9 +71,9 @@ export default function Nav({ user }) {
     <>
       {/* Top bar: a tinted strip with folder tabs; the active tab is cut from the page below. */}
       <header className="sticky top-0 z-40 border-b bg-secondary/80 backdrop-blur supports-[backdrop-filter]:bg-secondary/65">
-        <div className="container flex h-14 items-center gap-4">
+        <div className="container flex h-12 items-center gap-4">
           <Link href="/" className="flex items-center" aria-label={`${BRAND.app} home`}>
-            <Wordmark className="text-2xl" />
+            <Wordmark className="text-[1.375rem]" />
           </Link>
 
           {/* Desktop tabs */}
