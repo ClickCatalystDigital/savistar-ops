@@ -15,6 +15,38 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 const price = (v) => (v === null ? 'varies' : v === 0 ? 'free' : `$${v < 1 ? v.toFixed(3) : v.toFixed(2)}`);
 const LOW_CREDIT = 0.05;
 
+// The to-do list for improving the assistant: questions it could not answer, or that were thumbed down, in the last 30 days.
+function MissedQuestions() {
+  const [rows, setRows] = useState(null);
+  const [open, setOpen] = useState(false);
+  function toggle() {
+    setOpen((o) => !o);
+    if (rows === null) api('/api/assistant/misses').then(setRows).catch(() => setRows([]));
+  }
+  return (
+    <div className="flex flex-col gap-2 border-t border-dashed pt-4">
+      <button type="button" onClick={toggle} aria-expanded={open} className="flex w-full items-center justify-between text-left">
+        <span className="font-hand text-base">Questions it couldn’t answer</span>
+        <ChevronsUpDownIcon className="size-4 text-muted-foreground" />
+      </button>
+      {open && (rows === null ? <div className="h-16 animate-pulse rounded-lg bg-muted/50" /> : rows.length === 0 ? (
+        <p className="text-xs text-muted-foreground">None in the last 30 days.</p>
+      ) : (
+        <ul className="divide-y rounded-lg border text-sm">
+          {rows.map((r) => (
+            <li key={`${r.question}-${r.why}`} className="flex items-start gap-3 px-3 py-2">
+              <span className="min-w-0 flex-1">{r.question}</span>
+              <span className="shrink-0 rounded-full border border-dashed px-2 py-0.5 text-xs text-muted-foreground">{r.why}</span>
+              <span className="figures w-10 shrink-0 text-right text-xs text-muted-foreground">{r.times}×</span>
+            </li>
+          ))}
+        </ul>
+      ))}
+      <p className="text-xs text-muted-foreground">Questions people asked that it got wrong or couldn't look up: use them to decide which look-ups to add next.</p>
+    </div>
+  );
+}
+
 // Searchable model list (there are hundreds of models, so a plain select is unusable).
 function ModelPicker({ models, value, onChange }) {
   const [open, setOpen] = useState(false);
@@ -241,6 +273,8 @@ export function AssistantCard() {
             </span>
           </label>
         </div>
+
+        <MissedQuestions />
       </CardContent>
     </Card>
   );

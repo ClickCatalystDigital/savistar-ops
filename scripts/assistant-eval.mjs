@@ -33,6 +33,7 @@ const CASES = [
   ['Which workshop orders are late?', { type: 'table', tool: 'orders' }],
   ['orders due this week', { type: 'table', tool: 'orders', has: ['Period=This week'] }],
   ['Who worked on the cafe counter?', { type: 'table', tool: 'order_history' }],
+  ['are we delivering orders on time?', { type: 'table', tool: 'turnaround' }],
   ['who is in today', { type: 'table', tool: 'attendance' }],
   ['How many days did Suresh work this month?', { type: 'table', tool: 'days_worked', has: ['Person=Suresh Chauhan'] }],
   ['payroll for last month', { type: 'table', tool: 'payroll' }],

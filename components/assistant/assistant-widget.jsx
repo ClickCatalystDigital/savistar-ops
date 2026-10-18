@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ArrowUpIcon, ArrowUpRightIcon, ChevronDownIcon, RotateCcwIcon, SparklesIcon, XIcon } from 'lucide-react';
+import { ArrowUpIcon, ArrowUpRightIcon, ChevronDownIcon, RotateCcwIcon, SparklesIcon, ThumbsDownIcon, ThumbsUpIcon, XIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { BRAND } from '@/lib/brand';
 import { STARTERS } from '@/lib/assistant-starters';
@@ -132,6 +132,12 @@ export function AssistantWidget({ user }) {
     } finally { setBusy(false); }
   }, [msgs, text, busy, pathname]);
 
+  // Thumbs on an answer: one log row; a thumbs-down also lands in Settings → AI → "Questions it couldn't answer".
+  const rate = useCallback((id, question, tool, good) => {
+    setMsgs((m) => m.map((x) => (x.id === id ? { ...x, fb: good } : x)));
+    fetch('/api/assistant/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question, tool, good }) }).catch(() => {});
+  }, []);
+
   const reset = () => { setMsgs([]); contextRef.current = null; };
   const closeOnPhone = () => isPhone() && setOpen(false);
 
@@ -258,7 +264,23 @@ export function AssistantWidget({ user }) {
                     : safePath(m.error.link) && <Link href={m.error.link} onClick={closeOnPhone} className="mt-1.5 block font-medium underline underline-offset-2">{m.error.linkLabel || 'Open'}</Link>)}
                 </div>
               ) : m.reply?.type === 'table' ? (
-                <ResultCard reply={m.reply} onNavigate={closeOnPhone} />
+                <>
+                  <ResultCard reply={m.reply} onNavigate={closeOnPhone} />
+                  <div className="flex items-center justify-end gap-0.5 text-muted-foreground">
+                    <span className="mr-1 font-hand text-[13px]">{m.fb === undefined ? 'Was this right?' : 'Thanks!'}</span>
+                    {[true, false].map((good) => {
+                      const Icon = good ? ThumbsUpIcon : ThumbsDownIcon;
+                      const q = [...msgs.slice(0, idx)].reverse().find((x) => x.role === 'user')?.content ?? '';
+                      return (
+                        <button key={String(good)} type="button" disabled={m.fb !== undefined} onClick={() => rate(m.id, q, m.reply.tool, good)}
+                          aria-label={good ? 'Good answer' : 'Wrong answer'}
+                          className={cn('grid size-7 place-items-center rounded-md transition-colors hover:bg-muted hover:text-foreground disabled:cursor-default disabled:hover:bg-transparent', m.fb === good && (good ? 'text-success' : 'text-destructive'))}>
+                          <Icon className="size-3.5" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
               ) : m.reply ? (
                 <>
                   <div className="border-l-2 border-[color-mix(in_oklab,var(--weekend)_45%,transparent)] py-0.5 pl-3 text-[13.5px] leading-relaxed">
