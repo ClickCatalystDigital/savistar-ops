@@ -3,12 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ArrowUpIcon, ArrowUpRightIcon, ChevronDownIcon, RotateCcwIcon, SparklesIcon, ThumbsDownIcon, ThumbsUpIcon, XIcon } from 'lucide-react';
+import { ArrowUpIcon, ArrowUpRightIcon, ChevronDownIcon, LockIcon, RotateCcwIcon, SparklesIcon, ThumbsDownIcon, ThumbsUpIcon, XIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { BRAND } from '@/lib/brand';
+import { BRAND, DEMO } from '@/lib/brand';
 import { STARTERS } from '@/lib/assistant-starters';
 import { StickyNote } from '@/components/sticky-note';
+import { track } from '@/components/DemoAnalytics';
 import { ResultCard, safePath } from './result-card';
+import { AiLimitOverlay } from './ai-limit-overlay';
 
 const greeting = () => {
   const h = new Date().getHours();
@@ -47,6 +49,10 @@ export function AssistantWidget({ user }) {
   const [briefOpen, setBriefOpen] = useState(true);
   const [usual, setUsual] = useState([]);
   const [defaults, setDefaults] = useState(STARTERS);
+  // Public demo: free questions left for this visitor (null until known), and the "that was your free questions" overlay.
+  const [demoAi, setDemoAi] = useState(null);
+  const [limitOpen, setLimitOpen] = useState(false);
+  const locked = DEMO && demoAi?.left === 0;
   const loadedAt = useRef(0); // the briefing is time-aware: reload it when the panel opens after 10+ minutes
   const endRef = useRef(null);
   const lastAnswerRef = useRef(null);
@@ -73,6 +79,12 @@ export function AssistantWidget({ user }) {
     if (isPhone()) document.body.style.overflow = 'hidden';
     return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = prev; };
   }, [open]);
+
+  useEffect(() => {
+    if (!DEMO) return;
+    fetch('/api/demo/ai').then((r) => (r.ok ? r.json() : null)).then((d) => d && setDemoAi(d)).catch(() => {});
+  }, []);
+  const showLimit = () => { setLimitOpen(true); track('interiors_demo_ai_limit'); };
 
   // Once a day a sticky note appears beside the button.
   useEffect(() => {
@@ -108,6 +120,7 @@ export function AssistantWidget({ user }) {
   const send = useCallback(async (raw) => {
     const q = (raw ?? text).trim();
     if (!q || busy) return;
+    if (locked) { showLimit(); return; }
     const next = [...msgs, { id: idRef.current++, role: 'user', content: q }];
     setMsgs(next); setText(''); setBusy(true);
     if (inputRef.current) inputRef.current.style.height = 'auto';
@@ -119,6 +132,8 @@ export function AssistantWidget({ user }) {
         body: JSON.stringify({ messages: history, path: pathname, context: contextRef.current }),
       });
       const data = await res.json().catch(() => null);
+      if (DEMO && res.status === 429 && data?.demoLimit) { setDemoAi((d) => (d ? { ...d, left: 0 } : d)); showLimit(); }
+      if (DEMO && res.ok) { setDemoAi((d) => (d ? { ...d, left: Math.max(0, d.left - 1) } : d)); track('interiors_demo_ai_question'); }
       if (!res.ok || !data?.reply) {
         setMsgs((m) => [...m, { id: idRef.current++, role: 'assistant', error: { text: data?.error || 'Something went wrong. Please try again.', link: data?.link, linkLabel: data?.linkLabel } }]);
       } else {
@@ -130,7 +145,7 @@ export function AssistantWidget({ user }) {
     } catch {
       setMsgs((m) => [...m, { id: idRef.current++, role: 'assistant', error: { text: 'Could not reach the server. Check your connection and try again.' } }]);
     } finally { setBusy(false); }
-  }, [msgs, text, busy, pathname]);
+  }, [msgs, text, busy, pathname, locked]);
 
   // Thumbs on an answer: one log row; a thumbs-down also lands in Settings → AI → "Questions it couldn't answer".
   const rate = useCallback((id, question, tool, good) => {
@@ -141,9 +156,14 @@ export function AssistantWidget({ user }) {
   const reset = () => { setMsgs([]); contextRef.current = null; };
   const closeOnPhone = () => isPhone() && setOpen(false);
 
+  // The demo shows the assistant only when it has its own AI key (and once the visitor's count is known).
+  if (DEMO && !demoAi?.enabled) return null;
+  const limitOverlay = limitOpen && demoAi ? <AiLimitOverlay limit={demoAi.limit} onClose={() => setLimitOpen(false)} /> : null;
+
   if (!open) {
     return (
       <>
+        {limitOverlay}
         {teaser && (
           <button type="button" onClick={() => { setTeaser(false); setOpen(true); }}
             className="fixed right-20 bottom-[calc(9.75rem+env(safe-area-inset-bottom))] z-40 animate-in fade-in slide-in-from-right-2 duration-300 md:right-24 md:bottom-7 print:hidden">
@@ -152,10 +172,15 @@ export function AssistantWidget({ user }) {
             </StickyNote>
           </button>
         )}
-        <button type="button" onClick={() => { setTeaser(false); setOpen(true); }} aria-label={`Open ${BRAND.ai}`} title={BRAND.ai}
+        <button type="button" onClick={() => { setTeaser(false); if (locked) showLimit(); else setOpen(true); }} aria-label={locked ? `${BRAND.ai}: free questions used` : `Open ${BRAND.ai}`} title={BRAND.ai}
           className={cn('paper-surface group fixed right-4 bottom-[calc(9.5rem+env(safe-area-inset-bottom))] z-40 grid size-14 place-items-center rounded-full transition-all print:hidden',
             'hover:-translate-y-0.5 active:scale-95 md:right-6 md:bottom-6')}>
           <SparklesIcon strokeWidth={1.6} className="size-6 -rotate-6 text-primary transition-transform duration-300 group-hover:rotate-12" />
+          {locked && (
+            <span className="absolute -top-0.5 -right-0.5 grid size-6 place-items-center rounded-full border-2 border-background bg-foreground text-background">
+              <LockIcon className="size-3" />
+            </span>
+          )}
         </button>
       </>
     );
@@ -164,6 +189,8 @@ export function AssistantWidget({ user }) {
   const suggestions = (m) => [...(m.reply.chips ?? []), ...(m.reply.options ?? [])];
 
   return (
+    <>
+    {limitOverlay}
     <div role="dialog" aria-label={`${BRAND.ai} assistant`}
       className={cn('paper-surface fixed z-50 flex flex-col overflow-hidden print:hidden',
         'inset-0 pt-[env(safe-area-inset-top)] animate-in fade-in slide-in-from-bottom-3 duration-200',
@@ -173,7 +200,9 @@ export function AssistantWidget({ user }) {
         <SparklesIcon aria-hidden strokeWidth={1.6} className="size-6 shrink-0 -rotate-6 text-primary/80" />
         <div className="min-w-0 flex-1">
           <p className="marker w-fit font-hand text-xl leading-tight">{BRAND.ai}</p>
-          <p className="text-[11px] text-muted-foreground">Looks things up · never changes anything</p>
+          <p className="text-[11px] text-muted-foreground">
+            {DEMO && demoAi ? <span className="figures">{demoAi.left} of {demoAi.limit} free questions left</span> : 'Looks things up · never changes anything'}
+          </p>
         </div>
         <button type="button" onClick={reset} disabled={busy || !msgs.length} aria-label="New conversation" title="New conversation"
           className="grid size-8 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-30">
@@ -323,8 +352,9 @@ export function AssistantWidget({ user }) {
             <ArrowUpIcon className="size-4" />
           </button>
         </div>
-        <p className="figures mt-1.5 text-center text-[10px] text-muted-foreground/70">read-only · live data{quota ? ` · ${quota.used}/${quota.cap} today` : ''}</p>
+        <p className="figures mt-1.5 text-center text-[10px] text-muted-foreground/70">read-only · {DEMO ? 'sample data' : 'live data'}{quota && !DEMO ? ` · ${quota.used}/${quota.cap} today` : ''}</p>
       </form>
     </div>
+    </>
   );
 }
