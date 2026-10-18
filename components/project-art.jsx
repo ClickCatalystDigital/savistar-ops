@@ -18,7 +18,7 @@ export function StatusStamp({ status, className }) {
 export function Swatches({ items, className }) {
   if (!items.length) return null;
   return (
-    <div className={cn('flex overflow-hidden', className)}>
+    <div role="img" aria-label={`Materials: ${items.map(m => m.name).join(', ')}`} className={cn('flex overflow-hidden', className)}>
       {items.map(m => (
         <span key={m.name} title={m.name} style={{ backgroundColor: m.hex }} className="min-w-0 flex-1" />
       ))}

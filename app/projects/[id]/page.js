@@ -25,7 +25,7 @@ import { TrashIcon } from '@heroicons/react/24/outline';
 import { BRAND } from '@/lib/brand';
 import { StatusStamp } from '@/components/project-art';
 import { StickyNote } from '@/components/sticky-note';
-import { projectMaterials } from '@/lib/materials';
+import { MaterialsEditor } from '@/components/materials-editor';
 import { cn } from '@/lib/utils';
 
 export default function ProjectDetail() {
@@ -85,6 +85,14 @@ export default function ProjectDetail() {
     setBusy(false);
   }
 
+  // Materials are edited in place (MaterialsEditor); PUT takes the whole project, so send the rest unchanged.
+  async function saveMaterials(materials) {
+    try {
+      await api(`/api/projects/${id}`, { method: 'PUT', body: { client_id: p.client_id, name: p.name, status: p.status, start_date: p.start_date, notes: p.notes, address: p.address, materials } });
+      load();
+    } catch (e) { showToast(e.message, 'error'); }
+  }
+
   async function saveEdit() {
     setBusy(true);
     try {
@@ -107,7 +115,6 @@ export default function ProjectDetail() {
   if (!p) return <div className="container py-10 text-muted-foreground">Loading…</div>;
 
   const done = p.milestones.filter(m => m.status === 'done').length;
-  const materials = projectMaterials({ ...p, order_items: p.orders.map(o => o.item).join('; ') });
 
   return (
     <div className="container flex flex-col gap-4 py-6">
@@ -158,10 +165,6 @@ export default function ProjectDetail() {
                   <Textarea placeholder="Shown in the Site visits tab" value={edit.address} onChange={e => setEdit({ ...edit, address: e.target.value })} />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Label>Materials</Label>
-                  <Input placeholder="e.g. warm oak, brass, white lacquer" value={edit.materials} onChange={e => setEdit({ ...edit, materials: e.target.value })} />
-                </div>
-                <div className="flex flex-col gap-2">
                   <Label>Notes</Label>
                   <Textarea value={edit.notes} onChange={e => setEdit({ ...edit, notes: e.target.value })} />
                 </div>
@@ -178,16 +181,7 @@ export default function ProjectDetail() {
         </Dialog>
       </div>
 
-      {materials.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {materials.map(m => (
-            <span key={m.name} className="paper-surface flex items-center gap-2 rounded-md py-1 pl-1 pr-2.5 text-xs">
-              <span className="size-5 rounded-sm ring-1 ring-black/10" style={{ backgroundColor: m.hex }} />
-              <span className="font-hand">{m.name}</span>
-            </span>
-          ))}
-        </div>
-      )}
+      <MaterialsEditor project={{ ...p, order_items: p.orders.map(o => o.item).join('; ') }} onSave={saveMaterials} />
 
       {p.notes && <p className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">{p.notes}</p>}
 
