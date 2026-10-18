@@ -307,3 +307,26 @@
 /* Demo page: the feature links jump to their section below (components/DemoEntry.jsx). */
 html:has(#in-detail) { scroll-behavior: smooth; }
 @media (prefers-reduced-motion: reduce) { html:has(#in-detail) { scroll-behavior: auto; } }
+
+/* The assistant's butterfly (components/assistant/butterfly.jsx): wings rest open with a slow flap now and then,
+   and flutter when its button is hovered or focused. Both wings fold about the body (x = 12). */
+.butterfly .wing {
+  transform-box: view-box;
+  transform-origin: 12px 12px;
+  animation: bf-rest 7s ease-in-out infinite;
+}
+.group:hover .butterfly .wing,
+.group:focus-visible .butterfly .wing { animation: bf-flutter 1.1s ease-in-out infinite; }
+.butterfly-open .wing { animation: none; }
+@keyframes bf-rest {
+  0%, 84%, 100% { transform: scaleX(1); }
+  89% { transform: scaleX(0.45); }
+  94% { transform: scaleX(0.9); }
+}
+@keyframes bf-flutter {
+  0%, 100% { transform: scaleX(1); }
+  45% { transform: scaleX(0.35); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .butterfly .wing, .group:hover .butterfly .wing, .group:focus-visible .butterfly .wing { animation: none; }
+}

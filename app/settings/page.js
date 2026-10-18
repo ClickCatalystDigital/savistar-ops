@@ -18,10 +18,15 @@ import {
 import {
   Table, TableHeader, TableRow, TableHead, TableBody, TableCell,
 } from '@/components/ui/table';
-import { KeyRoundIcon, UploadIcon, XIcon, CheckIcon, PaletteIcon } from 'lucide-react';
+import { KeyRoundIcon, UploadIcon, XIcon, CheckIcon, PaletteIcon, UsersIcon } from 'lucide-react';
+import { Butterfly } from '@/components/assistant/butterfly';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import { UserAvatar, AVATAR_FONTS, AVATAR_SWATCHES } from '@/components/user-avatar';
 import { cn } from '@/lib/utils';
+import { AssistantCard } from '@/components/assistant/assistant-card';
+import { PersonaCard } from '@/components/assistant/persona-card';
+import { NotesCard } from '@/components/assistant/notes-card';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 const EMPTY = { username: '', password: '', display_name: '', role: 'user' };
 
@@ -41,6 +46,9 @@ export default function SettingsPage() {
   const [customColorOpen, setCustomColorOpen] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
+  const [me, setMe] = useState(null);
+  const [aiName, setAiName] = useState('Atelier AI');
+  const [tab, setTab] = useState(null);
 
   // Local object URL so a newly-chosen file previews immediately, before it's uploaded.
   useEffect(() => {
@@ -64,7 +72,13 @@ export default function SettingsPage() {
       setForbidden(true);
     }
   }
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    api('/api/me').then(setMe).catch(() => {});
+    api('/api/assistant/persona').then((d) => d.name && setAiName(d.name)).catch(() => {});
+  }, []);
+  // The team-wide AI setup (on My assistant) is for owners and admins; the demo hides it (its settings are not open there).
+  const showAi = ['owner', 'admin'].includes(me?.role) && process.env.NEXT_PUBLIC_DEMO !== '1';
 
   async function save() {
     setBusy(true);
@@ -154,23 +168,18 @@ export default function SettingsPage() {
     } catch (e) { showToast(e.message, 'error'); }
   }
 
-  if (forbidden) {
-    return (
-      <div className="container py-10">
-        <p className="text-center text-muted-foreground">Only owners, admins, and managers can manage users.</p>
-      </div>
-    );
-  }
+  // Users: owners, admins, managers (the users API refuses staff). My assistant: everyone.
+  const canUsers = !forbidden;
 
   return (
     <div className="container flex flex-col gap-4 py-6">
       <div className="flex items-center justify-between gap-3">
         <div>
           <PageTitle>Settings</PageTitle>
-          <p className="text-sm text-muted-foreground">Users & access</p>
+          <p className="text-sm text-muted-foreground">{canUsers ? 'Users, access & your assistant' : 'Your assistant'}</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild><NewButton label="New user" /></DialogTrigger>
+          {canUsers && (tab ?? 'users') === 'users' && <DialogTrigger asChild><NewButton label="New user" /></DialogTrigger>}
           <DialogContent>
             <DialogHeader><DialogTitle>New user</DialogTitle></DialogHeader>
             <div className="flex flex-col gap-4">
@@ -213,10 +222,16 @@ export default function SettingsPage() {
         </Dialog>
       </div>
 
+      <Tabs value={tab ?? (canUsers ? 'users' : 'me')} onValueChange={setTab}>
+        <TabsList>
+          {canUsers && <TabsTrigger value="users"><UsersIcon data-icon="inline-start" />Users</TabsTrigger>}
+          <TabsTrigger value="me"><Butterfly className="size-4 text-primary" />My assistant</TabsTrigger>
+        </TabsList>
+        {canUsers && <TabsContent value="users" className="mt-2">
       <Card>
         <CardHeader>
-          <CardTitle>Users</CardTitle>
-          <CardDescription>Staff can use every tab except Finance; only owners, admins, and managers can delete records or manage users. Everyone can change their own password from the nav menu.</CardDescription>
+          <CardTitle className="flex items-center gap-2 text-lg"><UsersIcon aria-hidden strokeWidth={1.6} className="size-6 -rotate-3 text-primary/80" /> Users</CardTitle>
+          <CardDescription>Staff can use every tab: on Finance they see only their own cash entries, here only My assistant. Only owners, admins and managers can delete records or manage users. Everyone can change their own password from the nav menu.</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -272,6 +287,14 @@ export default function SettingsPage() {
           </Table>
         </CardContent>
       </Card>
+        </TabsContent>}
+        {/* Everything about the assistant: your voice and notes; owners and admins also set it up for the team here. */}
+        <TabsContent value="me" className="mt-2 flex flex-col gap-4">
+          <PersonaCard aiName={aiName} />
+          {process.env.NEXT_PUBLIC_DEMO !== '1' && <NotesCard aiName={aiName} />}
+          {showAi && <AssistantCard />}
+        </TabsContent>
+      </Tabs>
 
       <Dialog open={!!pwFor} onOpenChange={o => !o && setPwFor(null)}>
         <DialogContent>
