@@ -200,7 +200,7 @@ export default function ClientDetail() {
 
       {client.notes && <p className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">{client.notes}</p>}
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {/* Conversations */}
         <Card className="lg:col-span-2">
           <CardHeader><CardTitle>Conversations</CardTitle></CardHeader>

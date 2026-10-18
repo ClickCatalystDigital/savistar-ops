@@ -142,7 +142,7 @@ export default function OrderDetail() {
 
       {o.description && <p className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">{o.description}</p>}
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Work history</CardTitle>
