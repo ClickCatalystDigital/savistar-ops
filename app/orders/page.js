@@ -20,10 +20,49 @@ import {
 import {
   Table, TableHeader, TableRow, TableHead, TableBody, TableCell,
 } from '@/components/ui/table';
-import { PlusIcon } from 'lucide-react';
+import { PlusIcon, KanbanSquareIcon, ListIcon } from 'lucide-react';
 import { BRAND } from '@/lib/brand';
+import { UserAvatar } from '@/components/user-avatar';
+import { StickyNote } from '@/components/sticky-note';
+import { cn } from '@/lib/utils';
 
 const STATUS_VARIANT = { pending: 'outline', in_progress: 'default', done: 'secondary', delivered: 'secondary', cancelled: 'destructive' };
+const BOARD = ['pending', 'in_progress', 'done', 'delivered'];
+
+// Who logged work on an order this week, as overlapping initials.
+function WorkerStack({ names }) {
+  const list = names ? names.split(',') : [];
+  if (!list.length) return <span className="text-muted-foreground">—</span>;
+  return (
+    <span className="flex -space-x-1.5" title={list.join(', ')}>
+      {list.slice(0, 4).map(n => <UserAvatar key={n} user={{ display_name: n, username: n }} size="size-6" textSize="text-[10px]" className="ring-2 ring-background" />)}
+      {list.length > 4 && <span className="figures flex size-6 items-center justify-center rounded-full bg-muted text-[10px] ring-2 ring-background">+{list.length - 4}</span>}
+    </span>
+  );
+}
+
+// A workshop job ticket: perforated stub at the bottom with the due date.
+function Ticket({ o }) {
+  const overdue = ['pending', 'in_progress'].includes(o.status) && o.due_date && o.due_date < todayISO();
+  return (
+    <Link href={`/orders/${o.id}`} className="paper-surface block rounded-lg transition-transform hover:-translate-y-0.5">
+      <div className="flex flex-col gap-1.5 p-3">
+        <div className="flex items-start justify-between gap-2">
+          <p className="text-sm font-medium leading-snug">{o.item}</p>
+          <span className="figures shrink-0 text-lg leading-none text-muted-foreground">×{o.qty}</span>
+        </div>
+        <p className="truncate text-xs text-muted-foreground">{o.client_name || 'No client'}{o.project_name ? ` · ${o.project_name}` : ''}</p>
+      </div>
+      <div className="flex items-center justify-between border-t-2 border-dotted border-border px-3 py-2">
+        <span className={cn('figures text-xs', overdue ? 'font-medium text-destructive' : 'text-muted-foreground')}>
+          {o.due_date ? `Due ${formatDate(o.due_date).slice(0, 6)}` : 'No due date'}
+        </span>
+        <WorkerStack names={o.recent_workers} />
+      </div>
+    </Link>
+  );
+}
+
 const EMPTY = { item: '', qty: 1, client_id: '', project_id: '', description: '', start_date: '', due_date: '' };
 
 export default function OrdersPage() {
@@ -31,14 +70,15 @@ export default function OrdersPage() {
   const [clients, setClients] = useState([]);
   const [projects, setProjects] = useState([]);
   const [filter, setFilter] = useState('all');
+  const [view, setView] = useState('board');
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [busy, setBusy] = useState(false);
 
-  async function load(f = filter) {
+  async function load(f = view === 'board' ? 'all' : filter) {
     setOrders(await api(`/api/orders?status=${f}`));
   }
-  useEffect(() => { load(); }, [filter]);
+  useEffect(() => { load(); }, [filter, view]);
   useEffect(() => {
     api('/api/clients').then(setClients).catch(() => {});
     api('/api/projects').then(setProjects).catch(() => {});
@@ -133,6 +173,8 @@ export default function OrdersPage() {
         </Dialog>
       </div>
 
+      <div className="flex flex-wrap items-center justify-between gap-3">
+      {view === 'list' ? (
       <Tabs value={filter} onValueChange={setFilter}>
         <TabsList>
           <TabsTrigger value="all">All</TabsTrigger>
@@ -142,7 +184,37 @@ export default function OrdersPage() {
           <TabsTrigger value="delivered">Delivered</TabsTrigger>
         </TabsList>
       </Tabs>
+      ) : <span />}
+      <Tabs value={view} onValueChange={setView}>
+        <TabsList>
+          <TabsTrigger value="board"><KanbanSquareIcon data-icon="inline-start" />Board</TabsTrigger>
+          <TabsTrigger value="list"><ListIcon data-icon="inline-start" />List</TabsTrigger>
+        </TabsList>
+      </Tabs>
+      </div>
 
+      {view === 'board' && (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {BOARD.map(s => {
+            const col = orders.filter(o => o.status === s);
+            return (
+              <section key={s} className="flex flex-col gap-3 rounded-xl bg-muted/40 p-3">
+                <h2 className="flex items-center justify-between font-hand text-lg">
+                  {capitalize(s)} <span className="figures text-xs text-muted-foreground">{col.length}</span>
+                </h2>
+                {col.length === 0 && <p className="py-4 text-center font-hand text-sm text-muted-foreground">Nothing here</p>}
+                {col.map(o => <Ticket key={o.id} o={o} />)}
+              </section>
+            );
+          })}
+        </div>
+      )}
+      {view === 'board' && orders.some(o => o.status === 'cancelled') && (
+        <p className="text-xs text-muted-foreground">{orders.filter(o => o.status === 'cancelled').length} cancelled, in the List view.</p>
+      )}
+
+      {view === 'list' && orders.length === 0 && <StickyNote className="my-10">No orders here yet.</StickyNote>}
+      {view === 'list' && orders.length > 0 && (
       <div className="paper-surface overflow-hidden rounded-lg">
         <Table>
           <TableHeader>
@@ -155,9 +227,6 @@ export default function OrdersPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {orders.length === 0 && (
-              <TableRow><TableCell colSpan={5} className="py-8 text-center text-muted-foreground">No orders.</TableCell></TableRow>
-            )}
             {orders.map(o => {
               const overdue = ['pending', 'in_progress'].includes(o.status) && o.due_date && o.due_date < todayISO();
               return (
@@ -171,14 +240,15 @@ export default function OrdersPage() {
                   <TableCell>
                     <Badge variant={STATUS_VARIANT[o.status] || 'outline'}>{capitalize(o.status)}</Badge>
                   </TableCell>
-                  <TableCell className={overdue ? 'font-medium text-destructive' : 'text-muted-foreground'}>{formatDate(o.due_date)}</TableCell>
-                  <TableCell className="max-w-48 truncate text-muted-foreground">{o.recent_workers || '—'}</TableCell>
+                  <TableCell className={cn('figures text-xs', overdue ? 'font-medium text-destructive' : 'text-muted-foreground')}>{formatDate(o.due_date)}</TableCell>
+                  <TableCell><WorkerStack names={o.recent_workers} /></TableCell>
                 </TableRow>
               );
             })}
           </TableBody>
         </Table>
       </div>
+      )}
     </div>
   );
 }
