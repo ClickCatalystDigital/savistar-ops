@@ -43,6 +43,9 @@ export async function POST(req) {
   }
   const guard = await guardCashEntity(user, entityType, entityId);
   if (guard) return guard;
+  if (entityType === 'project' && !file.type?.startsWith('image/')) {
+    return NextResponse.json({ error: 'Project photos must be images' }, { status: 400 });
+  }
   if (file.size > 20 * 1024 * 1024) {
     return NextResponse.json({ error: 'Max file size is 20 MB' }, { status: 400 });
   }

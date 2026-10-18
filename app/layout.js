@@ -5,6 +5,13 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { getSessionUser } from '@/lib/auth';
 import DemoAnalytics from '@/components/DemoAnalytics';
 import { BRAND } from '@/lib/brand';
+import { Architects_Daughter, Fira_Code } from 'next/font/google';
+import { queryOne } from '@/lib/db';
+
+// Home's type system (app/page.js) for every page: --font-hand for titles and labels,
+// --font-figures for dates and money (globals.css .font-hand / .figures).
+const hand = Architects_Daughter({ weight: '400', subsets: ['latin'], display: 'swap', variable: '--font-hand' });
+const figures = Fira_Code({ weight: '500', subsets: ['latin'], display: 'swap', variable: '--font-figures' });
 
 export const metadata = {
   title: BRAND.app,
@@ -17,9 +24,14 @@ export const metadata = {
 const themeInit = `(function(){try{var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();`;
 
 export default async function RootLayout({ children }) {
-  const user = await getSessionUser();
+  const session = await getSessionUser();
+  // The nav shows the login's avatar; the token doesn't carry it.
+  const user = session && {
+    ...session,
+    ...(await queryOne('SELECT avatar_color, avatar_font, avatar_image_key AS avatar_url FROM users WHERE username = ?', [session.username])),
+  };
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={`${hand.variable} ${figures.variable}`} suppressHydrationWarning>
       <head><script dangerouslySetInnerHTML={{ __html: themeInit }} /></head>
       <body className="min-h-screen bg-background text-foreground">
         <TooltipProvider delayDuration={200}>

@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Loader2Icon } from 'lucide-react';
 import { BRAND } from '@/lib/brand';
+import { Wordmark } from '@/components/wordmark';
 
 export default function Login() {
   const router = useRouter();
@@ -34,9 +35,7 @@ export default function Login() {
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-muted/40 to-background p-4">
       <Card className="w-full max-w-sm shadow-lg">
         <CardHeader className="items-center text-center">
-          <h1 className="text-2xl font-bold tracking-tight">
-            <span className="text-muted-foreground">{BRAND.word}</span><span className="text-primary">OPS</span>
-          </h1>
+          <h1><Wordmark className="text-3xl" /></h1>
           <p className="text-xs text-muted-foreground">{BRAND.studio} · {BRAND.workshop}</p>
         </CardHeader>
         <CardContent>

@@ -1,0 +1,32 @@
+import { cn } from '@/lib/utils';
+import { capitalize } from '@/lib/format';
+
+// A rubber stamp for projects that are no longer simply active. Active is the normal state and
+// gets no mark, so a stamp always means "look at this one".
+const STAMP = { completed: 'text-success', cancelled: 'text-danger', on_hold: 'text-warning' };
+
+// The milestone bar in the stamp's ink (pale, like the stamp), so status reads at a glance;
+// active keeps the brand blue.
+export const BAR = { completed: 'bg-success/75', cancelled: 'bg-danger/75', on_hold: 'bg-warning/60' };
+
+export function StatusStamp({ status, className }) {
+  if (!STAMP[status]) return null;
+  return (
+    <span className={cn('pointer-events-none inline-block -rotate-6 select-none rounded-sm border-2 border-current px-1.5 py-0.5 text-[10px] font-bold uppercase leading-none tracking-[0.2em] opacity-75',
+      STAMP[status], className)}>
+      {capitalize(status)}
+    </span>
+  );
+}
+
+// Material chips as a strip of colour, like samples pinned to a board.
+export function Swatches({ items, className }) {
+  if (!items.length) return null;
+  return (
+    <div role="img" aria-label={`Materials: ${items.map(m => m.name).join(', ')}`} className={cn('flex overflow-hidden', className)}>
+      {items.map(m => (
+        <span key={m.name} title={m.name} style={{ backgroundColor: m.hex }} className="min-w-0 flex-1" />
+      ))}
+    </div>
+  );
+}
