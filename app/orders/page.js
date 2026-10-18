@@ -1,6 +1,7 @@
 'use client';
 
 import { PageTitle } from '@/components/page-title';
+import { NewButton } from '@/components/new-button';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api, showToast, formatDate, capitalize } from '@/lib/client';
@@ -21,7 +22,7 @@ import {
 import {
   Table, TableHeader, TableRow, TableHead, TableBody, TableCell,
 } from '@/components/ui/table';
-import { PlusIcon, KanbanSquareIcon, ListIcon } from 'lucide-react';
+import { KanbanSquareIcon, ListIcon } from 'lucide-react';
 import { BRAND } from '@/lib/brand';
 import { UserAvatar } from '@/components/user-avatar';
 import { StickyNote } from '@/components/sticky-note';
@@ -128,7 +129,7 @@ export default function OrdersPage() {
           <p className="text-sm text-muted-foreground">{BRAND.workshopShort} furniture workshop orders</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild><Button><PlusIcon data-icon="inline-start" />New order</Button></DialogTrigger>
+          <DialogTrigger asChild><NewButton label="New order" /></DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>New order</DialogTitle></DialogHeader>
             <div className="flex flex-col gap-4">
@@ -210,7 +211,7 @@ export default function OrdersPage() {
       </div>
 
       {view === 'board' && (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
           {BOARD.map(s => {
             const col = orders.filter(o => o.status === s);
             return (

@@ -1,6 +1,7 @@
 'use client';
 
 import { PageTitle } from '@/components/page-title';
+import { NewButton } from '@/components/new-button';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { materialsIn } from '@/lib/materials';
@@ -17,7 +18,7 @@ import {
 import {
   Table, TableHeader, TableRow, TableHead, TableBody, TableCell,
 } from '@/components/ui/table';
-import { PlusIcon, AlertTriangleIcon } from 'lucide-react';
+import { AlertTriangleIcon } from 'lucide-react';
 
 const EMPTY = { name: '', phone: '', material: '', notes: '' };
 
@@ -50,7 +51,7 @@ export default function VendorsPage() {
           <p className="text-sm text-muted-foreground">Material suppliers — orders, deliveries, freight rates</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild><Button><PlusIcon data-icon="inline-start" />Add vendor</Button></DialogTrigger>
+          <DialogTrigger asChild><NewButton label="New vendor" /></DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>New vendor</DialogTitle></DialogHeader>
             <div className="flex flex-col gap-4">

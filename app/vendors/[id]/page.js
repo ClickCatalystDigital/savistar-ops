@@ -1,6 +1,7 @@
 'use client';
 
 import { PageTitle } from '@/components/page-title';
+import { NewButton } from '@/components/new-button';
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { StickyNote } from '@/components/sticky-note';
@@ -321,7 +322,7 @@ function PosTab({ vendorId, pos, onChanged }) {
     <div className="flex flex-col gap-4">
       <div className="flex justify-end">
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild><Button><PlusIcon data-icon="inline-start" />New PO</Button></DialogTrigger>
+          <DialogTrigger asChild><NewButton label="New PO" /></DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>New purchase order</DialogTitle></DialogHeader>
             <div className="flex flex-col gap-4">

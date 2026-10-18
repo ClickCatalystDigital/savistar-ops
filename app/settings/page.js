@@ -1,6 +1,7 @@
 'use client';
 
 import { PageTitle } from '@/components/page-title';
+import { NewButton } from '@/components/new-button';
 import { useEffect, useState } from 'react';
 import { api, showToast, capitalize } from '@/lib/client';
 import { Button } from '@/components/ui/button';
@@ -17,7 +18,7 @@ import {
 import {
   Table, TableHeader, TableRow, TableHead, TableBody, TableCell,
 } from '@/components/ui/table';
-import { PlusIcon, KeyRoundIcon, UploadIcon, XIcon, CheckIcon, PaletteIcon } from 'lucide-react';
+import { KeyRoundIcon, UploadIcon, XIcon, CheckIcon, PaletteIcon } from 'lucide-react';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import { UserAvatar, AVATAR_FONTS, AVATAR_SWATCHES } from '@/components/user-avatar';
 import { cn } from '@/lib/utils';
@@ -169,7 +170,7 @@ export default function SettingsPage() {
           <p className="text-sm text-muted-foreground">Users & access</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild><Button><PlusIcon data-icon="inline-start" />Add user</Button></DialogTrigger>
+          <DialogTrigger asChild><NewButton label="New user" /></DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>New user</DialogTitle></DialogHeader>
             <div className="flex flex-col gap-4">

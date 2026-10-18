@@ -1,6 +1,7 @@
 'use client';
 
 import { PageTitle } from '@/components/page-title';
+import { NewButton } from '@/components/new-button';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { StickyNote } from '@/components/sticky-note';
 import { api, showToast, formatDate, formatMoney, capitalize } from '@/lib/client';
@@ -22,7 +23,7 @@ import {
   Table, TableHeader, TableRow, TableHead, TableBody, TableCell,
 } from '@/components/ui/table';
 import {
-  PlusIcon, PencilIcon, PaperclipIcon, UploadIcon, ArrowLeftIcon,
+  PencilIcon, PaperclipIcon, UploadIcon, ArrowLeftIcon,
   Loader2Icon, FileTextIcon, ExternalLinkIcon,
 } from 'lucide-react';
 import { TrashIcon } from '@heroicons/react/24/outline';
@@ -178,7 +179,7 @@ function CashTab({ scoped = false }) {
         {month && <Button variant="ghost" size="sm" onClick={() => setMonth('')}>All months</Button>}
         <Dialog open={open} onOpenChange={o => { setOpen(o); if (!o) { setEditing(null); setForm(EMPTY_TXN); } }}>
           <DialogTrigger asChild>
-            <Button className="ml-auto"><PlusIcon data-icon="inline-start" />Add transaction</Button>
+            <NewButton label="New transaction" className="ml-auto" />
           </DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>{editing ? 'Edit transaction' : 'New cash transaction'}</DialogTitle></DialogHeader>

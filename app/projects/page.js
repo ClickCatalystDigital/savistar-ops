@@ -1,6 +1,7 @@
 'use client';
 
 import { PageTitle } from '@/components/page-title';
+import { NewButton } from '@/components/new-button';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { StickyNote } from '@/components/sticky-note';
@@ -18,7 +19,6 @@ import {
 import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectItem,
 } from '@/components/ui/select';
-import { PlusIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { BRAND } from '@/lib/brand';
 
@@ -60,7 +60,7 @@ export default function ProjectsPage() {
           <p className="text-sm text-muted-foreground">{BRAND.studioShort} interior design projects</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild><Button><PlusIcon data-icon="inline-start" />New project</Button></DialogTrigger>
+          <DialogTrigger asChild><NewButton label="New project" /></DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>New project</DialogTitle></DialogHeader>
             <div className="flex flex-col gap-4">
@@ -96,7 +96,7 @@ export default function ProjectsPage() {
         </Dialog>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {projects.length === 0 && (
           <StickyNote className="col-span-full my-6">No projects yet.</StickyNote>
         )}

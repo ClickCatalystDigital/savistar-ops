@@ -1,6 +1,7 @@
 'use client';
 
 import { PageTitle } from '@/components/page-title';
+import { NewButton } from '@/components/new-button';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api, showToast, formatDate } from '@/lib/client';
@@ -14,7 +15,7 @@ import {
 } from '@/components/ui/dialog';
 import { UserAvatar } from '@/components/user-avatar';
 import { StickyNote } from '@/components/sticky-note';
-import { PlusIcon, SearchIcon } from 'lucide-react';
+import { SearchIcon } from 'lucide-react';
 
 const EMPTY = { name: '', phone: '', email: '', address: '', notes: '' };
 
@@ -52,7 +53,7 @@ export default function ClientsPage() {
         <PageTitle>Clients</PageTitle>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button><PlusIcon data-icon="inline-start" />Add client</Button>
+            <NewButton label="New client" />
           </DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>New client</DialogTitle></DialogHeader>
@@ -95,7 +96,7 @@ export default function ClientsPage() {
 
       {/* A rolodex: one card per client, latest conversation on it. */}
       {clients.length === 0 && <StickyNote className="my-10">{q ? 'Nobody by that name.' : 'No clients yet. Add the first one.'}</StickyNote>}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {clients.map(c => (
           <Link key={c.id} href={`/clients/${c.id}`}
             className="paper-surface flex flex-col gap-3 rounded-xl p-4 transition-transform hover:-translate-y-0.5">
