@@ -247,6 +247,11 @@
   line-height: var(--rule);
 }
 
+/* Every table reads like a ledger: figures in Fira Code (numeric columns are the right-aligned
+   ones) and a double rule under the header. Unlayered to beat the table's own border utility. */
+[data-slot=table] :is(td, th).text-right { font-family: var(--font-figures), ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+[data-slot=table] thead tr { border-bottom: 3px double var(--border); }
+
 .scrollbar-none {
   scrollbar-width: none;       /* Firefox */
   -ms-overflow-style: none;    /* old Edge/IE */

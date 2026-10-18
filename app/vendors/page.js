@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { materialsIn } from '@/lib/materials';
+import { StickyNote } from '@/components/sticky-note';
 import { api, showToast, formatMoney } from '@/lib/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -92,14 +94,21 @@ export default function VendorsPage() {
           </TableHeader>
           <TableBody>
             {vendors.length === 0 && (
-              <TableRow><TableCell colSpan={6} className="py-8 text-center text-muted-foreground">No vendors yet.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="py-8"><StickyNote>No vendors yet. Add your first supplier.</StickyNote></TableCell></TableRow>
             )}
             {vendors.map(v => (
               <TableRow key={v.id}>
                 <TableCell>
                   <Link href={`/vendors/${v.id}`} className="font-medium text-primary hover:underline">{v.name}</Link>
                 </TableCell>
-                <TableCell className="text-muted-foreground">{v.material || '—'}</TableCell>
+                <TableCell className="text-muted-foreground">
+                  <span className="flex items-center gap-2">
+                    {/* A sample chip of what they supply; dashed when it isn't a material we know. */}
+                    {materialsIn(v.material, 1).map(m => <span key={m.name} className="size-4 rounded-sm ring-1 ring-black/10" style={{ backgroundColor: m.hex }} />)}
+                    {!materialsIn(v.material, 1).length && <span className="size-4 rounded-sm border border-dashed border-muted-foreground/40" />}
+                    {v.material || '—'}
+                  </span>
+                </TableCell>
                 <TableCell className="text-muted-foreground">{v.phone || '—'}</TableCell>
                 <TableCell className="text-center">{v.open_pos > 0 ? <Badge variant="secondary">{v.open_pos}</Badge> : '—'}</TableCell>
                 <TableCell className="text-center">

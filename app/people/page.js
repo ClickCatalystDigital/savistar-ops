@@ -22,6 +22,14 @@ import {
 } from '@/components/ui/table';
 import { PlusIcon, CheckIcon } from 'lucide-react';
 import { TrashIcon } from '@heroicons/react/24/outline';
+import { UserAvatar } from '@/components/user-avatar';
+import { cn } from '@/lib/utils';
+
+const ATTENDANCE = [
+  { value: 'present', short: 'P', label: 'Present', on: 'bg-success text-white' },
+  { value: 'half', short: '½', label: 'Half day', on: 'bg-warning text-white' },
+  { value: 'absent', short: 'A', label: 'Absent', on: 'bg-danger text-white' },
+];
 
 export default function PeoplePage() {
   return (
@@ -130,19 +138,22 @@ function WorksheetRow({ row, date, orders, onSaved }) {
     <Card>
       <CardContent className="flex flex-col gap-3 pt-4">
         <div className="flex flex-wrap items-center gap-3">
-          <Link href={`/people/${e.id}`} className="min-w-32 font-medium text-primary hover:underline">{e.name}</Link>
+          <Link href={`/people/${e.id}`} className="flex min-w-40 items-center gap-2 font-medium text-primary hover:underline">
+            <UserAvatar user={{ display_name: e.name, username: e.name }} size="size-7" />{e.name}
+          </Link>
           <span className="text-xs text-muted-foreground">{e.profession || '—'}</span>
           <div className="ml-auto flex items-center gap-2">
-            <Select value={att.status} onValueChange={v => { setAtt({ ...att, status: v }); saveAttendance({ ...att, status: v }); }}>
-              <SelectTrigger className="w-32"><SelectValue placeholder="Mark…" /></SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectItem value="present">Present</SelectItem>
-                  <SelectItem value="half">Half day</SelectItem>
-                  <SelectItem value="absent">Absent</SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
+            {/* One tap, like ticking a register: P / ½ / A. */}
+            <div role="radiogroup" aria-label={`Attendance for ${e.name}`} className="flex overflow-hidden rounded-md border">
+              {ATTENDANCE.map(a => (
+                <button key={a.value} type="button" role="radio" aria-checked={att.status === a.value} title={a.label}
+                  onClick={() => { setAtt({ ...att, status: a.value }); saveAttendance({ ...att, status: a.value }); }}
+                  className={cn('figures w-9 py-1.5 text-sm transition-colors focus-visible:relative focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+                    att.status === a.value ? a.on : 'text-muted-foreground hover:bg-muted')}>
+                  {a.short}
+                </button>
+              ))}
+            </div>
             {!absent && att.status && (
               <>
                 <Input type="time" value={att.in_time} onChange={ev => setAtt({ ...att, in_time: ev.target.value })}

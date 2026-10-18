@@ -24,6 +24,7 @@ import {
   Loader2Icon, FileTextIcon, ExternalLinkIcon,
 } from 'lucide-react';
 import { TrashIcon } from '@heroicons/react/24/outline';
+import { cn } from '@/lib/utils';
 import { BRAND } from '@/lib/brand';
 
 export default function FinancePage() {
@@ -145,6 +146,11 @@ function CashTab({ scoped = false }) {
 
   if (!data) return <p className="py-8 text-center text-muted-foreground">Loading…</p>;
 
+  // Balance after each row: rows are newest first and, without a month filter, complete,
+  // so walk back from the all-time balance.
+  let after = data.balance;
+  const running = data.rows.map(t => { const b = after; after -= t.kind === 'credit' ? t.amount : -t.amount; return b; });
+
   const monthCredit = data.rows.filter(r => r.kind === 'credit').reduce((s, r) => s + r.amount, 0);
   const monthDebit = data.rows.filter(r => r.kind === 'debit').reduce((s, r) => s + r.amount, 0);
 
@@ -225,15 +231,16 @@ function CashTab({ scoped = false }) {
               <TableHead>Party / description</TableHead>
               <TableHead className="text-right">Credit</TableHead>
               <TableHead className="text-right">Debit</TableHead>
+              {!month && <TableHead className="text-right">Balance</TableHead>}
               <TableHead className="text-right">Files</TableHead>
               <TableHead className="text-right" aria-label="Actions" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {data.rows.length === 0 && (
-              <TableRow><TableCell colSpan={6} className="py-8 text-center text-muted-foreground">No transactions{month ? ` in ${month}` : ''}.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="py-8 text-center text-muted-foreground">No transactions{month ? ` in ${month}` : ''}.</TableCell></TableRow>
             )}
-            {data.rows.map(t => (
+            {data.rows.map((t, i) => (
               <TableRow key={t.id} className="group">
                 <TableCell className="whitespace-nowrap">{formatDate(t.date)}</TableCell>
                 <TableCell>
@@ -243,9 +250,14 @@ function CashTab({ scoped = false }) {
                 <TableCell className="text-right font-medium text-green-700 dark:text-green-500">
                   {t.kind === 'credit' ? `₹${t.amount.toLocaleString('en-IN')}` : ''}
                 </TableCell>
-                <TableCell className="text-right font-medium">
+                <TableCell className="text-right font-medium text-red-700 dark:text-red-400">
                   {t.kind === 'debit' ? `₹${t.amount.toLocaleString('en-IN')}` : ''}
                 </TableCell>
+                {!month && (
+                  <TableCell className={cn('text-right text-muted-foreground', running[i] < 0 && 'text-destructive')}>
+                    {running[i] < 0 ? '−' : ''}₹{Math.abs(running[i]).toLocaleString('en-IN')}
+                  </TableCell>
+                )}
                 <TableCell className="text-right">
                   <Button variant="ghost" size="sm" onClick={() => setAttachFor(t)}>
                     <PaperclipIcon data-icon="inline-start" />{t.attachment_count || ''}
