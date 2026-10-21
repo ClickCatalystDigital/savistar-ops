@@ -70,6 +70,8 @@ export async function shiftDates(url, token, today = new Date(Date.now() + 5.5 *
     const all = stmts(days >= 0 ? `+${days}` : `${days}`);
     for (let i = 0; i < all.length; i += 200) await run(url, token, all.slice(i, i + 200));
   }
+  // The demo now reads as of today: say so, so scripts/demo-promote.sh in ahrom-labs can copy it to golden as is.
+  await run(url, token, [`UPDATE demo_meta SET seeded_on = '${today}'`]);
   return { shifted: n, columns: cols.rows.length };
 }
 
