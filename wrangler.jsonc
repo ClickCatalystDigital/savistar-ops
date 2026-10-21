@@ -18,6 +18,8 @@
     "DEMO_MODE": "1",
     "SKIP_MIGRATE": "1",
     "TURSO_URL": "libsql://sav-demo-pujan.aws-ap-south-1.turso.io",
+    // The owner pass reads and writes golden instead, so its changes survive the nightly reset (lib/db.js).
+    "GOLDEN_TURSO_URL": "libsql://sav-demo-golden-pujan.aws-ap-south-1.turso.io",
     "LEADS_TURSO_URL": "libsql://sav-demo-leads-pujan.aws-ap-south-1.turso.io"
   },
   // Run next to the database (Turso, Mumbai): a page makes several sequential queries.
