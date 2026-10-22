@@ -37,7 +37,9 @@ export async function POST(req, ctx) {
 
   // No slash in the filename — deleteFromR2 only recovers the last path segment,
   // so a flat filename is what keeps future cleanup working correctly.
-  const url = await uploadToR2(buffer, `avatar-${params.id}.webp`, 'image/webp');
+  let url;
+  try { url = await uploadToR2(buffer, `avatar-${params.id}.webp`, 'image/webp'); }
+  catch (e) { return NextResponse.json({ error: e.message }, { status: e.status || 502 }); }
 
   await execute('UPDATE users SET avatar_image_key = ? WHERE id = ?', [url, params.id]);
   if (previousUrl) await deleteFromR2(previousUrl).catch(() => {}); // best-effort cleanup

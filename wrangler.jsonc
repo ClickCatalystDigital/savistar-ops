@@ -24,5 +24,7 @@
   },
   // Run next to the database (Turso, Mumbai): a page makes several sequential queries.
   "placement": { "mode": "smart" },
+  // Demo uploads (owner pass only, lib/r2.js), shared with SB Ops' demo under interiors/.
+  "r2_buckets": [{ "binding": "DEMO_FILES", "bucket_name": "sb-demo-files" }],
   "observability": { "enabled": true }
 }

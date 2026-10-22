@@ -20,7 +20,9 @@ function demoGuard(req, pathname) {
   // The assistant: only asking (and its briefing, starters, thumbs) — never its settings, key or logs.
   if (pathname.startsWith('/api/assistant') && !DEMO_AI_OPEN.includes(pathname) && !(pathname === '/api/assistant/persona' && req.method === 'GET')) return NextResponse.json({ error: 'Not available in the demo' }, { status: 403 });
   const write = !['GET', 'HEAD', 'OPTIONS'].includes(req.method);
-  if (write && DEMO_BLOCKED.some(p => pathname === p || pathname.startsWith(p + '/'))) {
+  // A user's picture is allowed through: lib/r2.js lets only the owner-pass browser store it.
+  const avatar = /^\/api\/users\/\d+\/avatar$/.test(pathname);
+  if (write && !avatar && DEMO_BLOCKED.some(p => pathname === p || pathname.startsWith(p + '/'))) {
     return NextResponse.json({ error: 'Not available in the demo' }, { status: 403 });
   }
   return null;
