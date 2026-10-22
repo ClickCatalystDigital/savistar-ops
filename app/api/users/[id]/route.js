@@ -11,6 +11,15 @@ export async function PUT(req, ctx) {
   const guard = requireApprover(user);
   if (guard) return guard;
   const b = await req.json();
+  // Public demo: middleware lets this through only so the owner-pass browser can restyle a user's avatar
+  // (colour, font); nothing else about a login can change there, and visitors can't change anything.
+  if (process.env.DEMO_MODE === '1') {
+    const [{ cookies }, { isOwnerPass }] = await Promise.all([import('next/headers'), import('@/lib/demo-leads')]);
+    const onlyStyle = Object.keys(b).every(k => k === 'avatar_color' || k === 'avatar_font');
+    if (!onlyStyle || !isOwnerPass((await cookies()).get('demo_lead')?.value)) {
+      return NextResponse.json({ error: 'Not available in the demo' }, { status: 403 });
+    }
+  }
   if (b.password) {
     await execute('UPDATE users SET password = ? WHERE id = ?', [bcrypt.hashSync(b.password, 10), params.id]);
   }
