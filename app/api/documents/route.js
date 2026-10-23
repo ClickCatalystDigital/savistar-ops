@@ -19,13 +19,19 @@ export async function GET(req) {
   const pageSize = PAGE_SIZES.includes(Number(searchParams.get('pageSize'))) ? Number(searchParams.get('pageSize')) : 20;
   const page = Math.max(1, Number(searchParams.get('page')) || 1);
 
-  const { total } = await queryOne(`SELECT COUNT(*) AS total FROM documents WHERE is_deleted_record = 0`);
+  // ?month=YYYY-MM: statements whose period overlaps that month (dates are YYYY-MM-DD strings,
+  // so '-31' is a safe month end for the comparison even in short months).
+  const month = /^\d{4}-\d{2}$/.test(searchParams.get('month') || '') ? searchParams.get('month') : null;
+  const where = month ? 'is_deleted_record = 0 AND statement_from <= ? AND statement_to >= ?' : 'is_deleted_record = 0';
+  const args = month ? [`${month}-31`, `${month}-01`] : [];
+
+  const { total } = await queryOne(`SELECT COUNT(*) AS total FROM documents WHERE ${where}`, args);
   const rows = await queryAll(
     `SELECT id, doc_type, original_filename, file_url, status, bank_name, account_no,
        statement_from, statement_to, opening_balance, closing_balance, total_debit, total_credit,
        extract_error, uploaded_by, created_at
-     FROM documents WHERE is_deleted_record = 0 ORDER BY created_at DESC LIMIT ? OFFSET ?`,
-    [pageSize, (page - 1) * pageSize]);
+     FROM documents WHERE ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+    [...args, pageSize, (page - 1) * pageSize]);
   return NextResponse.json({ rows, total, page, pageSize });
 }
 

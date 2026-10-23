@@ -4,7 +4,7 @@ import { PageTitle } from '@/components/page-title';
 import { NewButton } from '@/components/new-button';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { StickyNote } from '@/components/sticky-note';
-import { api, showToast, formatDate, formatMoney, capitalize } from '@/lib/client';
+import { api, showToast, formatDate, capitalize } from '@/lib/client';
 import { todayISO } from '@/lib/date';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,7 +12,7 @@ import { DateInput } from '@/components/ui/date-input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -27,10 +27,43 @@ import {
   PencilIcon, PaperclipIcon, UploadIcon, ArrowLeftIcon,
   Loader2Icon, FileTextIcon, ExternalLinkIcon,
   ChevronLeftIcon, ChevronRightIcon, CopyIcon, EyeIcon, EyeOffIcon,
+  WalletIcon, LandmarkIcon, ArrowDownLeftIcon, ArrowUpRightIcon,
 } from 'lucide-react';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import { cn } from '@/lib/utils';
 import { BRAND } from '@/lib/brand';
+
+// Full Indian grouping, paise only when there are any (₹2,89,607.50, ₹12,000).
+const rupees = (n) => Math.abs(n).toLocaleString('en-IN', { minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 });
+
+const TONES = {
+  in: { edge: 'bg-success', chip: 'bg-success/10 text-success' },
+  out: { edge: 'bg-danger', chip: 'bg-danger/10 text-danger' },
+  balance: { edge: 'bg-info', chip: 'bg-info/10 text-info' },
+  short: { edge: 'bg-danger', chip: 'bg-danger/10 text-danger' },
+};
+
+// A KPI as a paper ledger slip: handwritten label, Fira Code figure, a coloured tab on the edge.
+function Stat({ label, value, tone, icon: Icon, hint, hero }) {
+  const t = TONES[tone];
+  return (
+    <div className="paper-surface relative flex flex-col gap-3 overflow-hidden rounded-xl py-4 pr-4 pl-5">
+      <span aria-hidden className={cn('absolute top-4 bottom-4 left-0 w-[3px] rounded-r-full', t.edge)} />
+      <div className="flex items-start justify-between gap-3">
+        <span className="font-hand text-[0.95rem] leading-tight text-muted-foreground">{label}</span>
+        <span className={cn('grid size-8 shrink-0 place-items-center rounded-full', t.chip)}><Icon className="size-4" /></span>
+      </div>
+      <p className={cn('figures w-fit text-2xl tracking-tight sm:text-[1.65rem]', hero && value != null && 'marker', tone === 'short' && 'text-danger')}>
+        {value == null ? <span className="text-muted-foreground">—</span> : (
+          <><span className="mr-0.5 text-[0.7em] text-muted-foreground">{value < 0 ? '−₹' : '₹'}</span>{rupees(value)}</>
+        )}
+      </p>
+      {hint && <p className="figures -mt-1 text-xs text-muted-foreground">{hint}</p>}
+    </div>
+  );
+}
+
+const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 export default function FinancePage() {
   const [me, setMe] = useState(null);
@@ -156,24 +189,31 @@ function CashTab({ scoped = false }) {
   let after = data.balance;
   const running = data.rows.map(t => { const b = after; after -= t.kind === 'credit' ? t.amount : -t.amount; return b; });
 
-  const monthCredit = data.rows.filter(r => r.kind === 'credit').reduce((s, r) => s + r.amount, 0);
-  const monthDebit = data.rows.filter(r => r.kind === 'debit').reduce((s, r) => s + r.amount, 0);
+  const credits = data.rows.filter(r => r.kind === 'credit');
+  const debits = data.rows.filter(r => r.kind === 'debit');
+  const monthCredit = credits.reduce((s, r) => s + r.amount, 0);
+  const monthDebit = debits.reduce((s, r) => s + r.amount, 0);
+  const creditCount = credits.length, debitCount = debits.length;
+  // Without a month filter the rows are the complete book (see `running` above).
+  const periodLabel = month
+    ? new Date(`${month}-01T00:00:00`).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })
+    : 'all time';
 
   return (
     <div className="flex flex-col gap-4">
       <div className="grid gap-3 sm:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2"><CardDescription>{scoped ? 'Your balance (all time)' : 'Cash balance (all time)'}</CardDescription></CardHeader>
-          <CardContent><p className={`text-2xl font-bold ${data.balance < 0 ? 'text-destructive' : ''}`}>{formatMoney(Math.abs(data.balance)) || '₹0'}{data.balance < 0 ? ' (short)' : ''}</p></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardDescription>{scoped ? 'Your credits' : 'Credits'} {month ? `in ${month}` : '(shown)'}</CardDescription></CardHeader>
-          <CardContent><p className="text-2xl font-bold">{formatMoney(monthCredit) || '₹0'}</p></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardDescription>{scoped ? 'Your debits' : 'Debits'} {month ? `in ${month}` : '(shown)'}</CardDescription></CardHeader>
-          <CardContent><p className="text-2xl font-bold">{formatMoney(monthDebit) || '₹0'}</p></CardContent>
-        </Card>
+        <Stat
+          label={scoped ? 'Your cash in hand' : 'Cash in hand'} hero
+          value={data.balance} tone={data.balance < 0 ? 'short' : 'balance'} icon={WalletIcon}
+          hint={data.balance < 0 ? `short by ₹${rupees(data.balance)}` : scoped ? 'your entries, all time' : 'every entry, all time'} />
+        <Stat
+          label={`${scoped ? 'You received' : 'Money in'} · ${periodLabel}`}
+          value={monthCredit} tone="in" icon={ArrowDownLeftIcon}
+          hint={plural(creditCount, 'credit')} />
+        <Stat
+          label={`${scoped ? 'You paid out' : 'Money out'} · ${periodLabel}`}
+          value={monthDebit} tone="out" icon={ArrowUpRightIcon}
+          hint={plural(debitCount, 'debit')} />
       </div>
 
       <div className="flex items-center gap-2">
@@ -371,6 +411,7 @@ function BankTab() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
+  const [month, setMonth] = useState(''); // YYYY-MM: statements whose period overlaps it
   const [selected, setSelected] = useState(null); // doc id under review
   const [bankName, setBankName] = useState('');
   const [busy, setBusy] = useState(false);
@@ -380,14 +421,15 @@ function BankTab() {
   const [remember, setRemember] = useState(true);
 
   const load = useCallback(async () => {
-    const data = await api(`/api/documents?page=${page}&pageSize=${pageSize}`);
+    const data = await api(`/api/documents?page=${page}&pageSize=${pageSize}${month ? `&month=${month}` : ''}`);
     if (!data.rows.length && page > 1) return setPage(p => p - 1); // last row on this page was deleted
     setDocs(data.rows);
     setTotal(data.total);
-  }, [page, pageSize]);
+  }, [page, pageSize, month]);
   useEffect(() => { load(); }, [load]);
 
   function changePageSize(v) { setPageSize(Number(v)); setPage(1); }
+  function changeMonth(v) { setMonth(v); setPage(1); }
 
   // Poll while any statement is still being read.
   useEffect(() => {
@@ -496,6 +538,11 @@ function BankTab() {
         </DialogContent>
       </Dialog>
 
+      <div className="flex items-center gap-2">
+        <Input type="month" value={month} onChange={e => changeMonth(e.target.value)} className="w-44" aria-label="Statements covering month" />
+        {month && <Button variant="ghost" size="sm" onClick={() => changeMonth('')}>All months</Button>}
+      </div>
+
       <div className="paper-surface overflow-hidden rounded-lg">
         <Table>
           <TableHeader>
@@ -510,7 +557,7 @@ function BankTab() {
           </TableHeader>
           <TableBody>
             {docs.length === 0 && (
-              <TableRow><TableCell colSpan={6} className="py-8"><StickyNote>No statements uploaded yet.</StickyNote></TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="py-8"><StickyNote>{month ? 'No statements cover this month.' : 'No statements uploaded yet.'}</StickyNote></TableCell></TableRow>
             )}
             {docs.map(d => (
               <TableRow key={d.id} className="group">
@@ -645,18 +692,19 @@ function StatementReview({ docId, onBack }) {
         {doc.status !== 'approved' && <Button onClick={() => save('approved')} disabled={busy}>Approve</Button>}
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-4">
-        {[
-          ['Opening balance', doc.opening_balance],
-          ['Closing balance', doc.closing_balance],
-          ['Deposits', doc.total_credit ?? totalCredit],
-          ['Withdrawals', doc.total_debit ?? totalDebit],
-        ].map(([label, val]) => (
-          <Card key={label}>
-            <CardHeader className="pb-2"><CardDescription>{label}</CardDescription></CardHeader>
-            <CardContent><p className="text-lg font-bold">{val != null ? `₹${Number(val).toLocaleString('en-IN')}` : '—'}</p></CardContent>
-          </Card>
-        ))}
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Stat
+          label="Closing balance" hero
+          value={doc.closing_balance} tone={doc.closing_balance < 0 ? 'short' : 'balance'} icon={LandmarkIcon}
+          hint={doc.opening_balance != null && doc.closing_balance != null
+            ? `from ₹${rupees(doc.opening_balance)} · net ${doc.closing_balance >= doc.opening_balance ? '+' : '−'}₹${rupees(Math.round((doc.closing_balance - doc.opening_balance) * 100) / 100)}`
+            : null} />
+        <Stat
+          label="Deposits" value={doc.total_credit != null ? Math.abs(doc.total_credit) : totalCredit}
+          tone="in" icon={ArrowDownLeftIcon} hint={plural(visibleItems.filter(l => l.amount > 0).length, 'credit')} />
+        <Stat
+          label="Withdrawals" value={doc.total_debit != null ? Math.abs(doc.total_debit) : totalDebit}
+          tone="out" icon={ArrowUpRightIcon} hint={plural(visibleItems.filter(l => l.amount < 0).length, 'debit')} />
       </div>
 
       <div className="paper-surface overflow-hidden rounded-lg">
