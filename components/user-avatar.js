@@ -43,8 +43,10 @@ export const PORTRAIT_SWATCHES = [
   { hex: '#5f6b7a', name: 'Slate' },
 ];
 
-// Illustrated avatars in public/avatars/01..30.webp (cut from one sheet, transparent background).
-export const AVATAR_PRESETS = Array.from({ length: 30 }, (_, i) => String(i + 1).padStart(2, '0'));
+// Illustrated avatars in public/avatars/NN.webp (cut from one sheet, transparent background).
+// The sheet repeats faces, so the picker offers one of each look, men and women mixed.
+// ponytail: the hidden near-copies stay in public/avatars so anyone already using one keeps it.
+export const AVATAR_PRESETS = ['01', '02', '03', '04', '05', '06', '07', '08', '13', '10', '20', '12', '22', '14', '25', '16', '27', '18', '21'];
 
 // Priority: uploaded image > illustrated preset > custom color+font initial > hash-based fallback color.
 export function UserAvatar({ user, size = 'size-9', textSize = 'text-xs', className, initialOnly = false }) {
