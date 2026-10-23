@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Loader2Icon, ArrowRightIcon, ArrowUpIcon, ChevronRightIcon } from 'lucide-react';
 import { FEATURES } from '@/lib/demo-features';
 import { track } from '@/components/DemoAnalytics';
+import DemoWhatsApp from '@/components/DemoWhatsApp';
 
 // Public demo entry (app/demo/page.js). Same flow as SB Ops' demo.
 
@@ -165,6 +166,7 @@ export default function DemoEntry({ roles, hasLead, isOwner = false }) {
           )}
         </CardContent>
       </Card>
+      <p className="mt-4 text-center text-sm text-muted-foreground">Questions? <DemoWhatsApp>WhatsApp Pujan</DemoWhatsApp></p>
     </main>
 
     <section id="in-detail" aria-labelledby="in-detail-heading" className="container border-t py-14">
