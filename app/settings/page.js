@@ -21,7 +21,7 @@ import {
 import { KeyRoundIcon, UploadIcon, XIcon, CheckIcon, PaletteIcon, UsersIcon } from 'lucide-react';
 import { Butterfly } from '@/components/assistant/butterfly';
 import { TrashIcon } from '@heroicons/react/24/outline';
-import { UserAvatar, AVATAR_FONTS, AVATAR_SWATCHES, AVATAR_PRESETS } from '@/components/user-avatar';
+import { UserAvatar, AVATAR_FONTS, AVATAR_SWATCHES, AVATAR_PRESETS, PORTRAIT_SWATCHES } from '@/components/user-avatar';
 import { cn } from '@/lib/utils';
 import { AssistantCard } from '@/components/assistant/assistant-card';
 import { PersonaCard } from '@/components/assistant/persona-card';
@@ -349,6 +349,21 @@ export default function SettingsPage() {
 
             <div className="flex flex-col gap-2">
               <Label>{avatarPreset ? 'Background color' : 'Letter color'}</Label>
+              {avatarPreset && (
+                <div className="flex flex-wrap items-center gap-2">
+                  {PORTRAIT_SWATCHES.map(s => (
+                    <button key={s.hex} type="button" title={s.name}
+                      onClick={() => { setAvatarColor(s.hex); setCustomColorOpen(false); }}
+                      aria-label={`Use ${s.name}`}
+                      className={cn('relative size-7 shrink-0 rounded-full transition-transform',
+                        s.light && 'ring-1 ring-inset ring-black/10',
+                        avatarColor === s.hex ? 'ring-2 ring-foreground ring-offset-2 ring-offset-background' : 'hover:scale-110')}
+                      style={{ backgroundColor: s.hex }}>
+                      {avatarColor === s.hex && <CheckIcon className={cn('absolute inset-0 m-auto size-3.5', s.light ? 'text-neutral-800' : 'text-white')} strokeWidth={3} />}
+                    </button>
+                  ))}
+                </div>
+              )}
               <div className="flex flex-wrap items-center gap-2">
                 {AVATAR_SWATCHES.map(hex => (
                   <button key={hex} type="button"

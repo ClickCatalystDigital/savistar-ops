@@ -28,6 +28,21 @@ export const AVATAR_SWATCHES = [
   '#6366f1', '#84cc16', '#0ea5e9', '#ec4899',
 ];
 
+// Backgrounds for illustrated portraits: the sheet's own paper first (the "no color" look),
+// then muted earth tones that let the ink and halftone read. light = needs a dark check mark.
+export const PORTRAIT_SWATCHES = [
+  { hex: '#f4efe6', name: 'Paper', light: true },
+  { hex: '#d8c3a5', name: 'Sand', light: true },
+  { hex: '#d4a24c', name: 'Ochre' },
+  { hex: '#c8775a', name: 'Terracotta' },
+  { hex: '#b5655a', name: 'Clay' },
+  { hex: '#8e6c88', name: 'Plum' },
+  { hex: '#9caf88', name: 'Sage' },
+  { hex: '#7d8a5c', name: 'Olive' },
+  { hex: '#8fa3b8', name: 'Dusty blue' },
+  { hex: '#5f6b7a', name: 'Slate' },
+];
+
 // Illustrated avatars in public/avatars/01..30.webp (cut from one sheet, transparent background).
 export const AVATAR_PRESETS = Array.from({ length: 30 }, (_, i) => String(i + 1).padStart(2, '0'));
 
