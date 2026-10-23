@@ -21,7 +21,7 @@ import {
 import { KeyRoundIcon, UploadIcon, XIcon, CheckIcon, PaletteIcon, UsersIcon } from 'lucide-react';
 import { Butterfly } from '@/components/assistant/butterfly';
 import { TrashIcon } from '@heroicons/react/24/outline';
-import { UserAvatar, AVATAR_FONTS, AVATAR_SWATCHES } from '@/components/user-avatar';
+import { UserAvatar, AVATAR_FONTS, AVATAR_SWATCHES, AVATAR_PRESETS } from '@/components/user-avatar';
 import { cn } from '@/lib/utils';
 import { AssistantCard } from '@/components/assistant/assistant-card';
 import { PersonaCard } from '@/components/assistant/persona-card';
@@ -41,6 +41,7 @@ export default function SettingsPage() {
   const [avatarFor, setAvatarFor] = useState(null);
   const [avatarColor, setAvatarColor] = useState('#3b82f6');
   const [avatarFont, setAvatarFont] = useState('sans');
+  const [avatarPreset, setAvatarPreset] = useState('');
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState(null);
   const [customColorOpen, setCustomColorOpen] = useState(false);
@@ -117,6 +118,7 @@ export default function SettingsPage() {
     setAvatarFor(u);
     setAvatarColor(u.avatar_color || '#3b82f6');
     setAvatarFont(u.avatar_font || 'sans');
+    setAvatarPreset(u.avatar_preset || '');
     setAvatarFile(null);
     setCustomColorOpen(false);
   }
@@ -124,7 +126,7 @@ export default function SettingsPage() {
   async function saveAvatarSettings() {
     setAvatarBusy(true);
     try {
-      await api(`/api/users/${avatarFor.id}`, { method: 'PUT', body: { avatar_color: avatarColor, avatar_font: avatarFont } });
+      await api(`/api/users/${avatarFor.id}`, { method: 'PUT', body: { avatar_color: avatarColor, avatar_font: avatarFont, avatar_preset: avatarPreset } });
       if (avatarFile) {
         const fd = new FormData();
         fd.append('file', avatarFile);
@@ -319,13 +321,34 @@ export default function SettingsPage() {
                   ...avatarFor,
                   avatar_color: avatarColor,
                   avatar_font: avatarFont,
+                  avatar_preset: avatarPreset,
                   avatar_url: avatarFile ? avatarPreviewUrl : avatarFor?.avatar_url,
                 }}
                 size="size-16" textSize="text-xl" className="ring-1 ring-border" />
             </div>
 
             <div className="flex flex-col gap-2">
-              <Label>Letter color</Label>
+              <Label>Portrait <span className="font-normal text-muted-foreground">(sits on the letter color)</span></Label>
+              <div className="grid max-h-44 grid-cols-6 gap-2 overflow-y-auto rounded-xl border bg-muted/30 p-2.5">
+                <button type="button" onClick={() => setAvatarPreset('')} aria-label="No portrait, show the letter"
+                  className={cn('flex aspect-square items-center justify-center rounded-full text-sm text-white transition-transform',
+                    !avatarPreset ? 'ring-2 ring-foreground ring-offset-2 ring-offset-background' : 'opacity-70 hover:scale-105 hover:opacity-100')}
+                  style={{ backgroundColor: avatarColor }}>
+                  {(avatarFor?.display_name || avatarFor?.username || '?').charAt(0).toUpperCase()}
+                </button>
+                {AVATAR_PRESETS.map(id => (
+                  <button key={id} type="button" onClick={() => setAvatarPreset(id)} aria-label={`Portrait ${id}`}
+                    className={cn('aspect-square overflow-hidden rounded-full transition-transform',
+                      avatarPreset === id ? 'ring-2 ring-foreground ring-offset-2 ring-offset-background' : 'hover:scale-105')}
+                    style={{ backgroundColor: avatarColor }}>
+                    <img src={`/avatars/${id}.webp`} alt="" loading="lazy" className="size-full" draggable={false} />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Label>{avatarPreset ? 'Background color' : 'Letter color'}</Label>
               <div className="flex flex-wrap items-center gap-2">
                 {AVATAR_SWATCHES.map(hex => (
                   <button key={hex} type="button"

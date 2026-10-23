@@ -35,7 +35,7 @@ export default async function RootLayout({ children }) {
   // The nav shows the login's avatar; the token doesn't carry it.
   const user = session && {
     ...session,
-    ...(await queryOne('SELECT avatar_color, avatar_font, avatar_image_key AS avatar_url FROM users WHERE username = ?', [session.username])),
+    ...(await queryOne('SELECT avatar_color, avatar_font, avatar_preset, avatar_image_key AS avatar_url FROM users WHERE username = ?', [session.username])),
   };
   return (
     <html lang="en" className={`${hand.variable} ${figures.variable}`} suppressHydrationWarning>

@@ -15,7 +15,7 @@ export async function PUT(req, ctx) {
   // (colour, font); nothing else about a login can change there, and visitors can't change anything.
   if (process.env.DEMO_MODE === '1') {
     const [{ cookies }, { isOwnerPass }] = await Promise.all([import('next/headers'), import('@/lib/demo-leads')]);
-    const onlyStyle = Object.keys(b).every(k => k === 'avatar_color' || k === 'avatar_font');
+    const onlyStyle = Object.keys(b).every(k => ['avatar_color', 'avatar_font', 'avatar_preset'].includes(k));
     if (!onlyStyle || !isOwnerPass((await cookies()).get('demo_lead')?.value)) {
       return NextResponse.json({ error: 'Not available in the demo' }, { status: 403 });
     }
@@ -24,8 +24,8 @@ export async function PUT(req, ctx) {
     await execute('UPDATE users SET password = ? WHERE id = ?', [bcrypt.hashSync(b.password, 10), params.id]);
   }
   await execute(
-    'UPDATE users SET role = COALESCE(?, role), display_name = COALESCE(?, display_name), active = COALESCE(?, active), avatar_color = COALESCE(?, avatar_color), avatar_font = COALESCE(?, avatar_font) WHERE id = ?',
-    [b.role ?? null, b.display_name ?? null, b.active === undefined ? null : (b.active ? 1 : 0), b.avatar_color ?? null, b.avatar_font ?? null, params.id]);
+    'UPDATE users SET role = COALESCE(?, role), display_name = COALESCE(?, display_name), active = COALESCE(?, active), avatar_color = COALESCE(?, avatar_color), avatar_font = COALESCE(?, avatar_font), avatar_preset = COALESCE(?, avatar_preset) WHERE id = ?',
+    [b.role ?? null, b.display_name ?? null, b.active === undefined ? null : (b.active ? 1 : 0), b.avatar_color ?? null, b.avatar_font ?? null, b.avatar_preset ?? null, params.id]);
   return NextResponse.json({ ok: true });
 }
 

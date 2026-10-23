@@ -28,7 +28,10 @@ export const AVATAR_SWATCHES = [
   '#6366f1', '#84cc16', '#0ea5e9', '#ec4899',
 ];
 
-// Priority: uploaded image > custom color+font initial > hash-based fallback color.
+// Illustrated avatars in public/avatars/01..30.webp (cut from one sheet, transparent background).
+export const AVATAR_PRESETS = Array.from({ length: 30 }, (_, i) => String(i + 1).padStart(2, '0'));
+
+// Priority: uploaded image > illustrated preset > custom color+font initial > hash-based fallback color.
 export function UserAvatar({ user, size = 'size-9', textSize = 'text-xs', className, initialOnly = false }) {
   if (!user) return null; // e.g. dialog mid-close-animation with no user selected yet
 
@@ -40,6 +43,18 @@ export function UserAvatar({ user, size = 'size-9', textSize = 'text-xs', classN
     return (
       <img src={user.avatar_url} alt={label}
         className={cn(size, 'shrink-0 rounded-full object-cover ring-1 ring-border', className)} />
+    );
+  }
+
+  // Illustrated preset: transparent line drawing over the chosen letter color.
+  if (user.avatar_preset && !initialOnly) {
+    return (
+      <span
+        style={user.avatar_color ? { backgroundColor: user.avatar_color } : undefined}
+        className={cn(size, 'relative shrink-0 overflow-hidden rounded-full ring-1 ring-black/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.15)]',
+          !user.avatar_color && fallbackColorClass(user.username || label), className)}>
+        <img src={`/avatars/${user.avatar_preset}.webp`} alt={label} className="size-full object-cover" draggable={false} />
+      </span>
     );
   }
 

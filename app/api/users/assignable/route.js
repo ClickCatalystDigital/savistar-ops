@@ -8,6 +8,6 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   const rows = await queryAll(
-    'SELECT id, username, display_name, avatar_color, avatar_font, avatar_image_key AS avatar_url FROM users WHERE active = 1 ORDER BY display_name, username');
+    'SELECT id, username, display_name, avatar_color, avatar_font, avatar_preset, avatar_image_key AS avatar_url FROM users WHERE active = 1 ORDER BY display_name, username');
   return NextResponse.json(rows);
 }
