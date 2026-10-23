@@ -68,7 +68,7 @@ Everyone, regardless of role, can change their own password from the nav menu (�
 A butterfly button in the corner opens **Atelier AI** (owners can rename it in Settings → My assistant), a read-only chat over the
 app's data. Ported from reel-inventory's LS AI: Jev (`typesafe/jev-1.13`, via OpenRouter) only *chooses*
 the kind of question, the look-up, company, period and follow-up; code matches the names (clients,
-projects, orders, vendors, people) and runs a fixed, parameterised query (`lib/assistantTools.js`, 22
+projects, orders, vendors, people) and runs a fixed, parameterised query (`lib/assistantTools.js`, 27
 look-ups that use the same maths as the tabs). Answers are ledger tables, optionally with a short
 summary from a writing model. It never changes data.
 
@@ -76,8 +76,13 @@ summary from a writing model. It never changes data.
   last 4 shown), credit, model, answer mode, daily question limit, and the switch for data questions
   (on by default). Until a key is saved there, `OPENROUTER_API_KEY` is used. A list of questions it
   couldn't answer or that were thumbed down shows what to add next.
-- **Everyone** can ask. Staff get only their own tasks and their own cash entries; payroll and
-  advances are refused. Bank statements are not part of it.
+- **Everyone** can ask. Staff get only their own tasks and their own cash entries; payroll, advances,
+  the bank, money position and project profit are refused.
+- **Bank and profit** (owners, admins, managers): bank balance and bank transactions read every extracted
+  statement, reviewed or not; lines from unapproved ones are marked “not reviewed”, hidden lines are left out and
+  a line on two overlapping statements counts once. Money position = cash + latest bank closings + unpaid
+  invoices (vendor payables left out). Project profit = billed − materials (POs, returns, freight) − labour,
+  estimated from work logs; billed with no project linked is called out.
 - **Personas**, chosen by each person in Settings → My assistant (saved per login; Settings is now open to
   everyone, staff see only that tab): Plain (default), Studio partner,
   Site supervisor, Finance desk, Gentle guide (`lib/assistant-personas.js`). A persona turns on a short written answer

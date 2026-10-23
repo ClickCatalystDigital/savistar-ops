@@ -59,6 +59,18 @@ const CASES = [
   ['kitna paisa aaya is mahine', { type: 'table', tool: 'cash' }],
   ['late orders and overdue milestones', { type: 'table', tool: 'orders', second: 'milestones' }],
   ['unpaid invoices and cash this month', { type: 'table', tool: 'outstanding_invoices', second: 'cash' }],
+  // bank, overall position, project profit (the demo has no bank statements: these check routing, the tables are empty)
+  ['what is our bank balance?', { type: 'table', tool: 'bank_balance' }],
+  ['how much is in HDFC', { type: 'table', tool: 'bank_balance' }],
+  ['biggest debits from the bank in July', { type: 'table', tool: 'bank_transactions', has: ['Period=July 2026'] }],
+  ['what came into the bank last month?', { type: 'table', tool: 'bank_transactions' }],
+  ['bank payments to Rahul Kumar', { type: 'table', tool: 'bank_transactions' }],
+  ['how much money do we have?', { type: 'table', tool: 'money_position' }],
+  ['where do we stand financially', { type: 'table', tool: 'money_position' }],
+  ['what profit did we make on the Kapadia job?', { type: 'table', tool: 'project_profit' }],
+  ['which projects are most profitable?', { type: 'table', tool: 'project_profit' }],
+  ['mehta project mein kitna margin hai', { type: 'table', tool: 'project_profit' }],
+  ['what is the cash balance?', { type: 'table', tool: 'cash' }],
   ['tell me a joke about plywood', { type: 'text', text: /only help/i }],
   ['what should we charge northbridge next', { type: 'text', text: /only report/i }],
   // reminders and notes (drafts only; nothing is saved)
@@ -70,8 +82,7 @@ const CASES = [
   ['how do I log a site visit?', { type: 'text', text: /site visit/i }],
   ['how is payroll worked out?', { type: 'text', text: /days/i }],
   ['mark the Mehta invoice paid', { type: 'text', text: /only look things up/i }],
-  ['what is our bank balance?', { type: 'text', text: /bank/i }],
-  ['what profit did we make on the Kapadia job?', { type: 'text', text: /profit|margin/i }],
+  ['what is the value of our stock?', { type: 'text', text: /stock/i }],
   ['hello', { type: 'text', text: /^Hi/ }],
   ['write me a poem about chairs', { type: 'text', text: /only help/i }],
 ];
