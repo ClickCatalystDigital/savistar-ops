@@ -25,10 +25,14 @@ import { ArrowLeftIcon, PencilIcon, SendIcon, PlusIcon, XIcon, DownloadIcon } fr
 import { TrashIcon } from '@heroicons/react/24/outline';
 import { BRAND } from '@/lib/brand';
 import { StickyNote } from '@/components/sticky-note';
+import { QuoteStatus } from '@/components/quote-status';
+import { NewQuoteDialog } from '@/components/new-quote-dialog';
+import { displayStatus } from '@/lib/quote-math';
+import { todayISO } from '@/lib/date';
 
 const rupees = n => `₹${(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const EMPTY_ITEM = { description: '', hsn: '', gst_pct: 18, qty: 1, unit_price: 0 };
-const EMPTY_INVOICE = { company: 'savistar', project_id: 'none', invoice_no: '', title: '', client_pan: '', submitted_on: '', due_date: '', payment_terms: '', status: 'draft', notes: '', items: [{ ...EMPTY_ITEM }] };
+const EMPTY_INVOICE = { company: 'savistar', project_id: 'none', invoice_no: '', title: '', client_pan: '', submitted_on: '', due_date: '', payment_terms: '', status: 'draft', place_of_supply: 'same_state', notes: '', items: [{ ...EMPTY_ITEM }] };
 
 function invoiceTotals(items) {
   const subtotal = items.reduce((s, i) => s + (Number(i.qty) || 0) * (Number(i.unit_price) || 0), 0);
@@ -48,6 +52,7 @@ export default function ClientDetail() {
   const [invoiceOpen, setInvoiceOpen] = useState(false);
   const [invoiceId, setInvoiceId] = useState(null);
   const [invoice, setInvoice] = useState(EMPTY_INVOICE);
+  const [quoteOpen, setQuoteOpen] = useState(false);
 
   const load = useCallback(async () => {
     try { setClient(await api(`/api/clients/${id}`)); }
@@ -98,6 +103,7 @@ export default function ClientDetail() {
       due_date: full.due_date || '',
       payment_terms: full.payment_terms || '',
       status: full.status,
+      place_of_supply: full.place_of_supply || 'same_state',
       notes: full.notes || '',
       items: full.items.length ? full.items : [{ ...EMPTY_ITEM }],
     });
@@ -274,6 +280,43 @@ export default function ClientDetail() {
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Quotations</CardTitle>
+          <Button size="sm" onClick={() => setQuoteOpen(true)}><PlusIcon data-icon="inline-start" />New quote</Button>
+        </CardHeader>
+        <CardContent>
+          {client.quotations.length === 0 && <StickyNote className="my-6">No quotations yet.</StickyNote>}
+          {client.quotations.length > 0 && (
+            <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Quote</TableHead>
+                  <TableHead>For</TableHead>
+                  <TableHead>Dated</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {client.quotations.map(qt => (
+                  <TableRow key={qt.id} className="cursor-pointer" onClick={() => router.push(`/quotes/${qt.id}`)}>
+                    <TableCell className="font-medium">{qt.quote_no || `#${qt.id}`}{qt.revision > 1 && <span className="text-muted-foreground"> R{qt.revision}</span>}</TableCell>
+                    <TableCell className="max-w-56 truncate">{qt.title || '—'}</TableCell>
+                    <TableCell>{formatDate(qt.quoted_on)}</TableCell>
+                    <TableCell><QuoteStatus status={displayStatus(qt, todayISO())} /></TableCell>
+                    <TableCell className="text-right">{rupees(qt.subtotal + qt.tax)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+      <NewQuoteDialog open={quoteOpen} onOpenChange={setQuoteOpen} client={client} />
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Invoices</CardTitle>
           <Button size="sm" onClick={openNewInvoice}><PlusIcon data-icon="inline-start" />New invoice</Button>
         </CardHeader>
@@ -375,6 +418,18 @@ export default function ClientDetail() {
                 <Input value={invoice.payment_terms} onChange={e => setInvoice({ ...invoice, payment_terms: e.target.value })} placeholder="e.g. 50% advance" />
               </div>
               <div className="flex flex-col gap-2">
+                <Label>Site is in</Label>
+                <Select value={invoice.place_of_supply} onValueChange={v => setInvoice({ ...invoice, place_of_supply: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value="same_state">Our state (CGST + SGST)</SelectItem>
+                      <SelectItem value="other_state">Another state (IGST)</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-2">
                 <Label>Client PAN</Label>
                 <Input value={invoice.client_pan} onChange={e => setInvoice({ ...invoice, client_pan: e.target.value })} placeholder="Optional" />
               </div>
@@ -419,8 +474,12 @@ export default function ClientDetail() {
               {(() => { const t = invoiceTotals(invoice.items); return (
                 <>
                   <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>{rupees(t.subtotal)}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">CGST</span><span>{rupees(t.cgst)}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">SGST</span><span>{rupees(t.sgst)}</span></div>
+                  {invoice.place_of_supply === 'other_state'
+                    ? <div className="flex justify-between"><span className="text-muted-foreground">IGST</span><span>{rupees(t.cgst + t.sgst)}</span></div>
+                    : <>
+                        <div className="flex justify-between"><span className="text-muted-foreground">CGST</span><span>{rupees(t.cgst)}</span></div>
+                        <div className="flex justify-between"><span className="text-muted-foreground">SGST</span><span>{rupees(t.sgst)}</span></div>
+                      </>}
                   <div className="flex justify-between font-semibold"><span>Grand total</span><span>{rupees(t.total)}</span></div>
                 </>
               ); })()}

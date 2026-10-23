@@ -37,6 +37,12 @@ without `TURSO_URL` data goes to `./savistar-ops-local.db`.
 - **Clients** — shared client list for both companies; conversation log per client (optionally
   pinned to a project); per-client invoicing with GST PDF export (CGST/SGST split, company
   letterhead selector for Savistar/Saag)
+- **Quotes** — quotations built from the studio's own **BOQ library** (Quotes → BOQ library: started from
+  Ahrom Labs' central library in `lib/boq-library.js`, reworded and extended by the studio; their edits are never
+  overwritten, see `lib/boq-sync.js`). The editor has rooms, quantities from site dimensions (`lib/dims.js`), past
+  quoted rates per item, line checks that never block (`lib/boq-check.js`), payment stages that become draft invoices
+  once accepted, revisions (R2 keeps the number; R1 is kept as superseded), autosave, and a PDF with a summary page.
+  Sending adds a follow-up task. CGST/SGST or IGST by where the site is (invoices too). Plan: `QUOTATIONS-PLAN.md`
 - **Projects** (Savistar) — milestones checklist, site visits, linked Saag orders & vendor POs, conversations
 - **Orders** (Saag) — workshop orders; work history shows who worked on what part, when
 - **People** — employees (salary or daily wage), daily worksheet (attendance in/out + per-order work log with

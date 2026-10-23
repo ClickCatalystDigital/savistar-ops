@@ -43,7 +43,7 @@ Every login lands on Home (tasks and calendar). Records worth opening:
 | Invoice PDF | Acme Interiors / Acme Furniture sample letterheads |
 
 - **owner** (Meera Shah) and **manager** (Rohan Desai) see everything; **office** (Kavya Patel) has its own task due today and only its own cash entries.
-- Not in the app, so not in the demo: quotations, and recording a payment against an invoice. Bank statements and attachments are blocked in the demo (uploads).
+- Not in the app, so not in the demo: recording a payment against an invoice. Quotations arrive with the `quotations` branch; the sample quotes are added by Pujan with the owner pass after it merges (golden is never re-seeded). Bank statements and attachments are blocked in the demo (uploads).
 
 ## Fix found on the way
 

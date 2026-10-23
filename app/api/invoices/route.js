@@ -8,10 +8,10 @@ export async function POST(req) {
   if (items.length === 0) return NextResponse.json({ error: 'At least one line item is required' }, { status: 400 });
 
   const { lastId } = await execute(
-    `INSERT INTO invoices (client_id, project_id, company, invoice_no, title, client_pan, submitted_on, due_date, payment_terms, status, notes)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO invoices (client_id, project_id, company, invoice_no, title, client_pan, submitted_on, due_date, payment_terms, status, notes, place_of_supply)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [b.client_id, b.project_id || null, b.company || 'savistar', b.invoice_no || null, b.title || null, b.client_pan || null,
-     b.submitted_on || null, b.due_date || null, b.payment_terms || null, b.status || 'draft', b.notes || null]);
+     b.submitted_on || null, b.due_date || null, b.payment_terms || null, b.status || 'draft', b.notes || null, b.place_of_supply === 'other_state' ? 'other_state' : 'same_state']);
 
   for (let i = 0; i < items.length; i++) {
     const it = items[i];

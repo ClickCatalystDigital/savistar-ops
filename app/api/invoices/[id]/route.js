@@ -17,9 +17,9 @@ export async function PUT(req, ctx) {
 
   await execute(
     `UPDATE invoices SET project_id = ?, company = ?, invoice_no = ?, title = ?, client_pan = ?, submitted_on = ?, due_date = ?,
-       payment_terms = ?, status = ?, notes = ? WHERE id = ?`,
+       payment_terms = ?, status = ?, notes = ?, place_of_supply = ? WHERE id = ?`,
     [b.project_id || null, b.company || 'savistar', b.invoice_no || null, b.title || null, b.client_pan || null,
-     b.submitted_on || null, b.due_date || null, b.payment_terms || null, b.status || 'draft', b.notes || null, params.id]);
+     b.submitted_on || null, b.due_date || null, b.payment_terms || null, b.status || 'draft', b.notes || null, b.place_of_supply === 'other_state' ? 'other_state' : 'same_state', params.id]);
 
   await execute('DELETE FROM invoice_items WHERE invoice_id = ?', [params.id]);
   for (let i = 0; i < items.length; i++) {
