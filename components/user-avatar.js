@@ -66,9 +66,9 @@ export function UserAvatar({ user, size = 'size-9', textSize = 'text-xs', classN
     return (
       <span
         style={user.avatar_color ? { backgroundColor: user.avatar_color } : undefined}
-        className={cn(size, 'relative shrink-0 overflow-hidden rounded-full ring-1 ring-black/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.15)]',
+        className={cn(size, 'relative block shrink-0 overflow-hidden rounded-full ring-1 ring-black/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.15)]',
           !user.avatar_color && fallbackColorClass(user.username || label), className)}>
-        <img src={`/avatars/${user.avatar_preset}.webp`} alt={label} className="size-full object-cover" draggable={false} />
+        <img src={`/avatars/${user.avatar_preset}.webp`} alt={label} className="block size-full" draggable={false} />
       </span>
     );
   }

@@ -3,6 +3,7 @@
 import { PageTitle } from '@/components/page-title';
 import { NewButton } from '@/components/new-button';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { api, showToast, capitalize } from '@/lib/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -42,6 +43,7 @@ export default function SettingsPage() {
   const [avatarColor, setAvatarColor] = useState('#3b82f6');
   const [avatarFont, setAvatarFont] = useState('sans');
   const [avatarPreset, setAvatarPreset] = useState('');
+  const router = useRouter();
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState(null);
   const [customColorOpen, setCustomColorOpen] = useState(false);
@@ -63,6 +65,7 @@ export default function SettingsPage() {
     if (!file) return;
     if (file.type !== 'image/webp') { showToast('Please choose a .webp file', 'error'); return; }
     setAvatarFile(file);
+    setAvatarPreset(''); // an uploaded picture replaces the portrait
   }
 
   async function load() {
@@ -142,9 +145,15 @@ export default function SettingsPage() {
           throw new Error(err.error || 'Image upload failed');
         }
       }
+      // A portrait replaces an uploaded picture, otherwise the picture would keep hiding it.
+      if (avatarPreset && !avatarFile && avatarFor.avatar_url) {
+        const res = await fetch(`/api/users/${avatarFor.id}/avatar`, { method: 'DELETE', credentials: 'include' });
+        if (!res.ok) throw new Error('Could not remove the uploaded picture');
+      }
       showToast('Avatar updated');
       setAvatarFor(null);
       load();
+      router.refresh(); // the nav avatar is rendered on the server
     } catch (e) { showToast(e.message, 'error'); }
     setAvatarBusy(false);
   }
@@ -158,6 +167,7 @@ export default function SettingsPage() {
       setAvatarFor(f => ({ ...f, avatar_image_key: null, avatar_url: null }));
       showToast('Image removed');
       load();
+      router.refresh();
     } catch (e) { showToast(e.message, 'error'); }
     setAvatarBusy(false);
   }
@@ -312,7 +322,7 @@ export default function SettingsPage() {
         </DialogContent>
       </Dialog>
       <Dialog open={!!avatarFor} onOpenChange={o => !o && setAvatarFor(null)}>
-        <DialogContent>
+        <DialogContent className="max-h-[90dvh] overflow-y-auto">
           <DialogHeader><DialogTitle>Avatar — {avatarFor?.username}</DialogTitle></DialogHeader>
           <div className="flex flex-col gap-5">
             <div className="flex justify-center">
@@ -322,26 +332,26 @@ export default function SettingsPage() {
                   avatar_color: avatarColor,
                   avatar_font: avatarFont,
                   avatar_preset: avatarPreset,
-                  avatar_url: avatarFile ? avatarPreviewUrl : avatarFor?.avatar_url,
+                  avatar_url: avatarFile ? avatarPreviewUrl : (avatarPreset ? null : avatarFor?.avatar_url),
                 }}
                 size="size-16" textSize="text-xl" className="ring-1 ring-border" />
             </div>
 
             <div className="flex flex-col gap-2">
               <Label>Portrait <span className="font-normal text-muted-foreground">(sits on the letter color)</span></Label>
-              <div className="grid max-h-44 grid-cols-6 gap-2 overflow-y-auto rounded-xl border bg-muted/30 p-2.5">
+              <div className="grid max-h-48 grid-cols-6 justify-items-center gap-2 overflow-y-auto rounded-xl border bg-muted/30 p-2.5">
                 <button type="button" onClick={() => setAvatarPreset('')} aria-label="No portrait, show the letter"
-                  className={cn('flex aspect-square items-center justify-center rounded-full text-sm text-white transition-transform',
+                  className={cn('flex size-10 items-center justify-center rounded-full text-sm text-white transition-transform',
                     !avatarPreset ? 'ring-2 ring-foreground ring-offset-2 ring-offset-background' : 'opacity-70 hover:scale-105 hover:opacity-100')}
                   style={{ backgroundColor: avatarColor }}>
                   {(avatarFor?.display_name || avatarFor?.username || '?').charAt(0).toUpperCase()}
                 </button>
                 {AVATAR_PRESETS.map(id => (
-                  <button key={id} type="button" onClick={() => setAvatarPreset(id)} aria-label={`Portrait ${id}`}
-                    className={cn('aspect-square overflow-hidden rounded-full transition-transform',
+                  <button key={id} type="button" onClick={() => { setAvatarPreset(id); setAvatarFile(null); }} aria-label={`Portrait ${id}`}
+                    className={cn('size-10 overflow-hidden rounded-full transition-transform',
                       avatarPreset === id ? 'ring-2 ring-foreground ring-offset-2 ring-offset-background' : 'hover:scale-105')}
                     style={{ backgroundColor: avatarColor }}>
-                    <img src={`/avatars/${id}.webp`} alt="" loading="lazy" className="size-full" draggable={false} />
+                    <img src={`/avatars/${id}.webp`} alt="" loading="lazy" className="block size-full" draggable={false} />
                   </button>
                 ))}
               </div>
@@ -388,7 +398,7 @@ export default function SettingsPage() {
               )}
             </div>
 
-            <div className="flex flex-col gap-2">
+            {!avatarPreset && <div className="flex flex-col gap-2">
               <Label>Letter font</Label>
               <div className="flex gap-2">
                 {AVATAR_FONTS.map(f => (
@@ -400,12 +410,12 @@ export default function SettingsPage() {
                   </button>
                 ))}
               </div>
-            </div>
+            </div>}
 
             <div className="h-px bg-border" />
 
             <div className="flex flex-col gap-2">
-              <Label>Custom image <span className="font-normal text-muted-foreground">(.webp only, overrides color/font)</span></Label>
+              <Label>Custom image <span className="font-normal text-muted-foreground">(.webp, replaces the portrait)</span></Label>
               <label
                 onDragOver={e => { e.preventDefault(); setDragActive(true); }}
                 onDragLeave={() => setDragActive(false)}
@@ -429,7 +439,7 @@ export default function SettingsPage() {
                   </button>
                 </div>
               )}
-              {!avatarFile && avatarFor?.avatar_url && (
+              {!avatarFile && !avatarPreset && avatarFor?.avatar_url && (
                 <Button variant="outline" size="sm" onClick={removeAvatarImage} disabled={avatarBusy} className="w-fit">
                   Remove current image
                 </Button>
