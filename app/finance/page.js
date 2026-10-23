@@ -27,7 +27,7 @@ import {
   PencilIcon, PaperclipIcon, UploadIcon, ArrowLeftIcon,
   Loader2Icon, FileTextIcon, ExternalLinkIcon,
   ChevronLeftIcon, ChevronRightIcon, CopyIcon, EyeIcon, EyeOffIcon,
-  WalletIcon, LandmarkIcon, ArrowDownLeftIcon, ArrowUpRightIcon,
+  WalletIcon, LandmarkIcon, ArrowDownLeftIcon, ArrowUpRightIcon, TriangleAlertIcon, CheckIcon,
 } from 'lucide-react';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import { cn } from '@/lib/utils';
@@ -667,14 +667,15 @@ function BankTab() {
 function StatementReview({ docId, onBack, onOpen }) {
   const [doc, setDoc] = useState(null);
   const [busy, setBusy] = useState(false);
-  const [dirty, setDirty] = useState(false); // unsaved notes / hide toggles
+  const [dirty, setDirty] = useState(false); // unsaved notes, hide toggles or amount fixes
+  const [fixing, setFixing] = useState(false); // amount cells editable, to correct a misread line
   const stripRef = useRef(null);
   // Bring the open statement's chip into view (it's often the newest, at the far right).
   useEffect(() => {
     const chip = stripRef.current?.querySelector('[data-current]');
     if (chip) stripRef.current.scrollLeft = chip.offsetLeft - (stripRef.current.clientWidth - chip.offsetWidth) / 2;
   }, [doc?.id]);
-  const leave = (go) => { if (!dirty || confirm('Discard unsaved notes on this statement?')) { setDirty(false); go(); } };
+  const leave = (go) => { if (!dirty || confirm('Discard unsaved changes on this statement?')) { setDirty(false); go(); } };
   const lineFileRef = useRef(null);
   const [attachIndex, setAttachIndex] = useState(null);
 
@@ -698,6 +699,12 @@ function StatementReview({ docId, onBack, onOpen }) {
   function setComment(i, comment) {
     const items = [...doc.line_items];
     items[i] = { ...items[i], comment };
+    setDoc({ ...doc, line_items: items }); setDirty(true);
+  }
+
+  function setAmount(i, amount) {
+    const items = [...doc.line_items];
+    items[i] = { ...items[i], amount: Math.round(amount * 100) / 100 };
     setDoc({ ...doc, line_items: items }); setDirty(true);
   }
 
@@ -729,6 +736,14 @@ function StatementReview({ docId, onBack, onOpen }) {
   const totalCredit = visibleItems.filter(l => l.amount > 0).reduce((s, l) => s + l.amount, 0);
   const totalDebit = visibleItems.filter(l => l.amount < 0).reduce((s, l) => s - l.amount, 0);
 
+  // Do the extracted lines reach the statement's own closing balance? Every line counts, hidden ones too
+  // (those are real lines of this statement, hidden only because another upload repeats them).
+  const allIn = doc.line_items.filter(l => l.amount > 0).reduce((s, l) => s + l.amount, 0);
+  const allOut = doc.line_items.filter(l => l.amount < 0).reduce((s, l) => s - l.amount, 0);
+  const reached = doc.opening_balance != null ? Math.round((Number(doc.opening_balance) + allIn - allOut) * 100) / 100 : null;
+  const off = reached != null && doc.closing_balance != null ? Math.round((reached - Number(doc.closing_balance)) * 100) / 100 : null;
+  const addsUp = off == null || Math.abs(off) < 1;
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-3">
@@ -740,7 +755,7 @@ function StatementReview({ docId, onBack, onOpen }) {
             {hiddenCount > 0 && ` · ${hiddenCount} hidden`}
           </p>
         </div>
-        <Button variant="outline" onClick={() => save()} disabled={busy}>Save notes</Button>
+        <Button variant="outline" onClick={() => save()} disabled={busy}>Save changes</Button>
         {doc.status !== 'approved' && <Button onClick={() => save('approved')} disabled={busy}>Approve</Button>}
       </div>
 
@@ -766,6 +781,36 @@ function StatementReview({ docId, onBack, onOpen }) {
                 {t.kind === 'gap' ? 'Missing' : 'Overlap'} {formatDate(t.from)}{t.to !== t.from ? ` – ${formatDate(t.to)}` : ''}
               </span>
             ))}
+          </div>
+        </div>
+      )}
+
+      {off != null && (!addsUp || fixing) && (
+        <div className="paper-surface flex flex-wrap items-center gap-3 rounded-xl px-4 py-3">
+          <span className={cn('grid size-8 shrink-0 place-items-center rounded-full',
+            addsUp ? 'bg-success/10 text-success' : 'bg-warning/15 text-amber-700 dark:text-amber-500')}>
+            {addsUp ? <CheckIcon className="size-4" /> : <TriangleAlertIcon className="size-4" />}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="font-hand text-[1.05rem] leading-snug">
+              {addsUp ? 'The lines add up to the closing balance now.' : <>The lines don&apos;t add up: off by <span className="figures text-[0.9em]">₹{rupees(off)}</span></>}
+            </p>
+            <p className="figures text-xs text-muted-foreground">
+              ₹{rupees(Number(doc.opening_balance))} opening + ₹{rupees(allIn)} in − ₹{rupees(allOut)} out = {reached < 0 ? '−' : ''}₹{rupees(reached)} · statement closes at {doc.closing_balance < 0 ? '−' : ''}₹{rupees(Number(doc.closing_balance))}
+            </p>
+            {!addsUp && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                A line&apos;s amount or in/out was probably misread. Compare with the PDF and fix it; until it adds up the assistant flags this statement in its bank answers.
+              </p>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {doc.file_url && (
+              <Button asChild variant="outline" size="sm"><a href={doc.file_url} target="_blank" rel="noreferrer"><ExternalLinkIcon data-icon="inline-start" />Open PDF</a></Button>
+            )}
+            <Button size="sm" variant={fixing ? 'default' : 'outline'} onClick={() => setFixing(f => !f)}>
+              {fixing ? 'Done fixing' : <><PencilIcon data-icon="inline-start" />Fix amounts</>}
+            </Button>
           </div>
         </div>
       )}
@@ -813,7 +858,17 @@ function StatementReview({ docId, onBack, onOpen }) {
                   )}
                 </TableCell>
                 <TableCell className={`whitespace-nowrap text-right font-medium ${l.amount > 0 ? 'text-green-700 dark:text-green-500' : ''}`}>
-                  {l.amount > 0 ? '+' : ''}₹{Math.abs(l.amount).toLocaleString('en-IN')}
+                  {fixing ? (
+                    <div className="flex items-center justify-end gap-1">
+                      <Button variant="outline" size="xs" className="w-10" onClick={() => setAmount(i, -l.amount)}
+                        aria-label={l.amount > 0 ? 'Money in; switch to out' : 'Money out; switch to in'} title="Switch in / out">
+                        {l.amount > 0 ? 'In' : 'Out'}
+                      </Button>
+                      <Input type="number" min="0" step="0.01" inputMode="decimal" aria-label="Amount"
+                        value={Math.abs(l.amount)} onChange={e => setAmount(i, (l.amount > 0 ? 1 : -1) * (Number(e.target.value) || 0))}
+                        className="figures h-8 w-28 text-right" />
+                    </div>
+                  ) : <>{l.amount > 0 ? '+' : ''}₹{Math.abs(l.amount).toLocaleString('en-IN')}</>}
                 </TableCell>
                 <TableCell>
                   <Input value={l.comment || ''} placeholder="Internal note…" onChange={e => setComment(i, e.target.value)} className="h-8" disabled={l.ignored} />
