@@ -4,6 +4,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { getSessionUser } from '@/lib/auth';
 import DemoAnalytics from '@/components/DemoAnalytics';
+import DemoWhatsApp from '@/components/DemoWhatsApp';
 import { BRAND } from '@/lib/brand';
 import { Architects_Daughter, Fira_Code } from 'next/font/google';
 import { queryOne } from '@/lib/db';
@@ -49,6 +50,7 @@ export default async function RootLayout({ children }) {
           )}
         </TooltipProvider>
         <Toaster position="top-center" richColors />
+        {process.env.DEMO_MODE === '1' && <DemoWhatsApp signedIn={!!user} />}
         {process.env.DEMO_MODE === '1' && <DemoAnalytics />}
       </body>
     </html>
