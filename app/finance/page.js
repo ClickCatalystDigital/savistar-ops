@@ -26,6 +26,7 @@ import {
 import {
   PencilIcon, PaperclipIcon, UploadIcon, ArrowLeftIcon,
   Loader2Icon, FileTextIcon, ExternalLinkIcon,
+  ChevronLeftIcon, ChevronRightIcon, CopyIcon, EyeIcon, EyeOffIcon,
 } from 'lucide-react';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import { cn } from '@/lib/utils';
@@ -363,8 +364,13 @@ function AttachmentsDialog({ entity, onClose }) {
 
 /* ---------------- Bank statements ---------------- */
 
+const PAGE_SIZES = [10, 20, 30, 50, 100];
+
 function BankTab() {
   const [docs, setDocs] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   const [selected, setSelected] = useState(null); // doc id under review
   const [bankName, setBankName] = useState('');
   const [busy, setBusy] = useState(false);
@@ -374,9 +380,14 @@ function BankTab() {
   const [remember, setRemember] = useState(true);
 
   const load = useCallback(async () => {
-    setDocs(await api('/api/documents'));
-  }, []);
+    const data = await api(`/api/documents?page=${page}&pageSize=${pageSize}`);
+    if (!data.rows.length && page > 1) return setPage(p => p - 1); // last row on this page was deleted
+    setDocs(data.rows);
+    setTotal(data.total);
+  }, [page, pageSize]);
   useEffect(() => { load(); }, [load]);
+
+  function changePageSize(v) { setPageSize(Number(v)); setPage(1); }
 
   // Poll while any statement is still being read.
   useEffect(() => {
@@ -410,7 +421,7 @@ function BankTab() {
       setBankName('');
       setPwPrompt(null);
       setPwValue('');
-      load();
+      if (page === 1) load(); else setPage(1); // new upload sorts first; jump there if we weren't already
     } catch (e) { showToast(e.message, 'error'); }
     finally { setBusy(false); }
   }
@@ -467,9 +478,11 @@ function BankTab() {
               />
             </div>
             <div className="flex items-center gap-2">
-              <Checkbox id="remember-pw" checked={remember} onCheckedChange={setRemember} />
+              <Checkbox id="remember-pw" checked={remember && !!bankName.trim()} onCheckedChange={setRemember} disabled={!bankName.trim()} />
               <Label htmlFor="remember-pw" className="text-sm font-normal">
-                Remember for "{bankName || 'this bank'}" — don't ask again
+                {bankName.trim()
+                  ? `Remember for "${bankName.trim()}" — don't ask again`
+                  : 'Add a bank name above to remember this password'}
               </Label>
             </div>
           </div>
@@ -532,6 +545,30 @@ function BankTab() {
             ))}
           </TableBody>
         </Table>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <span>Rows per page</span>
+            <Select value={String(pageSize)} onValueChange={changePageSize}>
+              <SelectTrigger className="h-8 w-[4.5rem]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {PAGE_SIZES.map(n => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-3">
+            <span>Page {page} of {Math.max(1, Math.ceil(total / pageSize))} · {total} total</span>
+            <div className="flex items-center gap-1">
+              <Button variant="outline" size="icon-sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)} aria-label="Previous page">
+                <ChevronLeftIcon className="size-4" />
+              </Button>
+              <Button variant="outline" size="icon-sm" disabled={page >= Math.ceil(total / pageSize)} onClick={() => setPage(p => p + 1)} aria-label="Next page">
+                <ChevronRightIcon className="size-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -565,6 +602,12 @@ function StatementReview({ docId, onBack }) {
     setDoc({ ...doc, line_items: items });
   }
 
+  function toggleIgnored(i) {
+    const items = [...doc.line_items];
+    items[i] = { ...items[i], ignored: !items[i].ignored };
+    setDoc({ ...doc, line_items: items });
+  }
+
   async function uploadLineFile(e) {
     const file = e.target.files?.[0];
     if (!file || attachIndex == null) return;
@@ -582,8 +625,10 @@ function StatementReview({ docId, onBack }) {
 
   if (!doc) return <p className="py-8 text-center text-muted-foreground">Loading…</p>;
 
-  const totalCredit = doc.line_items.filter(l => l.amount > 0).reduce((s, l) => s + l.amount, 0);
-  const totalDebit = doc.line_items.filter(l => l.amount < 0).reduce((s, l) => s - l.amount, 0);
+  const visibleItems = doc.line_items.filter(l => !l.ignored);
+  const hiddenCount = doc.line_items.length - visibleItems.length;
+  const totalCredit = visibleItems.filter(l => l.amount > 0).reduce((s, l) => s + l.amount, 0);
+  const totalDebit = visibleItems.filter(l => l.amount < 0).reduce((s, l) => s - l.amount, 0);
 
   return (
     <div className="flex flex-col gap-4">
@@ -592,7 +637,8 @@ function StatementReview({ docId, onBack }) {
         <div className="min-w-0 flex-1">
           <h2 className="truncate text-lg font-semibold">{doc.bank_name || 'Bank'} · {doc.account_no || 'account'}</h2>
           <p className="text-sm text-muted-foreground">
-            {doc.statement_from ? `${formatDate(doc.statement_from)} – ${formatDate(doc.statement_to)}` : 'Period unknown'} · {doc.line_items.length} transactions
+            {doc.statement_from ? `${formatDate(doc.statement_from)} – ${formatDate(doc.statement_to)}` : 'Period unknown'} · {visibleItems.length} transaction{visibleItems.length === 1 ? '' : 's'}
+            {hiddenCount > 0 && ` · ${hiddenCount} hidden`}
           </p>
         </div>
         <Button variant="outline" onClick={() => save()} disabled={busy}>Save notes</Button>
@@ -626,27 +672,43 @@ function StatementReview({ docId, onBack }) {
           </TableHeader>
           <TableBody>
             {doc.line_items.map((l, i) => (
-              <TableRow key={i}>
+              <TableRow key={i} className={cn(l.ignored && 'opacity-50')}>
                 <TableCell className="whitespace-nowrap">{formatDate(l.date)}</TableCell>
                 <TableCell className="max-w-md">
-                  <p className="truncate text-sm" title={l.description}>{l.description}</p>
+                  <p className={cn('truncate text-sm', l.ignored && 'line-through')} title={l.description}>{l.description}</p>
+                  {l.duplicate_of && (
+                    <Badge variant="outline" className="mt-1 gap-1 text-amber-700 dark:text-amber-500"
+                      title="Possible duplicate: the same date, amount and description appear on another statement, usually because two uploads overlap">
+
+                      <CopyIcon className="size-3" data-icon="inline-start" />
+                      Also in {l.duplicate_of.bank_name || l.duplicate_of.original_filename || 'another statement'}
+                      {l.duplicate_of.statement_from && ` · ${formatDate(l.duplicate_of.statement_from)} – ${formatDate(l.duplicate_of.statement_to)}`}
+                    </Badge>
+                  )}
                 </TableCell>
                 <TableCell className={`whitespace-nowrap text-right font-medium ${l.amount > 0 ? 'text-green-700 dark:text-green-500' : ''}`}>
                   {l.amount > 0 ? '+' : ''}₹{Math.abs(l.amount).toLocaleString('en-IN')}
                 </TableCell>
                 <TableCell>
-                  <Input value={l.comment || ''} placeholder="Internal note…" onChange={e => setComment(i, e.target.value)} className="h-8" />
+                  <Input value={l.comment || ''} placeholder="Internal note…" onChange={e => setComment(i, e.target.value)} className="h-8" disabled={l.ignored} />
                 </TableCell>
                 <TableCell className="text-right">
-                  {l.attachment_url ? (
-                    <Button asChild variant="ghost" size="icon-sm" aria-label="Open receipt">
-                      <a href={l.attachment_url} target="_blank" rel="noreferrer"><FileTextIcon /></a>
-                    </Button>
-                  ) : (
-                    <Button variant="ghost" size="icon-sm" onClick={() => { setAttachIndex(i); lineFileRef.current?.click(); }} aria-label="Attach receipt">
-                      <PaperclipIcon className="text-muted-foreground" />
-                    </Button>
-                  )}
+                  <div className="flex items-center justify-end gap-1">
+                    {(l.duplicate_of || l.ignored) && (
+                      <Button variant="ghost" size="icon-sm" onClick={() => toggleIgnored(i)} aria-label={l.ignored ? 'Unhide transaction' : 'Hide duplicate transaction'}>
+                        {l.ignored ? <EyeIcon className="text-muted-foreground" /> : <EyeOffIcon className="text-amber-700 dark:text-amber-500" />}
+                      </Button>
+                    )}
+                    {l.attachment_url ? (
+                      <Button asChild variant="ghost" size="icon-sm" aria-label="Open receipt">
+                        <a href={l.attachment_url} target="_blank" rel="noreferrer"><FileTextIcon /></a>
+                      </Button>
+                    ) : (
+                      <Button variant="ghost" size="icon-sm" onClick={() => { setAttachIndex(i); lineFileRef.current?.click(); }} aria-label="Attach receipt">
+                        <PaperclipIcon className="text-muted-foreground" />
+                      </Button>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

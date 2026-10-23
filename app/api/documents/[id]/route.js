@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { execute, softDelete } from '@/lib/db';
-import { getDocument } from '@/lib/extract';
+import { getDocument, withDuplicateFlags } from '@/lib/extract';
 import { getUserFromRequest, requireApprover, requireNonStaff } from '@/lib/auth';
 
 export async function GET(req, ctx) {
@@ -9,6 +9,7 @@ export async function GET(req, ctx) {
   if (guard) return guard;
   const doc = await getDocument(params.id);
   if (!doc) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  await withDuplicateFlags(doc);
   return NextResponse.json(doc);
 }
 
@@ -20,6 +21,9 @@ export async function PUT(req, ctx) {
   const b = await req.json();
   const doc = await getDocument(params.id);
   if (!doc) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  // duplicate_of is computed fresh on every GET (lib/extract.js withDuplicateFlags) — never store it,
+  // or it'd go stale the moment another statement changes.
+  const lineItems = (b.line_items ?? doc.line_items).map(({ duplicate_of, ...rest }) => rest);
   await execute(
     `UPDATE documents SET bank_name = ?, account_no = ?, statement_from = ?, statement_to = ?,
        opening_balance = ?, closing_balance = ?, total_debit = ?, total_credit = ?, line_items = ?, status = ?
@@ -28,7 +32,7 @@ export async function PUT(req, ctx) {
      b.statement_from ?? doc.statement_from, b.statement_to ?? doc.statement_to,
      b.opening_balance ?? doc.opening_balance, b.closing_balance ?? doc.closing_balance,
      b.total_debit ?? doc.total_debit, b.total_credit ?? doc.total_credit,
-     JSON.stringify(b.line_items ?? doc.line_items),
+     JSON.stringify(lineItems),
      b.status ?? doc.status, params.id]);
   return NextResponse.json({ ok: true });
 }

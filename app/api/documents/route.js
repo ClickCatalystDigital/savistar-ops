@@ -1,6 +1,8 @@
 // Bank statements: list + upload (PDF → R2 → async AI extraction).
 import { NextResponse } from 'next/server';
-import { queryAll, execute } from '@/lib/db';
+import { queryAll, queryOne, execute } from '@/lib/db';
+
+const PAGE_SIZES = [10, 20, 30, 50, 100];
 import { uploadToR2, isR2Configured } from '@/lib/r2';
 import { runExtraction } from '@/lib/extract';
 import { getUserFromRequest, requireNonStaff } from '@/lib/auth';
@@ -12,12 +14,19 @@ export async function GET(req) {
   // Stale 'reading' rows (server restarted mid-extraction) get failed after 5 min.
   await execute(`UPDATE documents SET status = 'extract_failed', extract_error = 'Timeout'
     WHERE status = 'reading' AND created_at < datetime('now', '-5 minutes') AND is_deleted_record = 0`);
+
+  const { searchParams } = new URL(req.url);
+  const pageSize = PAGE_SIZES.includes(Number(searchParams.get('pageSize'))) ? Number(searchParams.get('pageSize')) : 20;
+  const page = Math.max(1, Number(searchParams.get('page')) || 1);
+
+  const { total } = await queryOne(`SELECT COUNT(*) AS total FROM documents WHERE is_deleted_record = 0`);
   const rows = await queryAll(
     `SELECT id, doc_type, original_filename, file_url, status, bank_name, account_no,
        statement_from, statement_to, opening_balance, closing_balance, total_debit, total_credit,
        extract_error, uploaded_by, created_at
-     FROM documents WHERE is_deleted_record = 0 ORDER BY created_at DESC`);
-  return NextResponse.json(rows);
+     FROM documents WHERE is_deleted_record = 0 ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+    [pageSize, (page - 1) * pageSize]);
+  return NextResponse.json({ rows, total, page, pageSize });
 }
 
 export async function POST(req) {
