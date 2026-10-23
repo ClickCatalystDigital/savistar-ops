@@ -338,8 +338,8 @@ export default function SettingsPage() {
             </div>
 
             <div className="flex flex-col gap-2">
-              <Label>Portrait <span className="font-normal text-muted-foreground">(sits on the letter color)</span></Label>
-              <div className="grid max-h-48 grid-cols-6 justify-items-center gap-2 overflow-y-auto rounded-xl border bg-muted/30 p-2.5">
+              <Label className="flex-wrap gap-x-1.5 gap-y-0">Portrait <span className="font-normal text-muted-foreground">(sits on the letter color)</span></Label>
+              <div className="grid max-h-48 grid-cols-[repeat(auto-fill,minmax(2.75rem,1fr))] justify-items-center gap-y-2 overflow-y-auto rounded-xl border bg-muted/30 p-2.5">
                 <button type="button" onClick={() => setAvatarPreset('')} aria-label="No portrait, show the letter"
                   className={cn('flex size-10 items-center justify-center rounded-full text-sm text-white transition-transform',
                     !avatarPreset ? 'ring-2 ring-foreground ring-offset-2 ring-offset-background' : 'opacity-70 hover:scale-105 hover:opacity-100')}
@@ -415,7 +415,7 @@ export default function SettingsPage() {
             <div className="h-px bg-border" />
 
             <div className="flex flex-col gap-2">
-              <Label>Custom image <span className="font-normal text-muted-foreground">(.webp, replaces the portrait)</span></Label>
+              <Label className="flex-wrap gap-x-1.5 gap-y-0">Custom image <span className="font-normal text-muted-foreground">(.webp, replaces the portrait)</span></Label>
               <label
                 onDragOver={e => { e.preventDefault(); setDragActive(true); }}
                 onDragLeave={() => setDragActive(false)}
