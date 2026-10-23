@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { execute, softDelete } from '@/lib/db';
+import { execute, queryAll, softDelete } from '@/lib/db';
 import { getDocument, withDuplicateFlags } from '@/lib/extract';
 import { getUserFromRequest, requireApprover, requireNonStaff } from '@/lib/auth';
 
@@ -10,6 +10,12 @@ export async function GET(req, ctx) {
   const doc = await getDocument(params.id);
   if (!doc) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   await withDuplicateFlags(doc);
+  // Every statement of the same account (this one included), oldest period first, for the
+  // "Statements for this account" strip and its gap/overlap check.
+  doc.account_statements = doc.account_no ? await queryAll(
+    `SELECT id, bank_name, statement_from, statement_to, status FROM documents
+     WHERE account_no = ? AND is_deleted_record = 0 AND statement_from IS NOT NULL
+     ORDER BY statement_from, created_at`, [doc.account_no]) : [];
   return NextResponse.json(doc);
 }
 

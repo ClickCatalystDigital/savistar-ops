@@ -22,8 +22,19 @@ export async function GET(req) {
   // ?month=YYYY-MM: statements whose period overlaps that month (dates are YYYY-MM-DD strings,
   // so '-31' is a safe month end for the comparison even in short months).
   const month = /^\d{4}-\d{2}$/.test(searchParams.get('month') || '') ? searchParams.get('month') : null;
-  const where = month ? 'is_deleted_record = 0 AND statement_from <= ? AND statement_to >= ?' : 'is_deleted_record = 0';
-  const args = month ? [`${month}-31`, `${month}-01`] : [];
+  const account = searchParams.get('account') || null; // extracted account_no, not the typed label
+  const conds = ['is_deleted_record = 0'], args = [];
+  if (month) { conds.push('statement_from <= ? AND statement_to >= ?'); args.push(`${month}-31`, `${month}-01`); }
+  if (account) { conds.push('account_no = ?'); args.push(account); }
+  const where = conds.join(' AND ');
+
+  // Every account seen so far, for the filter: label from its newest statement.
+  const accounts = await queryAll(
+    `SELECT account_no, COUNT(*) AS statements,
+       (SELECT d2.bank_name FROM documents d2 WHERE d2.account_no = d.account_no AND d2.is_deleted_record = 0
+        ORDER BY d2.created_at DESC LIMIT 1) AS bank_name
+     FROM documents d WHERE is_deleted_record = 0 AND account_no IS NOT NULL AND account_no != ''
+     GROUP BY account_no ORDER BY bank_name, account_no`);
 
   const { total } = await queryOne(`SELECT COUNT(*) AS total FROM documents WHERE ${where}`, args);
   const rows = await queryAll(
@@ -32,7 +43,7 @@ export async function GET(req) {
        extract_error, uploaded_by, created_at
      FROM documents WHERE ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
     [...args, pageSize, (page - 1) * pageSize]);
-  return NextResponse.json({ rows, total, page, pageSize });
+  return NextResponse.json({ rows, total, page, pageSize, accounts });
 }
 
 export async function POST(req) {

@@ -65,6 +65,27 @@ function Stat({ label, value, tone, icon: Icon, hint, hero }) {
 
 const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
+const accountLabel = (a) => `${a.bank_name || 'Bank'} · …${String(a.account_no).slice(-4)}`;
+const addDays = (ymd, n) => { const d = new Date(`${ymd}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+
+// One account's statements in date order, with what's missing or doubled between neighbours.
+// Sharing a boundary day ("01 Jul – 01 Aug" then "01 Aug – …") is normal bank printing, not an overlap.
+function accountTimeline(stmts) {
+  const out = [];
+  stmts.forEach((s, i) => {
+    const prev = stmts[i - 1];
+    if (prev?.statement_to && s.statement_from) {
+      if (s.statement_from > addDays(prev.statement_to, 1)) {
+        out.push({ kind: 'gap', from: addDays(prev.statement_to, 1), to: addDays(s.statement_from, -1) });
+      } else if (s.statement_from < prev.statement_to) {
+        out.push({ kind: 'overlap', from: s.statement_from, to: s.statement_to && s.statement_to < prev.statement_to ? s.statement_to : prev.statement_to });
+      }
+    }
+    out.push({ kind: 'statement', ...s });
+  });
+  return out;
+}
+
 export default function FinancePage() {
   const [me, setMe] = useState(null);
   useEffect(() => { api('/api/me').then(setMe).catch(() => {}); }, []);
@@ -412,6 +433,8 @@ function BankTab() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [month, setMonth] = useState(''); // YYYY-MM: statements whose period overlaps it
+  const [account, setAccount] = useState('all'); // extracted account_no
+  const [accounts, setAccounts] = useState([]);
   const [selected, setSelected] = useState(null); // doc id under review
   const [bankName, setBankName] = useState('');
   const [busy, setBusy] = useState(false);
@@ -421,15 +444,20 @@ function BankTab() {
   const [remember, setRemember] = useState(true);
 
   const load = useCallback(async () => {
-    const data = await api(`/api/documents?page=${page}&pageSize=${pageSize}${month ? `&month=${month}` : ''}`);
+    const q = new URLSearchParams({ page, pageSize });
+    if (month) q.set('month', month);
+    if (account !== 'all') q.set('account', account);
+    const data = await api(`/api/documents?${q}`);
     if (!data.rows.length && page > 1) return setPage(p => p - 1); // last row on this page was deleted
     setDocs(data.rows);
     setTotal(data.total);
-  }, [page, pageSize, month]);
+    setAccounts(data.accounts);
+  }, [page, pageSize, month, account]);
   useEffect(() => { load(); }, [load]);
 
   function changePageSize(v) { setPageSize(Number(v)); setPage(1); }
   function changeMonth(v) { setMonth(v); setPage(1); }
+  function changeAccount(v) { setAccount(v); setPage(1); }
 
   // Poll while any statement is still being read.
   useEffect(() => {
@@ -481,7 +509,7 @@ function BankTab() {
   }
 
   if (selected) {
-    return <StatementReview docId={selected} onBack={() => { setSelected(null); load(); }} />;
+    return <StatementReview docId={selected} onOpen={setSelected} onBack={() => { setSelected(null); load(); }} />;
   }
 
   return (
@@ -538,9 +566,24 @@ function BankTab() {
         </DialogContent>
       </Dialog>
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <Select value={account} onValueChange={changeAccount}>
+          <SelectTrigger className="w-60" aria-label="Account"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem value="all">All accounts</SelectItem>
+              {accounts.map(a => (
+                <SelectItem key={a.account_no} value={a.account_no}>
+                  {accountLabel(a)} <span className="figures text-xs text-muted-foreground">({a.statements})</span>
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
         <Input type="month" value={month} onChange={e => changeMonth(e.target.value)} className="w-44" aria-label="Statements covering month" />
-        {month && <Button variant="ghost" size="sm" onClick={() => changeMonth('')}>All months</Button>}
+        {(month || account !== 'all') && (
+          <Button variant="ghost" size="sm" onClick={() => { setMonth(''); setAccount('all'); setPage(1); }}>Clear filters</Button>
+        )}
       </div>
 
       <div className="paper-surface overflow-hidden rounded-lg">
@@ -557,7 +600,7 @@ function BankTab() {
           </TableHeader>
           <TableBody>
             {docs.length === 0 && (
-              <TableRow><TableCell colSpan={6} className="py-8"><StickyNote>{month ? 'No statements cover this month.' : 'No statements uploaded yet.'}</StickyNote></TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="py-8"><StickyNote>{month || account !== 'all' ? 'No statements match these filters.' : 'No statements uploaded yet.'}</StickyNote></TableCell></TableRow>
             )}
             {docs.map(d => (
               <TableRow key={d.id} className="group">
@@ -621,9 +664,17 @@ function BankTab() {
   );
 }
 
-function StatementReview({ docId, onBack }) {
+function StatementReview({ docId, onBack, onOpen }) {
   const [doc, setDoc] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [dirty, setDirty] = useState(false); // unsaved notes / hide toggles
+  const stripRef = useRef(null);
+  // Bring the open statement's chip into view (it's often the newest, at the far right).
+  useEffect(() => {
+    const chip = stripRef.current?.querySelector('[data-current]');
+    if (chip) stripRef.current.scrollLeft = chip.offsetLeft - (stripRef.current.clientWidth - chip.offsetWidth) / 2;
+  }, [doc?.id]);
+  const leave = (go) => { if (!dirty || confirm('Discard unsaved notes on this statement?')) { setDirty(false); go(); } };
   const lineFileRef = useRef(null);
   const [attachIndex, setAttachIndex] = useState(null);
 
@@ -636,6 +687,7 @@ function StatementReview({ docId, onBack }) {
     setBusy(true);
     try {
       await api(`/api/documents/${docId}`, { method: 'PUT', body: { line_items: doc.line_items, bank_name: doc.bank_name, status: status || doc.status } });
+      setDirty(false);
       showToast(status === 'approved' ? 'Statement approved' : 'Saved');
       if (status === 'approved') onBack();
       else load();
@@ -646,13 +698,13 @@ function StatementReview({ docId, onBack }) {
   function setComment(i, comment) {
     const items = [...doc.line_items];
     items[i] = { ...items[i], comment };
-    setDoc({ ...doc, line_items: items });
+    setDoc({ ...doc, line_items: items }); setDirty(true);
   }
 
   function toggleIgnored(i) {
     const items = [...doc.line_items];
     items[i] = { ...items[i], ignored: !items[i].ignored };
-    setDoc({ ...doc, line_items: items });
+    setDoc({ ...doc, line_items: items }); setDirty(true);
   }
 
   async function uploadLineFile(e) {
@@ -680,7 +732,7 @@ function StatementReview({ docId, onBack }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon-sm" onClick={onBack} aria-label="Back"><ArrowLeftIcon /></Button>
+        <Button variant="ghost" size="icon-sm" onClick={() => leave(onBack)} aria-label="Back"><ArrowLeftIcon /></Button>
         <div className="min-w-0 flex-1">
           <h2 className="truncate text-lg font-semibold">{doc.bank_name || 'Bank'} · {doc.account_no || 'account'}</h2>
           <p className="text-sm text-muted-foreground">
@@ -691,6 +743,32 @@ function StatementReview({ docId, onBack }) {
         <Button variant="outline" onClick={() => save()} disabled={busy}>Save notes</Button>
         {doc.status !== 'approved' && <Button onClick={() => save('approved')} disabled={busy}>Approve</Button>}
       </div>
+
+      {doc.account_statements?.length > 1 && (
+        <div className="paper-surface flex flex-col gap-2 rounded-xl px-4 py-3">
+          <span className="font-hand text-[0.95rem] text-muted-foreground">
+            Statements for this account <span className="figures text-xs">({doc.account_statements.length})</span>
+          </span>
+          <div ref={stripRef} className="scrollbar-none relative -mx-1 flex gap-2 overflow-x-auto scroll-smooth px-1 pb-1">
+            {accountTimeline(doc.account_statements).map((t, i) => t.kind === 'statement' ? (
+              <button key={t.id} type="button" disabled={t.id === doc.id} data-current={t.id === doc.id || undefined}
+                onClick={() => leave(() => onOpen(t.id))}
+                className={cn('figures flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition-colors',
+                  t.id === doc.id ? 'border-primary bg-primary/10 text-primary' : 'bg-background/60 hover:border-primary/50 hover:text-primary')}>
+                <span aria-hidden className={cn('size-1.5 rounded-full', t.status === 'approved' ? 'bg-success' : t.status === 'pending' ? 'bg-info' : 'bg-muted-foreground')} />
+                {formatDate(t.statement_from)} – {t.statement_to ? formatDate(t.statement_to) : '?'}
+              </button>
+            ) : (
+              <span key={`${t.kind}-${i}`}
+                className={cn('figures flex shrink-0 items-center rounded-full border border-dashed px-3 py-1 text-xs',
+                  t.kind === 'gap' ? 'border-danger/50 text-danger' : 'border-warning/60 text-amber-700 dark:text-amber-500')}
+                title={t.kind === 'gap' ? 'No statement uploaded for these dates' : 'Two statements cover these dates — check the duplicate flags'}>
+                {t.kind === 'gap' ? 'Missing' : 'Overlap'} {formatDate(t.from)}{t.to !== t.from ? ` – ${formatDate(t.to)}` : ''}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-3 sm:grid-cols-3">
         <Stat
