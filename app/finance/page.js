@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { DateInput } from '@/components/ui/date-input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
@@ -368,6 +369,9 @@ function BankTab() {
   const [bankName, setBankName] = useState('');
   const [busy, setBusy] = useState(false);
   const fileRef = useRef(null);
+  const [pwPrompt, setPwPrompt] = useState(null); // { message } once the server says a password is needed
+  const [pwValue, setPwValue] = useState('');
+  const [remember, setRemember] = useState(true);
 
   const load = useCallback(async () => {
     setDocs(await api('/api/documents'));
@@ -381,7 +385,9 @@ function BankTab() {
     return () => clearInterval(t);
   }, [docs, load]);
 
-  async function upload() {
+  // password=null tries without one (or with whatever's already saved for this bank);
+  // the server replies `password_required` if the PDF is encrypted and that doesn't work.
+  async function doUpload(password) {
     const file = fileRef.current?.files?.[0];
     if (!file) return showToast('Choose a statement PDF first', 'warning');
     setBusy(true);
@@ -389,14 +395,28 @@ function BankTab() {
       const fd = new FormData();
       fd.append('file', file);
       fd.append('bank_name', bankName);
-      await api('/api/documents', { method: 'POST', body: fd });
+      if (password) {
+        fd.append('password', password);
+        fd.append('remember', remember ? 'true' : 'false');
+      }
+      const res = await fetch('/api/documents', { method: 'POST', body: fd });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        if (data.code === 'password_required') { setPwPrompt({ message: data.error }); return; }
+        throw new Error(data.error || 'Something went wrong');
+      }
       showToast('Uploaded — reading transactions…');
       fileRef.current.value = '';
       setBankName('');
+      setPwPrompt(null);
+      setPwValue('');
       load();
     } catch (e) { showToast(e.message, 'error'); }
-    setBusy(false);
+    finally { setBusy(false); }
   }
+
+  const upload = () => doUpload(null);
+  const submitPassword = () => pwValue && doUpload(pwValue);
 
   async function remove(d) {
     if (!confirm(`Delete statement "${d.original_filename}"?`)) return;
@@ -432,6 +452,36 @@ function BankTab() {
           </p>
         </CardContent>
       </Card>
+
+      <Dialog open={!!pwPrompt} onOpenChange={o => { if (!o) { setPwPrompt(null); setPwValue(''); } }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Password needed</DialogTitle></DialogHeader>
+          <div className="flex flex-col gap-4">
+            <p className="text-sm text-muted-foreground">{pwPrompt?.message}</p>
+            <div className="flex flex-col gap-2">
+              <Label>PDF password</Label>
+              <Input
+                type="password" autoFocus value={pwValue}
+                onChange={e => setPwValue(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') submitPassword(); }}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox id="remember-pw" checked={remember} onCheckedChange={setRemember} />
+              <Label htmlFor="remember-pw" className="text-sm font-normal">
+                Remember for "{bankName || 'this bank'}" — don't ask again
+              </Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setPwPrompt(null); setPwValue(''); }}>Cancel</Button>
+            <Button onClick={submitPassword} disabled={busy || !pwValue}>
+              {busy ? <Loader2Icon className="animate-spin" data-icon="inline-start" /> : null}
+              Unlock & upload
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="paper-surface overflow-hidden rounded-lg">
         <Table>
