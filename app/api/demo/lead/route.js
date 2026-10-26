@@ -12,6 +12,7 @@ export async function POST(req) {
     name: clip(b.name, 120), company: clip(b.company, 160), email: clip(b.email, 160).toLowerCase(),
     phone: clip(b.phone, 40), business: clip(b.business, 200),
   };
+  lead.whatsapp_ok = b.whatsapp_ok === true && !!lead.phone; // opt-in tickbox, only with a number
   if (!lead.name || !lead.company) return NextResponse.json({ error: 'Name and company are required' }, { status: 400 });
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(lead.email)) return NextResponse.json({ error: 'Enter a valid email' }, { status: 400 });
   const token = await saveDemoLead({ ...lead, ip: req.headers.get('cf-connecting-ip'), userAgent: clip(req.headers.get('user-agent'), 300) });

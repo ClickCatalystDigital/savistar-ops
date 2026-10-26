@@ -5,6 +5,7 @@ import { api } from '@/lib/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Loader2Icon, ArrowRightIcon, ArrowUpIcon, ChevronRightIcon } from 'lucide-react';
 import { FEATURES } from '@/lib/demo-features';
@@ -42,11 +43,15 @@ export default function DemoEntry({ roles, hasLead, isOwner = false }) {
     usePass(pass);
   }, []);
 
+  // WhatsApp consent: never pre-ticked, and only counts with a phone number to message.
+  const hasPhone = !!form.phone?.trim();
+  const waOk = hasPhone && form.whatsapp_ok === true;
+
   async function submit(e) {
     e.preventDefault();
     setBusy('form'); setError('');
     try {
-      await api('/api/demo/lead', { method: 'POST', body: form });
+      await api('/api/demo/lead', { method: 'POST', body: { ...form, whatsapp_ok: waOk } });
       track('interiors_demo_form_sent');
       setStep('roles');
     } catch (err) { setError(err.message); } finally { setBusy(null); }
@@ -136,6 +141,12 @@ export default function DemoEntry({ roles, hasLead, isOwner = false }) {
                   <Label htmlFor={key}>{label}</Label>
                   <Input id={key} type={type} required={required} value={form[key] || ''}
                     onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} />
+                  {key === 'phone' && (
+                    <Label className={`flex items-center gap-2 pt-1 font-normal ${hasPhone ? '' : 'text-muted-foreground'}`}>
+                      <Checkbox checked={waOk} disabled={!hasPhone} onCheckedChange={v => setForm(f => ({ ...f, whatsapp_ok: v === true }))} />
+                      WhatsApp me about this demo on this number
+                    </Label>
+                  )}
                 </div>
               ))}
               {error && <p className="text-sm text-destructive">{error}</p>}
