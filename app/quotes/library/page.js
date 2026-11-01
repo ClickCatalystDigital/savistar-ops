@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectItem } from '@/components/ui/select';
 import { UNITS, UNIT_LABEL, SPEC } from '@/lib/boq-check';
 import { ArrowLeftIcon, DownloadIcon, EyeIcon, EyeOffIcon, PencilIcon, PlusIcon, RotateCcwIcon, SearchIcon, Trash2Icon } from 'lucide-react';
+import { w } from '@/lib/market';
 
 const EMPTY = { trade: '', name: '', unit: 'nos', units: '', basis_required: false, measure: '', spec_keys: '', omits: '', description: '', match: '' };
 const APPROVERS = ['owner', 'admin', 'manager'];
@@ -61,7 +62,7 @@ export default function BoqLibraryPage() {
     <div className="container flex flex-col gap-4 py-6">
       <div className="flex flex-wrap items-center gap-3">
         <Button asChild variant="ghost" size="icon-sm"><Link href="/quotes" aria-label="Quotes"><ArrowLeftIcon /></Link></Button>
-        <PageTitle>BOQ library</PageTitle>
+        <PageTitle>{w('BOQ library')}</PageTitle>
         <div className="ml-auto flex gap-2">
           {canEdit && own > 0 && <Button asChild variant="outline" size="sm"><a href="/api/boq-items/export"><DownloadIcon data-icon="inline-start" />Export your items</a></Button>}
           {canEdit && <Button size="sm" onClick={() => setEdit({ ...EMPTY })}><PlusIcon data-icon="inline-start" />Add item</Button>}
@@ -153,7 +154,7 @@ export default function BoqLibraryPage() {
               </div>
               <div className="flex flex-col gap-1.5"><Label>Line to start from</Label><Textarea rows={3} value={edit.description || ''} onChange={(e) => setEdit({ ...edit, description: e.target.value })} placeholder="Providing and making … in [18] mm … ; measured by …" /></div>
               <div className="flex flex-col gap-1.5"><Label>Often left out of quotes</Label><Input value={edit.omits || ''} onChange={(e) => setEdit({ ...edit, omits: e.target.value })} placeholder="Separate with ;" /></div>
-              <div className="flex flex-col gap-1.5"><Label>Words that find it in a pasted BOQ</Label><Input value={edit.match || ''} onChange={(e) => setEdit({ ...edit, match: e.target.value })} placeholder="e.g. pooja, mandir, temple unit" /></div>
+              <div className="flex flex-col gap-1.5"><Label>{w('Words that find it in a pasted BOQ')}</Label><Input value={edit.match || ''} onChange={(e) => setEdit({ ...edit, match: e.target.value })} placeholder="e.g. pooja, mandir, temple unit" /></div>
             </div>
           )}
           <DialogFooter>

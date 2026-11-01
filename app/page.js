@@ -26,6 +26,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ChevronLeftIcon, ChevronRightIcon, PlusIcon, FolderKanbanIcon, MapPinIcon, ArmchairIcon, ListTodoIcon, Trash2Icon, CalendarIcon, UserIcon, SunIcon, CloudSunIcon, CloudIcon, CloudFogIcon, CloudDrizzleIcon, CloudRainIcon, CloudRainWindIcon, CloudSnowIcon, CloudLightningIcon } from 'lucide-react';
 import { UserAvatar } from '@/components/user-avatar';
 import { Architects_Daughter, Fira_Code } from 'next/font/google';
+import { LOCALE } from '@/lib/market';
 
 // Three-tier type system: Architects Daughter is chrome-only (labels, titles, the
 // greeting) — never for content someone has to actually read. Georgia carries real
@@ -715,11 +716,11 @@ export default function Dashboard() {
         const start = gridDays[0];
         const end = gridDays[gridDays.length - 1];
         const sameMonth = start.getMonth() === end.getMonth();
-        const startStr = start.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
-        const endStr = end.toLocaleDateString('en-IN', sameMonth ? { day: 'numeric', year: 'numeric' } : { month: 'short', day: 'numeric', year: 'numeric' });
+        const startStr = start.toLocaleDateString(LOCALE, { month: 'short', day: 'numeric' });
+        const endStr = end.toLocaleDateString(LOCALE, sameMonth ? { day: 'numeric', year: 'numeric' } : { month: 'short', day: 'numeric', year: 'numeric' });
         return `${startStr} – ${endStr}`;
       })()
-    : cursor.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+    : cursor.toLocaleDateString(LOCALE, { month: 'long', year: 'numeric' });
   const visibleCount = viewMode === 'week' ? (isMobile ? 4 : 12) : (isMobile ? 1 : 3);
   const cellMinH = viewMode === 'week' ? 'h-64 lg:h-[calc(100vh-22rem)] lg:min-h-48' : 'min-h-24';
   const phoneWeek = isPhone && viewMode === 'week';
@@ -1060,7 +1061,7 @@ className="border-2 border-muted-foreground/50 data-[state=checked]:border-prima
                         onClick={() => { setCursor(new Date(cursor.getFullYear(), m, 1)); setViewMode('month'); }}
                         className="flex flex-col gap-1.5 rounded-xl border p-2.5 text-left transition-colors hover:border-primary/40 hover:bg-primary/5">
                         <span className="text-sm font-semibold tracking-tight text-foreground">
-                          {monthDate.toLocaleDateString('en-IN', { month: 'long' })}
+                          {monthDate.toLocaleDateString(LOCALE, { month: 'long' })}
                         </span>
                         <div className="grid grid-cols-7 gap-0.5">
                           {cells.map((cd, i) => {
@@ -1132,7 +1133,7 @@ className="border-2 border-muted-foreground/50 data-[state=checked]:border-prima
                           </span>
                           <span className={cn(architectsDaughter.className, 'text-sm uppercase tracking-wide',
                             d.getDay() === 0 ? 'text-weekend' : d.getDay() === 6 ? 'text-weekend/80' : 'text-muted-foreground')}>
-                            {d.toLocaleDateString('en-IN', { weekday: 'long' })}
+                            {d.toLocaleDateString(LOCALE, { weekday: 'long' })}
                           </span>
                           {weatherDaily[iso] && <WeatherBadge info={weatherDaily[iso]} />}
                           {!expanded && <span className="ml-auto text-xs text-muted-foreground">Nothing due</span>}

@@ -7,6 +7,7 @@ import { api, showToast } from '@/lib/client';
 import { formatDate } from '@/lib/format';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { StickyNote } from '@/components/sticky-note';
+import { w } from '@/lib/market';
 
 // Settings → My assistant: the private notes this person asked the assistant to keep, with delete.
 export function NotesCard({ aiName = 'the assistant' }) {
@@ -26,7 +27,7 @@ export function NotesCard({ aiName = 'the assistant' }) {
       </CardHeader>
       <CardContent>
         {notes === null ? <div className="h-16 animate-pulse rounded-lg bg-muted/50" />
-          : notes.length === 0 ? <StickyNote>No notes yet. Try “note that Mrs Mehta prefers WhatsApp”.</StickyNote>
+          : notes.length === 0 ? <StickyNote>{w('No notes yet. Try “note that Mrs Mehta prefers WhatsApp”.')}</StickyNote>
           : (
             <ul className="divide-y rounded-lg border text-sm">
               {notes.map((n) => (

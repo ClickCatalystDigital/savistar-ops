@@ -9,7 +9,9 @@
     "lint": "next lint",
     "cf:build": "SAV_TARGET=workers NEXT_PUBLIC_DEMO=1 NEXT_PRIVATE_STANDALONE=true next build && node scripts/demo/strip-route-manifests.mjs && node scripts/demo/patch-yoga.mjs && opennextjs-cloudflare build --skipNextBuild --dangerouslyUseUnsupportedNextVersion && node scripts/demo/relative-wasm-imports.mjs && rm -rf .open-next/assets/logos .next",
     "cf:preview": "npm run cf:build && opennextjs-cloudflare preview",
-    "cf:deploy": "node scripts/demo/migrate.mjs && npm run cf:build && opennextjs-cloudflare deploy"
+    "cf:deploy": "node scripts/demo/migrate.mjs && npm run cf:build && opennextjs-cloudflare deploy",
+    "cf:build:us": "SAV_TARGET=workers NEXT_PUBLIC_DEMO=1 NEXT_PUBLIC_MARKET=NA NEXT_PRIVATE_STANDALONE=true next build && node scripts/demo/strip-route-manifests.mjs && node scripts/demo/patch-yoga.mjs && opennextjs-cloudflare build --skipNextBuild --dangerouslyUseUnsupportedNextVersion && node scripts/demo/relative-wasm-imports.mjs && rm -rf .open-next/assets/logos .next",
+    "cf:deploy:us": "MARKET=NA node scripts/demo/migrate.mjs && npm run cf:build:us && opennextjs-cloudflare deploy -c wrangler.us.jsonc"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1101.0",

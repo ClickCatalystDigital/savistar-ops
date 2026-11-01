@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { LOCALE, w } from '@/lib/market';
 
 const price = (v) => (v === null ? 'varies' : v === 0 ? 'free' : `$${v < 1 ? v.toFixed(3) : v.toFixed(2)}`);
 const LOW_CREDIT = 0.05;
@@ -237,7 +238,7 @@ export function AssistantCard() {
             <ModelPicker models={models} value={model} onChange={setModel} />
             <p className="text-xs text-muted-foreground">
               {picked
-                ? `${picked.id} · input ${price(picked.in)}, output ${price(picked.out)} per million tokens${picked.context ? ` · reads up to ${picked.context.toLocaleString('en-IN')} tokens` : ''}`
+                ? `${picked.id} · input ${price(picked.in)}, output ${price(picked.out)} per million tokens${picked.context ? ` · reads up to ${picked.context.toLocaleString(LOCALE)} tokens` : ''}`
                 : 'Used only in “Show, then write” mode and for how-to answers.'}
             </p>
           </div>
@@ -272,7 +273,7 @@ export function AssistantCard() {
               <Input type="number" min={1} max={10000} inputMode="numeric" value={cap} onChange={(e) => setCap(e.target.value)} className="w-32" />
               <Button variant="outline" disabled={busy || cap === String(s.cap)} onClick={() => put({ cap: Number(cap) }, 'Daily limit saved')}>Save limit</Button>
             </div>
-            <p className="text-xs text-muted-foreground">A safety cap on everyone's questions together (resets at midnight IST).</p>
+            <p className="text-xs text-muted-foreground">{w("A safety cap on everyone's questions together (resets at midnight IST).")}</p>
           </div>
 
           <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-dashed p-3">

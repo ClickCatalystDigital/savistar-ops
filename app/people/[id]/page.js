@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/table';
 import { ArrowLeftIcon, PencilIcon, PlusIcon, StarIcon } from 'lucide-react';
 import { TrashIcon } from '@heroicons/react/24/outline';
+import { LOCALE, CURRENCY } from '@/lib/market';
 
 export default function EmployeeDetail() {
   const { id } = useParams();
@@ -101,7 +102,7 @@ export default function EmployeeDetail() {
             {!emp.active && <Badge variant="outline">Inactive</Badge>}
           </div>
           <p className="text-sm text-muted-foreground">
-            {emp.profession || 'No profession'} · {emp.pay_type === 'daily' ? `₹${emp.pay_rate}/day` : `₹${emp.pay_rate}/month`}
+            {emp.profession || 'No profession'} · {emp.pay_type === 'daily' ? `${CURRENCY}${emp.pay_rate}/day` : `${CURRENCY}${emp.pay_rate}/month`}
             {emp.phone && ` · ${emp.phone}`} · joined {formatDate(emp.joined_at)}
           </p>
         </div>
@@ -135,7 +136,7 @@ export default function EmployeeDetail() {
                     </Select>
                   </div>
                   <div className="flex flex-col gap-2">
-                    <Label>{edit.pay_type === 'daily' ? 'Rate per day (₹)' : 'Salary per month (₹)'}</Label>
+                    <Label>{edit.pay_type === 'daily' ? `Rate per day (${CURRENCY})` : `Salary per month (${CURRENCY})`}</Label>
                     <Input type="number" min="0" value={edit.pay_rate} onChange={e => setEdit({ ...edit, pay_rate: e.target.value })} />
                   </div>
                 </div>
@@ -252,7 +253,7 @@ export default function EmployeeDetail() {
                       </div>
                     </div>
                     <div className="flex flex-col gap-2">
-                      <Label>Amount (₹)</Label>
+                      <Label>Amount ({CURRENCY})</Label>
                       <Input type="number" min="0" value={exp.amount} onChange={e => setExp({ ...exp, amount: e.target.value })} />
                     </div>
                     <div className="flex flex-col gap-2">
@@ -272,7 +273,7 @@ export default function EmployeeDetail() {
               {emp.expenses.map(x => (
                 <div key={x.id} className="group flex items-center gap-2 text-sm">
                   <Badge variant={x.kind === 'advance' ? 'destructive' : 'outline'}>{capitalize(x.kind)}</Badge>
-                  <span className="font-medium">₹{x.amount.toLocaleString('en-IN')}</span>
+                  <span className="font-medium">{CURRENCY}{x.amount.toLocaleString(LOCALE)}</span>
                   <span className="min-w-0 flex-1 truncate text-muted-foreground">{x.description || ''}</span>
                   <span className="text-xs text-muted-foreground">{formatDate(x.date)}</span>
                   <Button variant="ghost" size="icon-sm" className="text-muted-foreground/60 transition-colors hover:bg-destructive/10 hover:text-destructive dark:hover:bg-destructive/20" onClick={() => deleteExpense(x.id)} aria-label="Delete">
@@ -290,7 +291,7 @@ export default function EmployeeDetail() {
               {emp.payments.map(p => (
                 <div key={p.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
                   <span className="font-medium">{p.period}</span>
-                  <span>₹{p.net.toLocaleString('en-IN')}</span>
+                  <span>{CURRENCY}{p.net.toLocaleString(LOCALE)}</span>
                   <span className="text-xs text-muted-foreground">{formatDate(p.paid_on)}</span>
                 </div>
               ))}

@@ -22,6 +22,7 @@ import {
 import { BRAND } from '@/lib/brand';
 import { UserAvatar } from '@/components/user-avatar';
 import { toISODate } from '@/lib/date';
+import { LOCALE } from '@/lib/market';
 
 const ROLE_LABELS = { owner: 'Owner', admin: 'Admin', manager: 'Manager', user: 'Staff' };
 
@@ -98,7 +99,7 @@ export default function Nav({ user }) {
           <div className="ml-auto flex items-center gap-3">
             {today && (
               <Link href="/" className="hidden items-center gap-2 text-xs text-muted-foreground hover:text-foreground sm:flex">
-                <span className="figures">{today.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+                <span className="figures">{today.toLocaleDateString(LOCALE, { weekday: 'short', day: 'numeric', month: 'short' })}</span>
                 {due > 0 && <span className="figures rounded-full bg-primary px-1.5 py-0.5 text-[10px] leading-none text-primary-foreground">{due} due</span>}
               </Link>
             )}

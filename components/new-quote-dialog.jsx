@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectItem } from '@/components/ui/select';
 import { BRAND } from '@/lib/brand';
+import { w } from '@/lib/market';
 
 export function NewQuoteDialog({ open, onOpenChange, client = null }) {
   const router = useRouter();
@@ -47,7 +48,7 @@ export function NewQuoteDialog({ open, onOpenChange, client = null }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
-        <DialogHeader><DialogTitle>New quotation</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{w('New quotation')}</DialogTitle></DialogHeader>
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
             <Label htmlFor="nq-client">Client</Label>
@@ -90,7 +91,7 @@ export function NewQuoteDialog({ open, onOpenChange, client = null }) {
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="nq-title">For</Label>
-              <Input id="nq-title" placeholder="e.g. 3 BHK interiors" value={title} onChange={(e) => setTitle(e.target.value)} />
+              <Input id="nq-title" placeholder={w('e.g. 3 BHK interiors')} value={title} onChange={(e) => setTitle(e.target.value)} />
             </div>
           </div>
         </div>

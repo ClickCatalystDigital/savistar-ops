@@ -5,7 +5,10 @@
 // Token: TURSO_GROUP_TOKEN (savdemo group) from the environment or the gitignored .demo-secrets.
 import { existsSync, readFileSync } from 'node:fs';
 
-const DBS = ['libsql://sav-demo-golden-pujan.aws-ap-south-1.turso.io', 'libsql://sav-demo-pujan.aws-ap-south-1.turso.io'];
+// MARKET=NA: the North American demo's pair (wrangler.us.jsonc), same Turso group and token.
+const DBS = process.env.MARKET === 'NA'
+  ? ['libsql://sav-us-demo-golden-pujan.aws-ap-south-1.turso.io', 'libsql://sav-us-demo-pujan.aws-ap-south-1.turso.io']
+  : ['libsql://sav-demo-golden-pujan.aws-ap-south-1.turso.io', 'libsql://sav-demo-pujan.aws-ap-south-1.turso.io'];
 if (!process.env.TURSO_GROUP_TOKEN && existsSync('.demo-secrets')) {
   for (const line of readFileSync('.demo-secrets', 'utf8').split('\n')) {
     const m = /^TURSO_GROUP_TOKEN=(.+)$/.exec(line);

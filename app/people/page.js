@@ -27,6 +27,7 @@ import { PlusIcon, CheckIcon } from 'lucide-react';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import { UserAvatar } from '@/components/user-avatar';
 import { cn } from '@/lib/utils';
+import { LOCALE, CURRENCY } from '@/lib/market';
 
 const ATTENDANCE = [
   { value: 'present', short: 'P', label: 'Present', on: 'bg-success text-white' },
@@ -288,7 +289,7 @@ function Employees() {
                   </Select>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Label>{form.pay_type === 'daily' ? 'Rate per day (₹)' : 'Salary per month (₹)'}</Label>
+                  <Label>{form.pay_type === 'daily' ? `Rate per day (${CURRENCY})` : `Salary per month (${CURRENCY})`}</Label>
                   <Input type="number" min="0" value={form.pay_rate} onChange={e => setForm({ ...form, pay_rate: e.target.value })} />
                 </div>
               </div>
@@ -356,7 +357,7 @@ function Payroll() {
   useEffect(() => { load(); }, [load]);
 
   async function recordPayment(r) {
-    if (!confirm(`Record payment of ₹${r.net.toLocaleString('en-IN')} to ${r.name} for ${period}?`)) return;
+    if (!confirm(`Record payment of ${CURRENCY}${r.net.toLocaleString(LOCALE)} to ${r.name} for ${period}?`)) return;
     try {
       await api('/api/payroll', {
         method: 'POST',
@@ -392,15 +393,15 @@ function Payroll() {
               <TableRow key={r.id}>
                 <TableCell>
                   <Link href={`/people/${r.id}`} className="font-medium text-primary hover:underline">{r.name}</Link>
-                  <span className="ml-2 text-xs text-muted-foreground">{r.pay_type === 'daily' ? `₹${r.pay_rate}/day` : `₹${r.pay_rate}/mo`}</span>
+                  <span className="ml-2 text-xs text-muted-foreground">{r.pay_type === 'daily' ? `${CURRENCY}${r.pay_rate}/day` : `${CURRENCY}${r.pay_rate}/mo`}</span>
                 </TableCell>
                 <TableCell className="text-right">{r.days_present}</TableCell>
-                <TableCell className="text-right">₹{r.gross.toLocaleString('en-IN')}</TableCell>
-                <TableCell className="text-right text-destructive">{r.advances ? `−₹${r.advances.toLocaleString('en-IN')}` : '—'}</TableCell>
-                <TableCell className="text-right font-medium">₹{r.net.toLocaleString('en-IN')}</TableCell>
+                <TableCell className="text-right">{CURRENCY}{r.gross.toLocaleString(LOCALE)}</TableCell>
+                <TableCell className="text-right text-destructive">{r.advances ? `−${CURRENCY}${r.advances.toLocaleString(LOCALE)}` : '—'}</TableCell>
+                <TableCell className="text-right font-medium">{CURRENCY}{r.net.toLocaleString(LOCALE)}</TableCell>
                 <TableCell className="text-right">
                   {r.payment_id
-                    ? <Badge variant="secondary">Paid ₹{Number(r.paid_net).toLocaleString('en-IN')}</Badge>
+                    ? <Badge variant="secondary">Paid {CURRENCY}{Number(r.paid_net).toLocaleString(LOCALE)}</Badge>
                     : <Button size="sm" variant="outline" onClick={() => recordPayment(r)}>Record payment</Button>}
                 </TableCell>
               </TableRow>

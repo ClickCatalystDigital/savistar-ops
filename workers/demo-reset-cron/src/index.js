@@ -27,7 +27,7 @@ async function reset(env) {
     const tok = await fetch(`${base}/${env.GOLDEN_DB}/auth/tokens?expiration=1h&authorization=full-access`, { method: 'POST', headers });
     if (!tok.ok) throw new Error(`token: ${tok.status} ${await tok.text()}`);
     const { jwt } = await tok.json();
-    shifted = await shiftDates(`https://${database.Hostname}`, jwt);
+    shifted = await shiftDates(`https://${database.Hostname}`, jwt, todayIn(env.TIME_ZONE));
   } catch (e) {
     shiftError = e.message;
     try { await copy(env.GOLDEN_DB, backup); } catch (r) { return { ok: false, step: 'restore golden', error: `${shiftError}; ${r.message}` }; }
@@ -58,7 +58,9 @@ const MONTH = "'[0-9][0-9][0-9][0-9]-[0-9][0-9]'";
 // Shift every ISO date (and 'YYYY-MM' period) in every table by today − demo_meta.seeded_on, keeping any time part.
 // Two passes (+100 years, then back) so UNIQUE(…, date) columns never collide mid-update.
 // ponytail: dates inside free text / JSON and FY-coded numbers don't move; fine for a nightly demo.
-// `today` is India's date: the reset runs at 03:30 IST, when UTC is still on the day before.
+// `today` is the demo's own date: India's (the reset runs at 03:30 IST, when UTC is still on the day before), or
+// the US demo's TIME_ZONE (wrangler.us.jsonc).
+const todayIn = (tz) => (tz ? new Intl.DateTimeFormat('en-CA', { timeZone: tz }).format(new Date()) : new Date(Date.now() + 5.5 * 36e5).toISOString().slice(0, 10));
 export async function shiftDates(url, token, today = new Date(Date.now() + 5.5 * 36e5).toISOString().slice(0, 10)) {
   const [meta] = await run(url, token, [`SELECT seeded_on FROM demo_meta LIMIT 1`]);
   const seededOn = meta.rows[0]?.[0]?.value;

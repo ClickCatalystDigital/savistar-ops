@@ -29,9 +29,10 @@ import { QuoteStatus } from '@/components/quote-status';
 import { NewQuoteDialog } from '@/components/new-quote-dialog';
 import { displayStatus } from '@/lib/quote-math';
 import { todayISO } from '@/lib/date';
+import { LOCALE, CURRENCY, US, TAX, w } from '@/lib/market';
 
-const rupees = n => `₹${(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-const EMPTY_ITEM = { description: '', hsn: '', gst_pct: 18, qty: 1, unit_price: 0 };
+const rupees = n => `${CURRENCY}${(n || 0).toLocaleString(LOCALE, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const EMPTY_ITEM = { description: '', hsn: '', gst_pct: TAX.defaultPct, qty: 1, unit_price: 0 };
 const EMPTY_INVOICE = { company: 'savistar', project_id: 'none', invoice_no: '', title: '', client_pan: '', submitted_on: '', due_date: '', payment_terms: '', status: 'draft', place_of_supply: 'same_state', notes: '', items: [{ ...EMPTY_ITEM }] };
 
 function invoiceTotals(items) {
@@ -280,7 +281,7 @@ export default function ClientDetail() {
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Quotations</CardTitle>
+          <CardTitle>{w('Quotations')}</CardTitle>
           <Button size="sm" onClick={() => setQuoteOpen(true)}><PlusIcon data-icon="inline-start" />New quote</Button>
         </CardHeader>
         <CardContent>
@@ -417,7 +418,7 @@ export default function ClientDetail() {
                 <Label>Payment terms</Label>
                 <Input value={invoice.payment_terms} onChange={e => setInvoice({ ...invoice, payment_terms: e.target.value })} placeholder="e.g. 50% advance" />
               </div>
-              <div className="flex flex-col gap-2">
+              {!US && <div className="flex flex-col gap-2">
                 <Label>Site is in</Label>
                 <Select value={invoice.place_of_supply} onValueChange={v => setInvoice({ ...invoice, place_of_supply: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
@@ -428,11 +429,11 @@ export default function ClientDetail() {
                     </SelectGroup>
                   </SelectContent>
                 </Select>
-              </div>
-              <div className="flex flex-col gap-2">
+              </div>}
+              {!US && <div className="flex flex-col gap-2">
                 <Label>Client PAN</Label>
                 <Input value={invoice.client_pan} onChange={e => setInvoice({ ...invoice, client_pan: e.target.value })} placeholder="Optional" />
-              </div>
+              </div>}
             </div>
 
             <div className="flex flex-col gap-2">
@@ -442,8 +443,8 @@ export default function ClientDetail() {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-full">Description</TableHead>
-                      <TableHead>HSN</TableHead>
-                      <TableHead className="w-20">GST %</TableHead>
+                      {!US && <TableHead>HSN</TableHead>}
+                      <TableHead className="w-20">{US ? 'Tax %' : 'GST %'}</TableHead>
                       <TableHead className="w-16">Qty</TableHead>
                       <TableHead className="w-28">Unit price</TableHead>
                       <TableHead className="w-28 text-right">Total</TableHead>
@@ -454,7 +455,7 @@ export default function ClientDetail() {
                     {invoice.items.map((it, i) => (
                       <TableRow key={i}>
                         <TableCell><Input value={it.description} onChange={e => updateItem(i, { description: e.target.value })} placeholder="Item description" /></TableCell>
-                        <TableCell><Input value={it.hsn} onChange={e => updateItem(i, { hsn: e.target.value })} className="w-24" /></TableCell>
+                        {!US && <TableCell><Input value={it.hsn} onChange={e => updateItem(i, { hsn: e.target.value })} className="w-24" /></TableCell>}
                         <TableCell><Input type="number" value={it.gst_pct} onChange={e => updateItem(i, { gst_pct: e.target.value })} /></TableCell>
                         <TableCell><Input type="number" value={it.qty} onChange={e => updateItem(i, { qty: e.target.value })} /></TableCell>
                         <TableCell><Input type="number" value={it.unit_price} onChange={e => updateItem(i, { unit_price: e.target.value })} /></TableCell>
@@ -474,7 +475,9 @@ export default function ClientDetail() {
               {(() => { const t = invoiceTotals(invoice.items); return (
                 <>
                   <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>{rupees(t.subtotal)}</span></div>
-                  {invoice.place_of_supply === 'other_state'
+                  {US
+                    ? <div className="flex justify-between"><span className="text-muted-foreground">Sales tax</span><span>{rupees(t.cgst + t.sgst)}</span></div>
+                    : invoice.place_of_supply === 'other_state'
                     ? <div className="flex justify-between"><span className="text-muted-foreground">IGST</span><span>{rupees(t.cgst + t.sgst)}</span></div>
                     : <>
                         <div className="flex justify-between"><span className="text-muted-foreground">CGST</span><span>{rupees(t.cgst)}</span></div>

@@ -6,20 +6,21 @@ import { ArrowUpRightIcon, CheckIcon, CopyIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDate } from '@/lib/format';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
+import { LOCALE, CURRENCY } from '@/lib/market';
 
 // Paths an answer may link to: the tabs and a record's own page (same rule as lib/assistantTools.js safePath).
 export const safePath = (p) => (typeof p === 'string' && /^\/(clients|projects|orders|people|vendors|finance|settings)?(\/\d+)?$/.test(p) ? p : null);
 
 const NUMERIC = ['int', 'money', 'delta', 'money_delta'];
-const inr = (v) => `${v < 0 ? '−' : ''}₹${Math.abs(Math.round(v)).toLocaleString('en-IN')}`;
+const inr = (v) => `${v < 0 ? '−' : ''}${CURRENCY}${Math.abs(Math.round(v)).toLocaleString(LOCALE)}`;
 function cell(v, type) {
   if (v === null || v === undefined || v === '') return '—';
   if (type === 'money') return inr(Number(v));
-  if (type === 'int') return Number(v).toLocaleString('en-IN');
+  if (type === 'int') return Number(v).toLocaleString(LOCALE);
   if (type === 'date') { const d = formatDate(String(v)); return d.endsWith(` ${new Date().getFullYear()}`) ? d.slice(0, -5) : d; } // this year's dates without the year
   if (type === 'delta' || type === 'money_delta') {
     const n = Number(v);
-    return `${n > 0 ? '+' : n < 0 ? '−' : ''}${type === 'money_delta' ? inr(Math.abs(n)) : Math.abs(n).toLocaleString('en-IN')}`;
+    return `${n > 0 ? '+' : n < 0 ? '−' : ''}${type === 'money_delta' ? inr(Math.abs(n)) : Math.abs(n).toLocaleString(LOCALE)}`;
   }
   return String(v);
 }
@@ -91,7 +92,7 @@ export function ResultCard({ reply, onNavigate }) {
 
         <div className="flex items-center justify-between gap-2 border-t border-dashed px-3 py-1.5">
           <div className="min-w-0 text-[11px] leading-snug text-muted-foreground">
-            {reply.truncated && <p>Showing {rows.length} of {reply.total?.toLocaleString('en-IN')}.</p>}
+            {reply.truncated && <p>Showing {rows.length} of {reply.total?.toLocaleString(LOCALE)}.</p>}
             {reply.note && <p>{reply.note}</p>}
           </div>
           <div className="flex shrink-0 items-center gap-1">

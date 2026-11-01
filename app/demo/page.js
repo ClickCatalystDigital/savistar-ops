@@ -5,10 +5,11 @@ import { DEMO_ROLES } from '@/lib/demo-roles';
 import DemoEntry from '@/components/DemoEntry';
 import { isOwnerPass } from '@/lib/demo-leads';
 import { FEATURES } from '@/lib/demo-features';
+import { US } from '@/lib/market';
 
 export const metadata = {
   title: 'Interior Design and Furniture Workshop ERP: Live Demo | Ahrom Labs',
-  description: 'Try an operations system for an interior design studio and its furniture workshop: projects, site visits, workshop orders, vendor POs, daily worksheets, payroll, GST invoices and one combined finance book.',
+  description: 'Try an operations system for an interior design studio and its furniture workshop: projects, site visits, workshop orders, vendor POs, daily worksheets, payroll, ' + (US ? 'invoices' : 'GST invoices') + ' and one combined finance book.',
   robots: { index: true, follow: true },
 };
 

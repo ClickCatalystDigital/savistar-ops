@@ -7,10 +7,20 @@
 
 import { track } from '@/components/DemoAnalytics';
 import { cn } from '@/lib/utils';
+import { US } from '@/lib/market';
+
+// North American demo: no WhatsApp; the same spot offers Pujan's booking page (US Eastern hours, as on ahromlabs.com).
+const BOOKING = 'https://calendar.app.google/CuiiSRtJbheEV2U4A';
 
 const HREF = `https://wa.me/919426519798?text=${encodeURIComponent("Hi Pujan, I'm trying the interiors demo and have a question (ref: demo-interiors)")}`;
 
 export default function DemoWhatsApp({ children = 'WhatsApp', className }) {
+  if (US) return (
+    <a href={BOOKING} target="_blank" rel="noopener noreferrer" onClick={() => track('interiors_demo_booking')}
+      className={cn('inline-flex items-center gap-1 font-medium text-foreground underline-offset-2 hover:underline', className)}>
+      Book a call
+    </a>
+  );
   return (
     <a href={HREF} target="_blank" rel="noopener noreferrer" title="Questions? WhatsApp Pujan"
       onClick={() => track('interiors_demo_whatsapp')}

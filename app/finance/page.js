@@ -32,9 +32,10 @@ import {
 import { TrashIcon } from '@heroicons/react/24/outline';
 import { cn } from '@/lib/utils';
 import { BRAND } from '@/lib/brand';
+import { LOCALE, CURRENCY } from '@/lib/market';
 
 // Full Indian grouping, paise only when there are any (₹2,89,607.50, ₹12,000).
-const rupees = (n) => Math.abs(n).toLocaleString('en-IN', { minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 });
+const rupees = (n) => Math.abs(n).toLocaleString(LOCALE, { minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 });
 
 const TONES = {
   in: { edge: 'bg-success', chip: 'bg-success/10 text-success' },
@@ -55,7 +56,7 @@ function Stat({ label, value, tone, icon: Icon, hint, hero }) {
       </div>
       <p className={cn('figures w-fit text-2xl tracking-tight sm:text-[1.65rem]', hero && value != null && 'marker', tone === 'short' && 'text-danger')}>
         {value == null ? <span className="text-muted-foreground">—</span> : (
-          <><span className="mr-0.5 text-[0.7em] text-muted-foreground">{value < 0 ? '−₹' : '₹'}</span>{rupees(value)}</>
+          <><span className="mr-0.5 text-[0.7em] text-muted-foreground">{value < 0 ? `−${CURRENCY}` : CURRENCY}</span>{rupees(value)}</>
         )}
       </p>
       {hint && <p className="figures -mt-1 text-xs text-muted-foreground">{hint}</p>}
@@ -196,7 +197,7 @@ function CashTab({ scoped = false }) {
   }
 
   async function remove(t) {
-    if (!confirm(`Delete this ${t.kind} of ₹${t.amount.toLocaleString('en-IN')}?`)) return;
+    if (!confirm(`Delete this ${t.kind} of ${CURRENCY}${t.amount.toLocaleString(LOCALE)}?`)) return;
     try {
       await api(`/api/cash/${t.id}`, { method: 'DELETE' });
       load();
@@ -217,7 +218,7 @@ function CashTab({ scoped = false }) {
   const creditCount = credits.length, debitCount = debits.length;
   // Without a month filter the rows are the complete book (see `running` above).
   const periodLabel = month
-    ? new Date(`${month}-01T00:00:00`).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })
+    ? new Date(`${month}-01T00:00:00`).toLocaleDateString(LOCALE, { month: 'short', year: 'numeric' })
     : 'all time';
 
   return (
@@ -226,7 +227,7 @@ function CashTab({ scoped = false }) {
         <Stat
           label={scoped ? 'Your cash in hand' : 'Cash in hand'} hero
           value={data.balance} tone={data.balance < 0 ? 'short' : 'balance'} icon={WalletIcon}
-          hint={data.balance < 0 ? `short by ₹${rupees(data.balance)}` : scoped ? 'your entries, all time' : 'every entry, all time'} />
+          hint={data.balance < 0 ? `short by ${CURRENCY}${rupees(data.balance)}` : scoped ? 'your entries, all time' : 'every entry, all time'} />
         <Stat
           label={`${scoped ? 'You received' : 'Money in'} · ${periodLabel}`}
           value={monthCredit} tone="in" icon={ArrowDownLeftIcon}
@@ -265,7 +266,7 @@ function CashTab({ scoped = false }) {
                   </Select>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Label>Amount (₹)</Label>
+                  <Label>Amount ({CURRENCY})</Label>
                   <Input type="number" min="0" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} />
                 </div>
               </div>
@@ -314,14 +315,14 @@ function CashTab({ scoped = false }) {
                   {t.description && <span className="text-muted-foreground"> · {t.description}</span>}
                 </TableCell>
                 <TableCell className="text-right font-medium text-green-700 dark:text-green-500">
-                  {t.kind === 'credit' ? `₹${t.amount.toLocaleString('en-IN')}` : ''}
+                  {t.kind === 'credit' ? `${CURRENCY}${t.amount.toLocaleString(LOCALE)}` : ''}
                 </TableCell>
                 <TableCell className="text-right font-medium text-red-700 dark:text-red-400">
-                  {t.kind === 'debit' ? `₹${t.amount.toLocaleString('en-IN')}` : ''}
+                  {t.kind === 'debit' ? `${CURRENCY}${t.amount.toLocaleString(LOCALE)}` : ''}
                 </TableCell>
                 {!month && (
                   <TableCell className={cn('text-right text-muted-foreground', running[i] < 0 && 'text-destructive')}>
-                    {running[i] < 0 ? '−' : ''}₹{Math.abs(running[i]).toLocaleString('en-IN')}
+                    {running[i] < 0 ? '−' : ''}{CURRENCY}{Math.abs(running[i]).toLocaleString(LOCALE)}
                   </TableCell>
                 )}
                 <TableCell className="text-right">
@@ -346,7 +347,7 @@ function CashTab({ scoped = false }) {
       </div>
 
       <AttachmentsDialog
-        entity={attachFor ? { type: 'cash_transaction', id: attachFor.id, label: `${capitalize(attachFor.kind)} ₹${attachFor.amount.toLocaleString('en-IN')} · ${formatDate(attachFor.date)}` } : null}
+        entity={attachFor ? { type: 'cash_transaction', id: attachFor.id, label: `${capitalize(attachFor.kind)} ${CURRENCY}${attachFor.amount.toLocaleString(LOCALE)} · ${formatDate(attachFor.date)}` } : null}
         onClose={() => { setAttachFor(null); load(); }}
       />
     </div>
@@ -613,8 +614,8 @@ function BankTab() {
                 <TableCell className="whitespace-nowrap text-muted-foreground">
                   {d.statement_from ? `${formatDate(d.statement_from)} – ${formatDate(d.statement_to)}` : '—'}
                 </TableCell>
-                <TableCell className="text-right">{d.opening_balance != null ? `₹${d.opening_balance.toLocaleString('en-IN')}` : '—'}</TableCell>
-                <TableCell className="text-right">{d.closing_balance != null ? `₹${d.closing_balance.toLocaleString('en-IN')}` : '—'}</TableCell>
+                <TableCell className="text-right">{d.opening_balance != null ? `${CURRENCY}${d.opening_balance.toLocaleString(LOCALE)}` : '—'}</TableCell>
+                <TableCell className="text-right">{d.closing_balance != null ? `${CURRENCY}${d.closing_balance.toLocaleString(LOCALE)}` : '—'}</TableCell>
                 <TableCell>
                   {d.status === 'reading' && <Badge variant="outline"><Loader2Icon className="animate-spin" data-icon="inline-start" />Reading…</Badge>}
                   {d.status === 'pending' && <Badge>Review</Badge>}
@@ -793,10 +794,10 @@ function StatementReview({ docId, onBack, onOpen }) {
           </span>
           <div className="min-w-0 flex-1">
             <p className="font-hand text-[1.05rem] leading-snug">
-              {addsUp ? 'The lines add up to the closing balance now.' : <>The lines don&apos;t add up: off by <span className="figures text-[0.9em]">₹{rupees(off)}</span></>}
+              {addsUp ? 'The lines add up to the closing balance now.' : <>The lines don&apos;t add up: off by <span className="figures text-[0.9em]">{CURRENCY}{rupees(off)}</span></>}
             </p>
             <p className="figures text-xs text-muted-foreground">
-              ₹{rupees(Number(doc.opening_balance))} opening + ₹{rupees(allIn)} in − ₹{rupees(allOut)} out = {reached < 0 ? '−' : ''}₹{rupees(reached)} · statement closes at {doc.closing_balance < 0 ? '−' : ''}₹{rupees(Number(doc.closing_balance))}
+              {CURRENCY}{rupees(Number(doc.opening_balance))} opening + {CURRENCY}{rupees(allIn)} in − {CURRENCY}{rupees(allOut)} out = {reached < 0 ? '−' : ''}{CURRENCY}{rupees(reached)} · statement closes at {doc.closing_balance < 0 ? '−' : ''}{CURRENCY}{rupees(Number(doc.closing_balance))}
             </p>
             {!addsUp && (
               <p className="mt-1 text-xs text-muted-foreground">
@@ -820,7 +821,7 @@ function StatementReview({ docId, onBack, onOpen }) {
           label="Closing balance" hero
           value={doc.closing_balance} tone={doc.closing_balance < 0 ? 'short' : 'balance'} icon={LandmarkIcon}
           hint={doc.opening_balance != null && doc.closing_balance != null
-            ? `from ₹${rupees(doc.opening_balance)} · net ${doc.closing_balance >= doc.opening_balance ? '+' : '−'}₹${rupees(Math.round((doc.closing_balance - doc.opening_balance) * 100) / 100)}`
+            ? `from ${CURRENCY}${rupees(doc.opening_balance)} · net ${doc.closing_balance >= doc.opening_balance ? '+' : '−'}${CURRENCY}${rupees(Math.round((doc.closing_balance - doc.opening_balance) * 100) / 100)}`
             : null} />
         <Stat
           label="Deposits" value={doc.total_credit != null ? Math.abs(doc.total_credit) : totalCredit}
@@ -868,7 +869,7 @@ function StatementReview({ docId, onBack, onOpen }) {
                         value={Math.abs(l.amount)} onChange={e => setAmount(i, (l.amount > 0 ? 1 : -1) * (Number(e.target.value) || 0))}
                         className="figures h-8 w-28 text-right" />
                     </div>
-                  ) : <>{l.amount > 0 ? '+' : ''}₹{Math.abs(l.amount).toLocaleString('en-IN')}</>}
+                  ) : <>{l.amount > 0 ? '+' : ''}{CURRENCY}{Math.abs(l.amount).toLocaleString(LOCALE)}</>}
                 </TableCell>
                 <TableCell>
                   <Input value={l.comment || ''} placeholder="Internal note…" onChange={e => setComment(i, e.target.value)} className="h-8" disabled={l.ignored} />

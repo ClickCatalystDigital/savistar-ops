@@ -11,6 +11,7 @@ import { Loader2Icon, ArrowRightIcon, ArrowUpIcon, ChevronRightIcon } from 'luci
 import { FEATURES } from '@/lib/demo-features';
 import { track } from '@/components/DemoAnalytics';
 import DemoWhatsApp from '@/components/DemoWhatsApp';
+import { US } from '@/lib/market';
 
 // Public demo entry (app/demo/page.js). Same flow as SB Ops' demo.
 
@@ -141,7 +142,7 @@ export default function DemoEntry({ roles, hasLead, isOwner = false }) {
                   <Label htmlFor={key}>{label}</Label>
                   <Input id={key} type={type} required={required} value={form[key] || ''}
                     onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} />
-                  {key === 'phone' && (
+                  {key === 'phone' && !US && (
                     <Label className={`flex items-center gap-2 pt-1 font-normal ${hasPhone ? '' : 'text-muted-foreground'}`}>
                       <Checkbox checked={waOk} disabled={!hasPhone} onCheckedChange={v => setForm(f => ({ ...f, whatsapp_ok: v === true }))} />
                       WhatsApp me about this demo on this number
@@ -177,14 +178,14 @@ export default function DemoEntry({ roles, hasLead, isOwner = false }) {
           )}
         </CardContent>
       </Card>
-      <p className="mt-4 text-center text-sm text-muted-foreground">Questions? <DemoWhatsApp>WhatsApp Pujan</DemoWhatsApp></p>
+      <p className="mt-4 text-center text-sm text-muted-foreground">Questions? <DemoWhatsApp>{US ? 'Book a call' : 'WhatsApp Pujan'}</DemoWhatsApp></p>
     </main>
 
     <section id="in-detail" aria-labelledby="in-detail-heading" className="container border-t py-14">
       <h2 id="in-detail-heading" className="text-2xl font-semibold tracking-tight sm:text-3xl">What Designer Ops does, in detail</h2>
       <p className="mt-3 max-w-3xl text-muted-foreground">
         Designer Ops is one operations system for an interior design studio and its furniture workshop: projects and site
-        visits, workshop orders, vendors and freight, people and payroll, GST invoices and a shared finance book. Every
+        visits, workshop orders, vendors and freight, people and payroll, {US ? 'invoices' : 'GST invoices'} and a shared finance book. Every
         feature below runs in the live demo above with sample data.
       </p>
       <div className="mt-10 grid gap-x-12 gap-y-12 lg:grid-cols-2">

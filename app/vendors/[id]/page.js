@@ -30,6 +30,7 @@ import {
 import { ArrowLeftIcon, PlusIcon, PencilIcon, AlertTriangleIcon, PackageCheckIcon } from 'lucide-react';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import { BRAND } from '@/lib/brand';
+import { LOCALE, CURRENCY } from '@/lib/market';
 
 const BLUE_ICON_BTN = 'text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-950/40';
 const RED_ICON_BTN = 'text-red-600 transition-colors hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-950/40';
@@ -76,7 +77,7 @@ export default function VendorDetail() {
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-2">
             <PageTitle className="truncate">{v.name}</PageTitle>
-            <span className="text-lg font-semibold text-muted-foreground">{formatMoney(v.total_expense) || '₹0'}</span>
+            <span className="text-lg font-semibold text-muted-foreground">{formatMoney(v.total_expense) || `${CURRENCY}0`}</span>
           </div>
           <p className="text-sm text-muted-foreground">
             {[v.material, v.phone].filter(Boolean).join(' · ') || 'No details'}
@@ -332,7 +333,7 @@ function PosTab({ vendorId, pos, onChanged }) {
                   <div key={i} className="flex items-end gap-2">
                     <Input placeholder="e.g. 19mm plywood sheet" value={it.item} onChange={e => updateItemRow(i, 'item', e.target.value)} className="flex-1" />
                     <Input type="number" min="1" placeholder="Qty" value={it.qty_ordered} onChange={e => updateItemRow(i, 'qty_ordered', e.target.value)} className="w-20" />
-                    <Input type="number" min="0" placeholder="₹ rate" value={it.rate} onChange={e => updateItemRow(i, 'rate', e.target.value)} className="w-24" />
+                    <Input type="number" min="0" placeholder={`${CURRENCY} rate`} value={it.rate} onChange={e => updateItemRow(i, 'rate', e.target.value)} className="w-24" />
                     {form.items.length > 1 && (
                       <Button variant="ghost" size="icon-sm" className={RED_ICON_BTN} onClick={() => removeItemRow(i)} aria-label="Remove item">
                         <TrashIcon />
@@ -453,7 +454,7 @@ function PosTab({ vendorId, pos, onChanged }) {
                         <Checkbox checked={selected.has(po.id)} onCheckedChange={() => toggleOne(po.id)} aria-label="Select PO" />
                       )}
                       <span className="font-medium">{po.item} × {po.qty_ordered}</span>
-                      {po.rate && <span className="text-sm text-muted-foreground">@ ₹{po.rate}</span>}
+                      {po.rate && <span className="text-sm text-muted-foreground">@ {CURRENCY}{po.rate}</span>}
                       <Badge variant={st === 'cancelled' ? 'destructive' : st === 'open' ? 'default' : 'secondary'}>
                         {PO_STATUS_LABELS[st]}
                       </Badge>
@@ -499,7 +500,7 @@ function PosTab({ vendorId, pos, onChanged }) {
               <div className="flex justify-end border-t pt-3">
                 <div className="text-right">
                   <p className="text-xs text-muted-foreground">Expense</p>
-                  <p className="text-xl font-bold">{formatMoney(groupExpense) || '₹0'}</p>
+                  <p className="text-xl font-bold">{formatMoney(groupExpense) || `${CURRENCY}0`}</p>
                 </div>
               </div>
             </CardContent>
@@ -556,7 +557,7 @@ function PosTab({ vendorId, pos, onChanged }) {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-2">
-                  <Label>Rate per unit (₹)</Label>
+                  <Label>Rate per unit ({CURRENCY})</Label>
                   <Input type="number" min="0" value={editForm.rate} onChange={e => setEditForm({ ...editForm, rate: e.target.value })} />
                 </div>
                 <div className="flex flex-col gap-2">
@@ -641,7 +642,7 @@ function FreightTab({ vendorId, rates, freight, onChanged }) {
     setBusy(true);
     try {
       const r = await api('/api/freight', { method: 'POST', body: { vendor_id: vendorId, ...charge, amount: Number(charge.amount) } });
-      if (r.overcharged) showToast(`Above rate card! Expected ₹${r.expected_amount.toLocaleString('en-IN')}`, 'warning');
+      if (r.overcharged) showToast(`Above rate card! Expected ${CURRENCY}${r.expected_amount.toLocaleString(LOCALE)}`, 'warning');
       else showToast('Freight charge logged');
       setCharge({ date: todayISO(), from_loc: '', to_loc: '', amount: '', notes: '' });
       onChanged();
@@ -664,14 +665,14 @@ function FreightTab({ vendorId, rates, freight, onChanged }) {
           <div className="flex flex-wrap items-end gap-2">
             <Input list="vendor-locs" placeholder="From" value={rate.from_loc} onChange={e => setRate({ ...rate, from_loc: e.target.value })} className="w-28 flex-1" />
             <Input list="vendor-locs" placeholder="To" value={rate.to_loc} onChange={e => setRate({ ...rate, to_loc: e.target.value })} className="w-28 flex-1" />
-            <Input type="number" placeholder="₹ expected" value={rate.expected_amount} onChange={e => setRate({ ...rate, expected_amount: e.target.value })} className="w-28" />
+            <Input type="number" placeholder={`${CURRENCY} expected`} value={rate.expected_amount} onChange={e => setRate({ ...rate, expected_amount: e.target.value })} className="w-28" />
             <Button size="sm" onClick={addRate} disabled={busy || !rate.from_loc || !rate.to_loc || !rate.expected_amount}><PlusIcon /></Button>
           </div>
           {rates.length === 0 && <p className="text-sm text-muted-foreground">No routes yet. Add the agreed freight per route — charges above it get flagged.</p>}
           {rates.map(r => (
             <div key={r.id} className="group flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
               <span className="font-medium">{r.from_loc} → {r.to_loc}</span>
-              <span className="ml-auto">₹{r.expected_amount.toLocaleString('en-IN')}</span>
+              <span className="ml-auto">{CURRENCY}{r.expected_amount.toLocaleString(LOCALE)}</span>
               <Button variant="ghost" size="icon-sm" className="text-muted-foreground/60 transition-colors hover:bg-destructive/10 hover:text-destructive dark:hover:bg-destructive/20" onClick={() => deleteRate(r.id)} aria-label="Delete rate">
                 <TrashIcon />
               </Button>
@@ -687,7 +688,7 @@ function FreightTab({ vendorId, rates, freight, onChanged }) {
             <DateInput value={charge.date} onChange={v => setCharge({ ...charge, date: v })} className="w-36" />
             <Input list="vendor-locs" placeholder="From" value={charge.from_loc} onChange={e => setCharge({ ...charge, from_loc: e.target.value })} className="w-24 flex-1" />
             <Input list="vendor-locs" placeholder="To" value={charge.to_loc} onChange={e => setCharge({ ...charge, to_loc: e.target.value })} className="w-24 flex-1" />
-            <Input type="number" placeholder="₹ charged" value={charge.amount} onChange={e => setCharge({ ...charge, amount: e.target.value })} className="w-28" />
+            <Input type="number" placeholder={`${CURRENCY} charged`} value={charge.amount} onChange={e => setCharge({ ...charge, amount: e.target.value })} className="w-28" />
             <Button size="sm" onClick={addCharge} disabled={busy || !charge.from_loc || !charge.to_loc || !charge.amount}><PlusIcon /></Button>
           </div>
           {freight.length === 0 && <p className="text-sm text-muted-foreground">No freight logged yet.</p>}
@@ -710,15 +711,15 @@ function FreightTab({ vendorId, rates, freight, onChanged }) {
                       <TableCell className="whitespace-nowrap">{formatDate(f.date)}</TableCell>
                       <TableCell>{f.from_loc} → {f.to_loc}</TableCell>
                       <TableCell className={over ? 'text-right font-medium text-destructive' : 'text-right'}>
-                        ₹{f.amount.toLocaleString('en-IN')}
+                        {CURRENCY}{f.amount.toLocaleString(LOCALE)}
                       </TableCell>
                       <TableCell className="text-right text-muted-foreground">
-                        {f.expected_amount != null ? `₹${f.expected_amount.toLocaleString('en-IN')}` : 'no rate'}
+                        {f.expected_amount != null ? `${CURRENCY}${f.expected_amount.toLocaleString(LOCALE)}` : 'no rate'}
                       </TableCell>
                       <TableCell className="text-right">
                         {over && (
                           <Badge variant="destructive">
-                            <AlertTriangleIcon data-icon="inline-start" />+₹{(f.amount - f.expected_amount).toLocaleString('en-IN')}
+                            <AlertTriangleIcon data-icon="inline-start" />+{CURRENCY}{(f.amount - f.expected_amount).toLocaleString(LOCALE)}
                           </Badge>
                         )}
                         <Button variant="ghost" size="icon-sm" className="ml-1 text-muted-foreground/60 transition-colors hover:bg-destructive/10 hover:text-destructive dark:hover:bg-destructive/20" onClick={() => deleteCharge(f.id)} aria-label="Delete charge">

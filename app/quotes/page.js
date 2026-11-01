@@ -17,8 +17,9 @@ import { api, showToast, formatDate } from '@/lib/client';
 import { displayStatus } from '@/lib/quote-math';
 import { todayISO, toISODate } from '@/lib/date';
 import { BookOpenIcon, SearchIcon } from 'lucide-react';
+import { LOCALE, CURRENCY, US, w } from '@/lib/market';
 
-const rupees = (n) => `₹${Math.round(n || 0).toLocaleString('en-IN')}`;
+const rupees = (n) => `${CURRENCY}${Math.round(n || 0).toLocaleString(LOCALE)}`;
 const FILTERS = [
   { key: 'open', label: 'Open' },
   { key: 'expiring', label: 'Expiring this week' },
@@ -55,7 +56,7 @@ export default function QuotesPage() {
       <div className="flex items-center justify-between gap-3">
         <PageTitle>Quotes</PageTitle>
         <div className="flex items-center gap-2">
-          <Button asChild variant="outline" size="sm"><Link href="/quotes/library"><BookOpenIcon data-icon="inline-start" />BOQ library</Link></Button>
+          <Button asChild variant="outline" size="sm"><Link href="/quotes/library"><BookOpenIcon data-icon="inline-start" />{w('BOQ library')}</Link></Button>
           <NewButton label="New quote" onClick={() => setOpen(true)} />
         </div>
       </div>
@@ -64,7 +65,7 @@ export default function QuotesPage() {
         <div className="paper-surface rounded-xl p-4">
           <p className="text-xs text-muted-foreground">Open quotes</p>
           <p className="figures text-2xl font-semibold">{rupees(openOnes.reduce((s, r) => s + r.total, 0))}</p>
-          <p className="text-xs text-muted-foreground">{openOnes.length} draft or sent, incl. GST</p>
+          <p className="text-xs text-muted-foreground">{openOnes.length} draft or sent, incl. {US ? 'tax' : 'GST'}</p>
         </div>
         <div className="paper-surface rounded-xl p-4">
           <p className="text-xs text-muted-foreground">Won this month</p>

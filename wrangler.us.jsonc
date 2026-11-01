@@ -1,0 +1,32 @@
+// North American demo (interiors-erp-us.ahromlabs.com): wrangler.jsonc with the US Worker name, route and databases.
+// Built with NEXT_PUBLIC_MARKET=NA (npm run cf:deploy:us). The leads database is shared with the Indian demo.
+{
+  // Public demo of Savistar Ops: interiors-erp.ahromlabs.com, made-up companies, sample data reset nightly
+  // (workers/demo-reset-cron). The live app runs on Render from the same code (`next build`/`next start`).
+  // Deploy the demo with `npm run cf:deploy`.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "savistar-ops-interiors-demo-us",
+  "account_id": "5d8cf246f656006b81d99d734e8c0f40",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-08-27",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"], // public fetch: lib/demo-leads.js calls ahromlabs.com (same zone)
+  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+  "routes": [{ "pattern": "interiors-erp-us.ahromlabs.com", "custom_domain": true }],
+  // Secrets (wrangler secret put): TURSO_AUTH_TOKEN (savdemo group token), SESSION_SECRET (its own),
+  // OPENROUTER_API_KEY (the demo's own credit-capped key for the assistant; without it the assistant is hidden),
+  // DEMO_PASS (the owner-pass PIN, 4+ characters; see DEMO.md).
+  // Never the live deployment's values.
+  "vars": {
+    "DEMO_MODE": "1",
+    "SKIP_MIGRATE": "1",
+    "TURSO_URL": "libsql://sav-us-demo-pujan.aws-ap-south-1.turso.io",
+    // The owner pass reads and writes golden instead, so its changes survive the nightly reset (lib/db.js).
+    "GOLDEN_TURSO_URL": "libsql://sav-us-demo-golden-pujan.aws-ap-south-1.turso.io",
+    "LEADS_TURSO_URL": "libsql://sav-demo-leads-pujan.aws-ap-south-1.turso.io"
+  },
+  // Run next to the database (Turso, Mumbai): a page makes several sequential queries.
+  "placement": { "mode": "smart" },
+  // Demo uploads (owner pass only, lib/r2.js), shared with SB Ops' demo under interiors/.
+  "r2_buckets": [{ "binding": "DEMO_FILES", "bucket_name": "sb-demo-files" }],
+  "observability": { "enabled": true }
+}

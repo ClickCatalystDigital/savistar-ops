@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { BRAND } from '@/lib/brand';
+import { w } from '@/lib/market';
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState([]);
@@ -66,7 +67,7 @@ export default function ProjectsPage() {
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-2">
                 <Label>Project name</Label>
-                <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="e.g. Mehta Residence — 3BHK" />
+                <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder={w("e.g. Mehta Residence — 3BHK")} />
               </div>
               <div className="flex flex-col gap-2">
                 <Label>Client</Label>

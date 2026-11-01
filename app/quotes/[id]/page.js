@@ -28,11 +28,12 @@ import {
   ArrowLeftIcon, BookOpenIcon, ClipboardPasteIcon, CopyIcon, DownloadIcon, FilePlusIcon, PlusIcon, SendIcon,
   CheckIcon, XIcon, GitBranchIcon, TriangleAlertIcon, Trash2Icon, LayersIcon, ReceiptTextIcon,
 } from 'lucide-react';
+import { LOCALE, CURRENCY, US, TAX, w } from '@/lib/market';
 
-const rupees = (n) => `₹${(Number(n) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const rupees = (n) => `${CURRENCY}${(Number(n) || 0).toLocaleString(LOCALE, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 let keySeq = 0;
 const withKey = (it) => ({ ...it, _k: ++keySeq });
-const blankLine = (section) => withKey({ section, description: '', unit: '', dims: '', measurement_basis: '', qty: '', rate: '', gst_pct: 18, boq_item_id: null, dismissed_flags: '' });
+const blankLine = (section) => withKey({ section, description: '', unit: '', dims: '', measurement_basis: '', qty: '', rate: '', gst_pct: TAX.defaultPct, boq_item_id: null, dismissed_flags: '' });
 
 export default function QuoteEditor() {
   const { id } = useParams();
@@ -146,7 +147,7 @@ export default function QuoteEditor() {
     const lines = linesFromPaste(paste.text, lib, paste.section);
     if (!lines.length) { showToast('No lines found. Copy the cells themselves from Excel.', 'error'); return; }
     touch();
-    setItems((list) => [...list.filter((it) => String(it.description || '').trim()), ...lines.map((l) => withKey({ gst_pct: 18, dims: '', dismissed_flags: '', ...l }))]);
+    setItems((list) => [...list.filter((it) => String(it.description || '').trim()), ...lines.map((l) => withKey({ gst_pct: TAX.defaultPct, dims: '', dismissed_flags: '', ...l }))]);
     setPaste(null);
     showToast(`${lines.length} line${lines.length === 1 ? '' : 's'} added`);
   }
@@ -181,7 +182,7 @@ export default function QuoteEditor() {
     } catch (e) { showToast(e.message, 'error'); }
   }
   async function remove() {
-    if (!confirm('Delete this quotation?')) return;
+    if (!confirm(w('Delete this quotation?'))) return;
     try { await api(`/api/quotations/${id}`, { method: 'DELETE' }); router.push('/quotes'); } catch (e) { showToast(e.message, 'error'); }
   }
 
@@ -216,7 +217,7 @@ export default function QuoteEditor() {
           <Button asChild variant="outline" size="sm"><a href={`/api/quotations/${id}/pdf`} onClick={() => save()}><DownloadIcon data-icon="inline-start" />PDF</a></Button>
           {editable && <Button size="sm" variant="outline" onClick={() => setDialog('send')}><SendIcon data-icon="inline-start" />{q.status === 'sent' ? 'Sent again' : 'Mark as sent'}</Button>}
           {editable && <Button size="sm" onClick={() => setDialog('accept')}><CheckIcon data-icon="inline-start" />Accepted</Button>}
-          {editable && <Button size="sm" variant="ghost" onClick={() => confirm('Mark this quotation as declined?') && act('decline')}><XIcon data-icon="inline-start" />Declined</Button>}
+          {editable && <Button size="sm" variant="ghost" onClick={() => confirm(w('Mark this quotation as declined?')) && act('decline')}><XIcon data-icon="inline-start" />Declined</Button>}
           {(q.status === 'sent' || q.status === 'declined' || q.status === 'draft') && <Button size="sm" variant="ghost" onClick={() => act('revise')}><GitBranchIcon data-icon="inline-start" />Revise</Button>}
           {q.status === 'draft' && <Button size="sm" variant="ghost" className="text-destructive" onClick={remove}><Trash2Icon data-icon="inline-start" />Delete</Button>}
         </div>
@@ -247,6 +248,7 @@ export default function QuoteEditor() {
           <div className="flex flex-col gap-1.5"><Label>Quote no.</Label><Input value={q.quote_no || ''} onChange={(e) => setField({ quote_no: e.target.value })} disabled={!editable} /></div>
           <div className="flex flex-col gap-1.5"><Label>Dated</Label><DateInput value={q.quoted_on || ''} onChange={(v) => setField({ quoted_on: v })} disabled={!editable} /></div>
           <div className="flex flex-col gap-1.5"><Label>Valid until</Label><DateInput value={q.valid_until || ''} onChange={(v) => setField({ valid_until: v })} disabled={!editable} /></div>
+          {!US && (
           <div className="flex flex-col gap-1.5">
             <Label>Site is in</Label>
             <Select value={q.place_of_supply} onValueChange={(v) => setField({ place_of_supply: v })} disabled={!editable}>
@@ -257,6 +259,7 @@ export default function QuoteEditor() {
               </SelectGroup></SelectContent>
             </Select>
           </div>
+          )}
           <div className="flex flex-col gap-1.5">
             <Label>Project</Label>
             <Select value={q.project_id ? String(q.project_id) : 'none'} onValueChange={(v) => setField({ project_id: v === 'none' ? null : Number(v) })} disabled={!editable}>
@@ -267,7 +270,7 @@ export default function QuoteEditor() {
               </SelectGroup></SelectContent>
             </Select>
           </div>
-          <div className="col-span-2 flex flex-col gap-1.5 sm:col-span-3 lg:col-span-6"><Label>For</Label><Input value={q.title || ''} placeholder="e.g. 3 BHK interiors, Mehta bungalow" onChange={(e) => setField({ title: e.target.value })} disabled={!editable} /></div>
+          <div className="col-span-2 flex flex-col gap-1.5 sm:col-span-3 lg:col-span-6"><Label>For</Label><Input value={q.title || ''} placeholder={w("e.g. 3 BHK interiors, Mehta bungalow")} onChange={(e) => setField({ title: e.target.value })} disabled={!editable} /></div>
         </CardContent>
       </Card>
 
@@ -315,7 +318,7 @@ export default function QuoteEditor() {
                   <th className="w-28 pb-2">Unit</th>
                   <th className="w-20 pb-2">Qty</th>
                   <th className="w-28 pb-2">Rate</th>
-                  <th className="w-16 pb-2">GST %</th>
+                  <th className="w-16 pb-2">{US ? 'Tax %' : 'GST %'}</th>
                   <th className="w-28 pb-2 text-right">Amount</th>
                   <th className="w-8 pb-2" />
                 </tr>
@@ -328,7 +331,7 @@ export default function QuoteEditor() {
                   return (
                     <tr key={it._k} className="border-t align-top">
                       <td className="py-2 pr-1">
-                        <Button size="icon-sm" variant="ghost" title={libRow ? `From library: ${libRow.name}` : 'Pick from the BOQ library'} onClick={() => editable && setPicker({ key: it._k })} disabled={!editable}>
+                        <Button size="icon-sm" variant="ghost" title={libRow ? `From library: ${libRow.name}` : w('Pick from the BOQ library')} onClick={() => editable && setPicker({ key: it._k })} disabled={!editable}>
                           <BookOpenIcon className={libRow ? 'text-primary' : 'text-muted-foreground'} />
                         </Button>
                       </td>
@@ -372,8 +375,8 @@ export default function QuoteEditor() {
                         <Input type="number" inputMode="decimal" value={it.rate} disabled={!editable} onChange={(e) => setLine(it._k, { rate: e.target.value })}
                           onKeyDown={(e) => { if (e.key === 'Enter' && editable) { e.preventDefault(); addLine(it.section || '', it._k); } }} />
                         {memory?.length > 0 && (
-                          <p className="mt-1 text-[11px] leading-tight text-muted-foreground" title={memory.map((m) => `₹${m.rate} · ${m.client_name} · ${formatDate(m.quoted_on)} · ${m.status}`).join('\n')}>
-                            Last ₹{Number(memory[0].rate).toLocaleString('en-IN')} · {memory[0].client_name}{memory[0].status === 'accepted' ? ' ✓' : ''}
+                          <p className="mt-1 text-[11px] leading-tight text-muted-foreground" title={memory.map((m) => `${CURRENCY}${m.rate} · ${m.client_name} · ${formatDate(m.quoted_on)} · ${m.status}`).join('\n')}>
+                            Last {CURRENCY}{Number(memory[0].rate).toLocaleString(LOCALE)} · {memory[0].client_name}{memory[0].status === 'accepted' ? ' ✓' : ''}
                           </p>
                         )}
                       </td>
@@ -474,7 +477,7 @@ function ItemPicker({ open, lib, onClose, onPick }) {
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="flex max-h-[85vh] flex-col sm:max-w-2xl">
-        <DialogHeader><DialogTitle>Pick from the BOQ library</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{w('Pick from the BOQ library')}</DialogTitle></DialogHeader>
         <Input autoFocus placeholder="Search: wardrobe, false ceiling, skirting…" value={s} onChange={(e) => setS(e.target.value)} />
         <div className="flex flex-wrap gap-1">
           <Button size="xs" variant={!trade ? 'default' : 'outline'} onClick={() => setTrade('')}>All</Button>
@@ -487,7 +490,7 @@ function ItemPicker({ open, lib, onClose, onPick }) {
               <span className="line-clamp-1 text-xs text-muted-foreground">{r.trade}{r.measure ? ` · ${r.measure}` : ''}</span>
             </button>
           ))}
-          {rows.length === 0 && <p className="px-2 py-6 text-sm text-muted-foreground">Nothing matches. Add it to the library from Quotes → BOQ library.</p>}
+          {rows.length === 0 && <p className="px-2 py-6 text-sm text-muted-foreground">{w('Nothing matches. Add it to the library from Quotes → BOQ library.')}</p>}
         </div>
       </DialogContent>
     </Dialog>
@@ -509,7 +512,7 @@ function CopyRoomsDialog({ open, onClose, currentId, onCopy }) {
           {shown.map((x) => (
             <button key={x.id} type="button" onClick={() => onCopy(x.id)} className="flex w-full items-center justify-between rounded-md px-2 py-2 text-left text-sm hover:bg-muted">
               <span><span className="figures font-medium">{x.quote_no || `#${x.id}`}</span> · {x.client_name}{x.title ? ` · ${x.title}` : ''}</span>
-              <span className="figures text-muted-foreground">₹{Math.round(x.subtotal).toLocaleString('en-IN')}</span>
+              <span className="figures text-muted-foreground">{CURRENCY}{Math.round(x.subtotal).toLocaleString(LOCALE)}</span>
             </button>
           ))}
           {shown.length === 0 && <p className="px-2 py-6 text-sm text-muted-foreground">No other quotes yet.</p>}
@@ -545,7 +548,7 @@ function AcceptDialog({ open, hasProject, onClose, onAccept }) {
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent>
         <DialogHeader><DialogTitle>Client accepted</DialogTitle></DialogHeader>
-        <p className="text-sm text-muted-foreground">The quotation is locked as accepted. Its payment stages can then be raised as invoices.</p>
+        <p className="text-sm text-muted-foreground">{w('The quotation is locked as accepted. Its payment stages can then be raised as invoices.')}</p>
         {!hasProject && (
           <label className="flex items-center gap-2 text-sm">
             <Checkbox checked={createProject} onCheckedChange={(v) => setCreateProject(!!v)} /> Open a project for it
