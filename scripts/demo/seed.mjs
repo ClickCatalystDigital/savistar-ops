@@ -9,7 +9,6 @@
 // The app's first request creates the schema (lib/db.js migrate) and its default logins; this script
 // replaces those logins with the demo ones, then enters everything else through the real API, so
 // derived values (PO balances, freight checks, payroll) behave exactly as in real use.
-import { createClient } from '@libsql/client/web';
 import bcrypt from 'bcryptjs';
 import { randomBytes } from 'node:crypto';
 
@@ -17,7 +16,9 @@ const D = await import(process.env.MARKET === 'NA' ? './seed-data-us.mjs' : './s
 const { CLIENTS, PROJECTS, MATERIALS, PHOTOS, VISITS, PEOPLE, ORDERS, WORK, TASKS, VENDORS, POS, INVOICES, CONVERSATIONS, TASK_LIST } = D;
 
 const { DB_URL, DB_TOKEN, BASE = 'http://localhost:8791' } = process.env;
-if (!DB_URL || !/sav-demo/.test(DB_URL)) throw new Error('DB_URL must be a sav-demo database (never the live one)');
+if (!DB_URL || !/sav(-us)?-demo/.test(DB_URL)) throw new Error('DB_URL must be a sav-demo or sav-us-demo database (never the live one)');
+// A local file database (file:…, for testing a seed before it goes to Turso) needs the Node client.
+const { createClient } = await import(DB_URL.startsWith('file:') ? '@libsql/client' : '@libsql/client/web');
 const db = createClient({ url: DB_URL, authToken: DB_TOKEN });
 
 // --- helpers ---------------------------------------------------------------------------------------
