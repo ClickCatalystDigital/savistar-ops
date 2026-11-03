@@ -64,3 +64,39 @@ assert.deepEqual(suggestAccountMap([
   { code: 'fee', name: 'Bank Charges', account_type: 'expense' },
 ], qbo), { bank: '35', ar: '84', ap: '33', sales: '79', buy: '80', site: '58', fee: '8' });
 console.log('quickbooks suggestions ok');
+
+// ---------- Phase 2: sending records ----------
+const { fingerprint, syncKey, requestId, customerQuery, itemQuery, SALES_ITEMS, buildCustomer, buildInvoice, buildPayment } = await import('../lib/quickbooks.mjs');
+const key = syncKey('INV-7', fingerprint('2026-11-03', 1250, 4));
+assert.equal(key, 'INV-7#2026-11-03|1250|4');
+assert.notEqual(key, syncKey('INV-7', fingerprint('2026-11-03', 900, 4)));
+const rid = requestId('123', 'invoice', key);
+assert.ok(rid.length <= 50 && rid === requestId('123', 'invoice', key) && rid !== requestId('123', 'payment', key));
+assert.equal(customerQuery("O'Brien & Sons"), "select * from Customer where DisplayName = 'O\\'Brien & Sons'");
+assert.equal(itemQuery('Design studio sales'), "select * from Item where Name = 'Design studio sales'");
+assert.deepEqual(Object.values(SALES_ITEMS).map(i => i.code), ['sales_studio', 'sales_workshop']);
+
+assert.deepEqual(buildCustomer({ name: 'Acme Homes', email: 'a@b.co', phone: '512', address: '1 Main St' }), {
+  DisplayName: 'Acme Homes', CompanyName: 'Acme Homes', PrimaryEmailAddr: { Address: 'a@b.co' }, PrimaryPhone: { FreeFormNumber: '512' },
+  BillAddr: { Line1: '1 Main St' }, ShipAddr: { Line1: '1 Main St' },
+});
+assert.deepEqual(buildCustomer({ name: 'Bare' }), { DisplayName: 'Bare', CompanyName: 'Bare' });
+
+const inv = buildInvoice(
+  { id: 9, invoice_no: null, submitted_on: null, created_at: '2026-11-02 10:00:00', due_date: '2026-12-01' },
+  [{ description: 'Sofa', qty: 2, unit_price: 499.99, gst_pct: 8.25 }, { description: 'Delivery', qty: 1, unit_price: 50, gst_pct: 0 }],
+  { address: '1 Main St', email: 'a@b.co' }, { customerId: '58', itemId: '11' });
+assert.equal(inv.DocNumber, '9');
+assert.equal(inv.TxnDate, '2026-11-02');
+assert.equal(inv.Line[0].Amount, 999.98);
+assert.deepEqual(inv.Line.map(l => l.SalesItemLineDetail.TaxCodeRef.value), ['TAX', 'NON']);
+assert.ok(!JSON.stringify(inv).includes('TxnTaxDetail'));
+assert.equal(inv.DueDate, '2026-12-01');
+assert.equal(inv.BillEmail.Address, 'a@b.co');
+
+const pay = buildPayment({ id: 5, date: '2026-11-03', amount: 2500, description: 'Advance' }, { customerId: '58', depositAccountId: '35' });
+assert.equal(pay.TotalAmt, 2500);
+assert.equal(pay.DepositToAccountRef.value, '35');
+assert.equal(pay.Line, undefined); // unapplied: no LinkedTxn
+assert.equal(buildPayment({ id: 5, date: 'x', amount: 1 }, { customerId: '1' }).DepositToAccountRef, undefined);
+console.log('quickbooks sending ok');

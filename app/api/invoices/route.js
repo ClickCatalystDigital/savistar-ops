@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { execute } from '@/lib/db';
+import { autoSend } from '@/lib/quickbooks-sync';
 
 export async function POST(req) {
   const b = await req.json();
@@ -20,5 +21,6 @@ export async function POST(req) {
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [lastId, it.description.trim(), it.hsn || null, Number(it.gst_pct) || 0, Number(it.qty) || 1, Number(it.unit_price) || 0, i]);
   }
+  if (b.status && b.status !== 'draft') autoSend(req, 'invoice', lastId); // QuickBooks, in the background when connected
   return NextResponse.json({ id: lastId });
 }

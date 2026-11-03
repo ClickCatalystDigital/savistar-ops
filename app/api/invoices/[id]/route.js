@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { queryAll, queryOne, execute, softDelete } from '@/lib/db';
+import { autoSend } from '@/lib/quickbooks-sync';
 
 export async function GET(req, ctx) {
   const params = await ctx.params;
@@ -15,6 +16,7 @@ export async function PUT(req, ctx) {
   const items = (b.items || []).filter(i => i.description?.trim());
   if (items.length === 0) return NextResponse.json({ error: 'At least one line item is required' }, { status: 400 });
 
+  const before = await queryOne('SELECT status FROM invoices WHERE id = ?', [params.id]);
   await execute(
     `UPDATE invoices SET project_id = ?, company = ?, invoice_no = ?, title = ?, client_pan = ?, submitted_on = ?, due_date = ?,
        payment_terms = ?, status = ?, notes = ?, place_of_supply = ? WHERE id = ?`,
@@ -29,6 +31,8 @@ export async function PUT(req, ctx) {
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [params.id, it.description.trim(), it.hsn || null, Number(it.gst_pct) || 0, Number(it.qty) || 1, Number(it.unit_price) || 0, i]);
   }
+  // QuickBooks: an invoice goes over when it leaves draft (in the background when connected).
+  if (before?.status === 'draft' && b.status && b.status !== 'draft') autoSend(req, 'invoice', params.id);
   return NextResponse.json({ ok: true });
 }
 

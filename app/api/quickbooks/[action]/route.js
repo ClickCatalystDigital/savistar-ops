@@ -1,5 +1,8 @@
-// QuickBooks Online (North American public demo; lib/quickbooks.js). One file for the six endpoints:
+// QuickBooks Online (North American public demo; lib/quickbooks.js). One file for the endpoints:
 //   GET  status | accounts      — card state / the QuickBooks company's active accounts (office roles)
+//   GET  sync                   — QuickBooks state of every sent invoice, failures to retry, today's count
+//   POST send {kind: 'invoice'|'receipt', id} — send or retry one record now (lib/quickbooks-sync.js); any office
+//        role, demo visitors included (the target is the Intuit sandbox)
 //   GET  connect | callback     — Intuit's OAuth 2.0 authorization-code round trip (owner pass only)
 //   POST disconnect, PUT account-map {map: {code: qboAccountId|''}} (owner pass only)
 // Register this exact redirect URI in the Intuit app: https://interiors-erp-us.ahromlabs.com/api/quickbooks/callback
@@ -7,6 +10,7 @@ import { NextResponse } from 'next/server';
 import { getUserFromRequest, isStaff } from '@/lib/auth';
 import { audit } from '@/lib/assistant';
 import { qboConfig, redirectUri, setHost, completeConnection, connectionStatus, qboAccounts, saveAccountMap, disconnect, manageDenied } from '@/lib/quickbooks';
+import { sendInvoice, sendReceipt, syncState } from '@/lib/quickbooks-sync';
 import { authorizeUrl, checkState, normalizeAccounts, cleanAccountMap, LOCAL_ACCOUNTS, STATE_TTL_MS } from '@/lib/quickbooks.mjs';
 
 const json = (body, status = 200) => NextResponse.json(body, { status });
@@ -22,7 +26,7 @@ async function guard(req, action) {
   if (!user || isStaff(user)) return { error: json({ error: 'Forbidden' }, 403) };
   setHost(req);
   const cfg = qboConfig();
-  if (!['status'].includes(action) && !cfg) return { error: json({ error: 'QuickBooks is not set up on this server' }, 404) };
+  if (!['status', 'sync'].includes(action) && !cfg) return { error: json({ error: 'QuickBooks is not set up on this server' }, 404) };
   return { user, cfg };
 }
 
@@ -36,6 +40,7 @@ export async function GET(req, { params }) {
     const [connection, manage] = await Promise.all([connectionStatus().catch(err => ({ status: 'error', last_error: err.message })), manageDenied()]);
     return json({ enabled: true, environment: cfg.environment, canManage: !manage, manageNote: manage, connection, localAccounts: LOCAL_ACCOUNTS });
   }
+  if (action === 'sync') return cfg ? json({ enabled: true, ...(await syncState()) }) : json({ enabled: false });
   if (action === 'accounts') {
     try { return json({ accounts: normalizeAccounts(await qboAccounts()) }); } catch (err) { return json({ error: err.message }, 502); }
   }
@@ -68,6 +73,11 @@ export async function POST(req, { params }) {
   const { action } = await params;
   const { user, error } = await guard(req, action);
   if (error) return error;
+  if (action === 'send') {
+    const { kind, id } = await req.json().catch(() => ({}));
+    if (!['invoice', 'receipt'].includes(kind) || !id) return json({ error: 'Send {kind, id}' }, 400);
+    try { return json(await (kind === 'invoice' ? sendInvoice(id) : sendReceipt(id))); } catch (err) { return json({ error: err.message }, 502); }
+  }
   if (action !== 'disconnect') return json({ error: 'Not found' }, 404);
   const why = await manageDenied();
   if (why) return json({ error: why }, 403);

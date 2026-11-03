@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { queryAll, execute } from '@/lib/db';
 import { getUserFromRequest, isStaff } from '@/lib/auth';
+import { autoSend } from '@/lib/quickbooks-sync';
 
 // Staff only ever see the entries they created themselves — owners/admins/managers see
 // everything. The filter lives here so the UI (CashTab) needs no scoping logic of its own.
@@ -45,5 +46,7 @@ export async function POST(req) {
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     [b.date, b.kind, b.amount, b.party || null, b.party_type || null, b.party_id || null,
      b.description || null, user.username]);
+  // QuickBooks: money received from a client goes over as a payment (in the background when connected).
+  if (b.kind === 'credit' && b.party_type === 'client' && b.party_id) autoSend(req, 'receipt', lastId);
   return NextResponse.json({ id: lastId });
 }

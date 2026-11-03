@@ -26,6 +26,7 @@ import { TrashIcon } from '@heroicons/react/24/outline';
 import { BRAND } from '@/lib/brand';
 import { StickyNote } from '@/components/sticky-note';
 import { QuoteStatus } from '@/components/quote-status';
+import { QuickBooksStatus } from '@/components/quickbooks-status';
 import { NewQuoteDialog } from '@/components/new-quote-dialog';
 import { displayStatus } from '@/lib/quote-math';
 import { todayISO } from '@/lib/date';
@@ -341,7 +342,12 @@ export default function ClientDetail() {
                     <TableCell className="font-medium">{inv.invoice_no || `#${inv.id}`}</TableCell>
                     <TableCell>{formatDate(inv.submitted_on)}</TableCell>
                     <TableCell>{formatDate(inv.due_date)}</TableCell>
-                    <TableCell><Badge variant={inv.status === 'paid' ? 'secondary' : 'default'}>{capitalize(inv.status)}</Badge></TableCell>
+                    <TableCell>
+                      <div className="flex flex-col items-start gap-1">
+                        <Badge variant={inv.status === 'paid' ? 'secondary' : 'default'}>{capitalize(inv.status)}</Badge>
+                        {US && inv.status !== 'draft' && <QuickBooksStatus invoiceId={inv.id} />}
+                      </div>
+                    </TableCell>
                     <TableCell className="text-right">{rupees(inv.subtotal + inv.tax)}</TableCell>
                   </TableRow>
                 ))}

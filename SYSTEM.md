@@ -101,6 +101,16 @@ summary from a writing model. It never changes data.
 - Each panel opens with a briefing (today, or tomorrow in the evening) and the person's usual questions.
 - `scripts/assistant-eval.mjs` runs 55 questions (incl. fragments, typos and Hinglish) against a server with the demo data.
 
+## QuickBooks Online (North American public demo only)
+
+Inert unless `qboConfig()` (lib/quickbooks.js) returns a config: `QBO_CLIENT_ID` + `QBO_CLIENT_SECRET`, `DEMO_MODE=1`, `NEXT_PUBLIC_MARKET=NA`. One connection per demo site (an Intuit sandbox company), kept in R2 beside a send history (`quickbooks/<host>/connection.json`, `sync.json`) so the nightly database rebuild never re-sends seeded records. Connect, disconnect and the account mapping are owner-pass only (Settings → Integrations); everything below is open to any non-staff role, demo visitors included.
+
+- **Invoices** go to QuickBooks as Invoices on the client (a Customer, found by name or created) when they leave draft (`POST /api/invoices`, `PUT /api/invoices/[id]` draft → sent/paid). Each company's lines use one Service item, created once: "Design studio sales" (account `sales_studio`) and "Furniture workshop sales" (`sales_workshop`). Lines are TAX or NON by the line's tax rate; QuickBooks works out the sales tax, so its total can differ from ours.
+- **Payments** go as Payments when Finance records money in (credit) with a client as the party (`POST /api/cash`, `PUT /api/cash/[id]` when an entry becomes a client credit), deposited to the account mapped to `bank`. The cash book names the client but not an invoice, so a Payment is sent **unapplied** (no linked invoice): the accountant applies it in QuickBooks.
+- Sending is automatic and in the background (`ctx.waitUntil`); it never fails the user's save. A failure is kept with its reason. Each invoice row on the client page shows "In QuickBooks" (plus the number when QuickBooks numbered it differently), "QuickBooks failed · Retry" (reason on hover) or "Not in QuickBooks · Send"; the QuickBooks card has a Sending section with today's count and the failures with Retry. `POST /api/quickbooks/send {kind: 'invoice'|'receipt', id}`, `GET /api/quickbooks/sync`.
+- A record is matched to what was sent by number + fingerprint (date, total, client), so editing a sent invoice's total sends a new invoice. Retries are idempotent (`requestid`).
+- Pure parts and checks: lib/quickbooks.mjs, `node scripts/check-quickbooks.mjs`. Logic: lib/quickbooks-sync.js.
+
 ## Deploy (Render)
 
 Plain Node web service — no Docker:

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { LinkIcon } from 'lucide-react';
 import { api, showToast } from '@/lib/client';
+import { useQuickBooksSync, sendToQuickBooks } from '@/components/quickbooks-status';
 import { accountFits, suggestAccountMap } from '@/lib/quickbooks.mjs';
 
 const when = v => (v ? new Date(v).toLocaleString() : '—');
@@ -18,6 +19,7 @@ export function QuickBooksCard() {
   const [qbError, setQbError] = useState(null);
   const [map, setMap] = useState({});
   const [busy, setBusy] = useState(false);
+  const [sync, reloadSync] = useQuickBooksSync();
 
   const load = useCallback(() => {
     api(`/api/quickbooks/status`).then(r => {
@@ -139,6 +141,24 @@ export function QuickBooksCard() {
                 </div>
               )}
             </div>
+
+            {sync?.enabled && (
+              <div className="flex flex-col gap-2">
+                <h3 className="text-sm font-medium">Sending</h3>
+                <p className="text-xs text-muted-foreground">
+                  Invoices that are sent or paid, and money received from a client in the cash book, go to QuickBooks automatically
+                  (payments arrive unapplied: apply them to the invoice in QuickBooks). {sync.sentToday} sent today
+                  {sync.failures.length ? `, ${sync.failures.length} need attention.` : ', nothing needs attention.'}
+                </p>
+                {sync.failures.map(f => (
+                  <div key={`${f.kind}-${f.id}`} className="flex flex-wrap items-center gap-2 rounded-md border border-destructive/30 px-3 py-2 text-xs">
+                    <span className="font-medium">{f.kind === 'invoice' ? 'Invoice' : 'Payment'} {f.no}</span>
+                    <span className="flex-1 text-destructive">{f.error}</span>
+                    <Button size="sm" variant="outline" onClick={async () => { await sendToQuickBooks(f.kind, f.id); reloadSync(); }}>Retry</Button>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {s.canManage ? (
               <div className="flex flex-wrap gap-2">
