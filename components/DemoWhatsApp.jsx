@@ -12,7 +12,8 @@ import { US } from '@/lib/market';
 // North American demo: no WhatsApp; the same spot offers Pujan's booking page (US Eastern hours, as on ahromlabs.com).
 const BOOKING = 'https://calendar.app.google/CuiiSRtJbheEV2U4A';
 
-const HREF = `https://wa.me/919426519798?text=${encodeURIComponent("Hi Pujan, I'm trying the interiors demo and have a question (ref: demo-interiors)")}`;
+// US builds: Pujan's US WhatsApp number, +1 732 306 5127.
+const HREF = `https://wa.me/${US ? '17323065127' : '919426519798'}?text=${encodeURIComponent("Hi Pujan, I'm trying the interiors demo and have a question (ref: demo-interiors)")}`;
 
 export default function DemoWhatsApp({ children = 'WhatsApp', className }) {
   if (US) return (
