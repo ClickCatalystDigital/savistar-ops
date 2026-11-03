@@ -26,19 +26,19 @@ export function useQuickBooksSync() {
 export async function sendToQuickBooks(kind, id) {
   try {
     const r = await api('/api/quickbooks/send', { method: 'POST', body: { kind, id } });
-    showToast(r.qbo_doc ? `Sent to QuickBooks as invoice ${r.qbo_doc}` : 'Sent to QuickBooks');
+    showToast(r.qbo_doc ? `Sent to QuickBooks as ${kind === 'bill' ? 'bill' : 'invoice'} ${r.qbo_doc}` : 'Sent to QuickBooks');
   } catch (err) { showToast(err.message, 'error'); }
   load(true);
 }
 
 const money = n => `${CURRENCY}${Number(n).toFixed(2)}`;
 
-export function QuickBooksStatus({ invoiceId }) {
+export function QuickBooksStatus({ invoiceId, kind = 'invoice' }) {
   const [s] = useQuickBooksSync();
   const [busy, setBusy] = useState(false);
-  const e = s?.enabled && s.invoices?.[invoiceId];
+  const e = s?.enabled && s[kind === 'bill' ? 'bills' : 'invoices']?.[invoiceId];
   if (!e) return null;
-  const send = async ev => { ev.stopPropagation(); setBusy(true); await sendToQuickBooks('invoice', invoiceId); setBusy(false); };
+  const send = async ev => { ev.stopPropagation(); setBusy(true); await sendToQuickBooks(kind, invoiceId); setBusy(false); };
   if (e.status === 'sent') {
     const taxNote = e.theirs != null && Math.abs(e.theirs - e.ours) > 0.01
       ? `QuickBooks total ${money(e.theirs)} (it works out the sales tax) vs ${money(e.ours)} here` : 'Totals match';

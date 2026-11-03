@@ -30,7 +30,8 @@ import {
 import { ArrowLeftIcon, PlusIcon, PencilIcon, AlertTriangleIcon, PackageCheckIcon } from 'lucide-react';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import { BRAND } from '@/lib/brand';
-import { LOCALE, CURRENCY } from '@/lib/market';
+import { LOCALE, CURRENCY, US } from '@/lib/market';
+import { QuickBooksStatus } from '@/components/quickbooks-status';
 
 const BLUE_ICON_BTN = 'text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-950/40';
 const RED_ICON_BTN = 'text-red-600 transition-colors hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-950/40';
@@ -459,6 +460,7 @@ function PosTab({ vendorId, pos, onChanged }) {
                         {PO_STATUS_LABELS[st]}
                       </Badge>
                       {st === 'open' && outstanding > 0 && <Badge variant="outline">{outstanding} pending</Badge>}
+                      {US && po.status === 'complete' && <QuickBooksStatus kind="bill" invoiceId={po.id} />}
                       <span className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
                         {po.order_item && <>for <Link href={`/orders/${po.order_id}`} className="text-primary hover:underline">{po.order_item}</Link></>}
                         <Button variant="ghost" size="icon-sm" className={BLUE_ICON_BTN}

@@ -100,3 +100,21 @@ assert.equal(pay.DepositToAccountRef.value, '35');
 assert.equal(pay.Line, undefined); // unapplied: no LinkedTxn
 assert.equal(buildPayment({ id: 5, date: 'x', amount: 1 }, { customerId: '1' }).DepositToAccountRef, undefined);
 console.log('quickbooks sending ok');
+
+// ---------- Phase 2b: purchase side ----------
+const { vendorQuery, buildVendor, buildBill } = await import('../lib/quickbooks.mjs');
+assert.equal(vendorQuery("Smith's Timber"), "select * from Vendor where DisplayName = 'Smith\\'s Timber'");
+assert.deepEqual(buildVendor({ name: 'Smith Timber', phone: '512' }), { DisplayName: 'Smith Timber', CompanyName: 'Smith Timber', PrimaryPhone: { FreeFormNumber: '512' } });
+assert.deepEqual(buildVendor({ name: 'Bare' }), { DisplayName: 'Bare', CompanyName: 'Bare' });
+const bill = buildBill({ bill_no: 'PO-12', bill_date: '2026-11-01' }, [{ description: 'Oak plank', qty: 3, rate: 19.99 }], { vendorId: '61', accountId: '80' });
+assert.equal(bill.VendorRef.value, '61');
+assert.equal(bill.DocNumber, 'PO-12');
+assert.equal(bill.Line.length, 1);
+assert.equal(bill.Line[0].Amount, 59.97);
+assert.equal(bill.Line[0].AccountBasedExpenseLineDetail.AccountRef.value, '80');
+assert.equal(bill.DueDate, undefined);
+const taxed = buildBill({ bill_no: 'PO-13', bill_date: '2026-11-01', due_date: '2026-12-01', tax_amount: 5.5 }, [{ description: 'x', qty: 1, rate: 100 }], { vendorId: '61', accountId: '80' });
+assert.deepEqual(taxed.Line.map(l => l.Amount), [100, 5.5]);
+assert.equal(taxed.Line[1].Description, 'Sales tax paid');
+assert.equal(taxed.DueDate, '2026-12-01');
+console.log('quickbooks purchase builders ok');

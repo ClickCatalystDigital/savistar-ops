@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { queryOne, execute } from '@/lib/db';
 import { computeStoredStatus } from '@/lib/po';
+import { autoSend } from '@/lib/quickbooks-sync';
 
 // Record a partial delivery and/or return against a PO. Auto-completes the PO once
 // everything ordered has arrived (returns never reopen it — see lib/po.js).
@@ -28,5 +29,7 @@ export async function POST(req, ctx) {
     [params.id, b.date, b.qty_delivered || 0, b.qty_returned || 0, b.notes || null]);
   const status = computeStoredStatus({ qty_ordered: po.qty_ordered, delivered: newDelivered, status: po.status });
   await execute('UPDATE vendor_pos SET status = ? WHERE id = ?', [status, params.id]);
+  // QuickBooks: a PO that has just completed goes over as a bill (in the background when connected).
+  if (status === 'complete' && po.status !== 'complete') autoSend(req, 'bill', params.id);
   return NextResponse.json({ ok: true, outstanding: Math.max(0, po.qty_ordered - newDelivered) });
 }

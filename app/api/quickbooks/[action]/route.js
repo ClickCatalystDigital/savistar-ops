@@ -1,7 +1,7 @@
 // QuickBooks Online (North American public demo; lib/quickbooks.js). One file for the endpoints:
 //   GET  status | accounts      — card state / the QuickBooks company's active accounts (office roles)
 //   GET  sync                   — QuickBooks state of every sent invoice, failures to retry, today's count
-//   POST send {kind: 'invoice'|'receipt', id} — send or retry one record now (lib/quickbooks-sync.js); any office
+//   POST send {kind: 'invoice'|'receipt'|'bill', id} — send or retry one record now (lib/quickbooks-sync.js); any office
 //        role, demo visitors included (the target is the Intuit sandbox)
 //   GET  connect | callback     — Intuit's OAuth 2.0 authorization-code round trip (owner pass only)
 //   POST disconnect, PUT account-map {map: {code: qboAccountId|''}} (owner pass only)
@@ -10,7 +10,7 @@ import { NextResponse } from 'next/server';
 import { getUserFromRequest, isStaff } from '@/lib/auth';
 import { audit } from '@/lib/assistant';
 import { qboConfig, redirectUri, setHost, completeConnection, connectionStatus, qboAccounts, saveAccountMap, disconnect, manageDenied } from '@/lib/quickbooks';
-import { sendInvoice, sendReceipt, syncState } from '@/lib/quickbooks-sync';
+import { KINDS, sendRecord, syncState } from '@/lib/quickbooks-sync';
 import { authorizeUrl, checkState, normalizeAccounts, cleanAccountMap, LOCAL_ACCOUNTS, STATE_TTL_MS } from '@/lib/quickbooks.mjs';
 
 const json = (body, status = 200) => NextResponse.json(body, { status });
@@ -75,8 +75,8 @@ export async function POST(req, { params }) {
   if (error) return error;
   if (action === 'send') {
     const { kind, id } = await req.json().catch(() => ({}));
-    if (!['invoice', 'receipt'].includes(kind) || !id) return json({ error: 'Send {kind, id}' }, 400);
-    try { return json(await (kind === 'invoice' ? sendInvoice(id) : sendReceipt(id))); } catch (err) { return json({ error: err.message }, 502); }
+    if (!KINDS.includes(kind) || !id) return json({ error: 'Send {kind, id}' }, 400);
+    try { return json(await sendRecord(kind, id)); } catch (err) { return json({ error: err.message }, 502); }
   }
   if (action !== 'disconnect') return json({ error: 'Not found' }, 404);
   const why = await manageDenied();
