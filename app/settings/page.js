@@ -28,6 +28,9 @@ import { AssistantCard } from '@/components/assistant/assistant-card';
 import { PersonaCard } from '@/components/assistant/persona-card';
 import { NotesCard } from '@/components/assistant/notes-card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { QuickBooksCard } from '@/components/quickbooks-card';
+import { DEMO } from '@/lib/brand';
+import { US } from '@/lib/market';
 
 const EMPTY = { username: '', password: '', display_name: '', role: 'user' };
 
@@ -52,6 +55,8 @@ export default function SettingsPage() {
   const [me, setMe] = useState(null);
   const [aiName, setAiName] = useState('Atelier AI');
   const [tab, setTab] = useState(null);
+  // ?tab= opens a tab directly (the QuickBooks sign-in comes back to ?tab=integrations).
+  useEffect(() => { const t = new URLSearchParams(window.location.search).get('tab'); if (t) setTab(t); }, []);
 
   // Local object URL so a newly-chosen file previews immediately, before it's uploaded.
   useEffect(() => {
@@ -237,6 +242,7 @@ export default function SettingsPage() {
       <Tabs value={tab ?? (canUsers ? 'users' : 'me')} onValueChange={setTab}>
         <TabsList>
           {canUsers && <TabsTrigger value="users"><UsersIcon data-icon="inline-start" />Users</TabsTrigger>}
+          {canUsers && US && DEMO && <TabsTrigger value="integrations">Integrations</TabsTrigger>}
           <TabsTrigger value="me"><Butterfly className="size-4 text-primary" />My assistant</TabsTrigger>
         </TabsList>
         {canUsers && <TabsContent value="users" className="mt-2">
@@ -301,6 +307,7 @@ export default function SettingsPage() {
       </Card>
         </TabsContent>}
         {/* Everything about the assistant: your voice and notes; owners and admins also set it up for the team here. */}
+        {canUsers && US && DEMO && <TabsContent value="integrations" className="mt-2"><QuickBooksCard /></TabsContent>}
         <TabsContent value="me" className="mt-2 flex flex-col gap-4">
           <PersonaCard aiName={aiName} />
           {process.env.NEXT_PUBLIC_DEMO !== '1' && <NotesCard aiName={aiName} />}
