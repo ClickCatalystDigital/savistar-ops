@@ -7,10 +7,20 @@ import { isOwnerPass } from '@/lib/demo-leads';
 import { FEATURES } from '@/lib/demo-features';
 import { US } from '@/lib/market';
 
+// The demo's public address (wrangler.jsonc / wrangler.us.jsonc routes).
+const DEMO_ORIGIN = US ? 'https://interiors-erp-us.ahromlabs.com' : 'https://interiors-erp.ahromlabs.com';
+
 export const metadata = {
-  title: 'Interior Design and Furniture Workshop ERP: Live Demo | Ahrom Labs',
+  title: US
+    ? 'Interior Design and Furniture Workshop ERP for US Studios: Live Demo | Ahrom Labs'
+    : 'Interior Design and Furniture Workshop ERP: Live Demo | Ahrom Labs',
   description: 'Try an operations system for an interior design studio and its furniture workshop: projects, site visits, workshop orders, vendor POs, daily worksheets, payroll, ' + (US ? 'invoices' : 'GST invoices') + ' and one combined finance book.',
   robots: { index: true, follow: true },
+  // One URL per demo (/ only redirects here), and the India and US builds named as each other's regional versions.
+  alternates: {
+    canonical: `${DEMO_ORIGIN}/demo`,
+    languages: { 'en-IN': 'https://interiors-erp.ahromlabs.com/demo', 'en-US': 'https://interiors-erp-us.ahromlabs.com/demo', 'x-default': 'https://interiors-erp.ahromlabs.com/demo' },
+  },
 };
 
 export default async function DemoPage() {
@@ -25,11 +35,11 @@ export default async function DemoPage() {
     applicationCategory: 'BusinessApplication',
     applicationSubCategory: 'Operations software for interior design firms and furniture workshops',
     operatingSystem: 'Web browser',
-    url: 'https://interiors-erp.ahromlabs.com/demo',
+    url: `${DEMO_ORIGIN}/demo`,
     description: metadata.description,
     featureList: FEATURES.map(([, title, text]) => `${title}: ${text}`),
     publisher: { '@type': 'Organization', name: 'Ahrom Labs', url: 'https://ahromlabs.com' },
-    hasPart: FEATURES.map(([, , , id, heading]) => ({ '@type': 'WebPageElement', name: heading, url: `https://interiors-erp.ahromlabs.com/demo#${id}` })),
+    hasPart: FEATURES.map(([, , , id, heading]) => ({ '@type': 'WebPageElement', name: heading, url: `${DEMO_ORIGIN}/demo#${id}`})),
   };
   return (
     <>
