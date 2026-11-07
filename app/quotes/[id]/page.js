@@ -24,6 +24,7 @@ import { UNITS, UNIT_LABEL, checkLine, matchItem, linesFromPaste } from '@/lib/b
 import { qtyFromDims } from '@/lib/dims';
 import { quoteTotals, roomTotals, lineAmount, displayStatus, amountInWords } from '@/lib/quote-math';
 import { todayISO } from '@/lib/date';
+import { DetailSkeleton } from '@/components/load-swap';
 import {
   ArrowLeftIcon, BookOpenIcon, ClipboardPasteIcon, CopyIcon, DownloadIcon, FilePlusIcon, PlusIcon, SendIcon,
   CheckIcon, XIcon, GitBranchIcon, TriangleAlertIcon, Trash2Icon, LayersIcon, ReceiptTextIcon,
@@ -195,7 +196,7 @@ export default function QuoteEditor() {
   const invoiced = stages.reduce((s, st) => s + (st.invoice_id ? Number(st.invoice_total) || 0 : 0), 0);
   const paid = stages.reduce((s, st) => s + (st.invoice_status === 'paid' ? Number(st.invoice_total) || 0 : 0), 0);
 
-  if (!q) return <div className="container py-10 text-muted-foreground">Loading…</div>;
+  if (!q) return <DetailSkeleton />;
   const shown = displayStatus(q, todayISO());
   const ref = `${q.quote_no || `#${q.id}`}${q.revision > 1 ? ` R${q.revision}` : ''}`;
 

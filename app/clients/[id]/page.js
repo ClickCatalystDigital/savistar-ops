@@ -29,6 +29,7 @@ import { QuoteStatus } from '@/components/quote-status';
 import { NewQuoteDialog } from '@/components/new-quote-dialog';
 import { displayStatus } from '@/lib/quote-math';
 import { todayISO } from '@/lib/date';
+import { DetailSkeleton } from '@/components/load-swap';
 
 const rupees = n => `₹${(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const EMPTY_ITEM = { description: '', hsn: '', gst_pct: 18, qty: 1, unit_price: 0 };
@@ -152,7 +153,7 @@ export default function ClientDetail() {
     } catch (e) { showToast(e.message, 'error'); }
   }
 
-  if (!client) return <div className="container py-10 text-muted-foreground">Loading…</div>;
+  if (!client) return <DetailSkeleton />;
 
   return (
     <div className="container flex flex-col gap-4 py-6">

@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { PageTitle } from '@/components/page-title';
 import { NewButton } from '@/components/new-button';
 import { StickyNote } from '@/components/sticky-note';
+import { LoadSwap, RowsSkeleton } from '@/components/load-swap';
 import { QuoteStatus } from '@/components/quote-status';
 import { NewQuoteDialog } from '@/components/new-quote-dialog';
 import { Button } from '@/components/ui/button';
@@ -89,7 +90,7 @@ export default function QuotesPage() {
       </div>
 
       {/* Until the list arrives, say so: zeros and an empty table read as "my quotes are gone". */}
-      {!rows && <div className="h-40 animate-pulse rounded-lg bg-muted/50" aria-label="Loading quotes" />}
+      <LoadSwap ready={!!rows} skeleton={<RowsSkeleton rows={5} cols={5} />}>
       {rows && shown.length === 0 && <StickyNote className="my-10">{rows.length ? 'Nothing here for this filter.' : 'No quotations yet. Press New quote to start one.'}</StickyNote>}
       {shown.length > 0 && (
         <div className="overflow-x-auto">
@@ -121,6 +122,7 @@ export default function QuotesPage() {
           </Table>
         </div>
       )}
+      </LoadSwap>
       <NewQuoteDialog open={open} onOpenChange={setOpen} />
     </div>
   );

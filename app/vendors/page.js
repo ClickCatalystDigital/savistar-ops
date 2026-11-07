@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { materialsIn } from '@/lib/materials';
 import { StickyNote } from '@/components/sticky-note';
+import { SkeletonTableRows } from '@/components/load-swap';
 import { api, showToast, formatMoney } from '@/lib/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,11 +25,12 @@ const EMPTY = { name: '', phone: '', material: '', notes: '' };
 
 export default function VendorsPage() {
   const [vendors, setVendors] = useState([]);
+  const [loaded, setLoaded] = useState(false);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [busy, setBusy] = useState(false);
 
-  async function load() { setVendors(await api('/api/vendors')); }
+  async function load() { setVendors(await api('/api/vendors')); setLoaded(true); }
   useEffect(() => { load(); }, []);
 
   async function save() {
@@ -95,7 +97,8 @@ export default function VendorsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {vendors.length === 0 && (
+            <SkeletonTableRows ready={loaded} rows={5} cols={6} />
+            {loaded && vendors.length === 0 && (
               <TableRow><TableCell colSpan={6} className="py-8"><StickyNote>No vendors yet. Add your first supplier.</StickyNote></TableCell></TableRow>
             )}
             {vendors.map(v => (

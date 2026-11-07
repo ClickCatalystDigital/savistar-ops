@@ -26,6 +26,7 @@ import { KanbanSquareIcon, ListIcon } from 'lucide-react';
 import { BRAND } from '@/lib/brand';
 import { UserAvatar } from '@/components/user-avatar';
 import { StickyNote } from '@/components/sticky-note';
+import { LoadSwap, CardsSkeleton, RowsSkeleton } from '@/components/load-swap';
 import { cn } from '@/lib/utils';
 
 const STATUS_VARIANT = { pending: 'outline', in_progress: 'default', done: 'secondary', delivered: 'secondary', cancelled: 'destructive' };
@@ -71,6 +72,7 @@ const EMPTY = { item: '', qty: 1, client_id: '', project_id: '', description: ''
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState([]);
+  const [loaded, setLoaded] = useState(false);
   const [clients, setClients] = useState([]);
   const [projects, setProjects] = useState([]);
   const [filter, setFilter] = useState('all');
@@ -81,6 +83,7 @@ export default function OrdersPage() {
 
   async function load(f = view === 'board' ? 'all' : filter) {
     setOrders(await api(`/api/orders?status=${f}`));
+    setLoaded(true);
   }
   useEffect(() => { load(); }, [filter, view]);
   useEffect(() => {
@@ -210,6 +213,7 @@ export default function OrdersPage() {
       </Tabs>
       </div>
 
+      <LoadSwap ready={loaded} skeleton={view === 'board' ? <CardsSkeleton cards={4} className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4" /> : <RowsSkeleton rows={6} cols={5} />}>
       {view === 'board' && (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
           {BOARD.map(s => {
@@ -267,6 +271,7 @@ export default function OrdersPage() {
         </Table>
       </div>
       )}
+      </LoadSwap>
     </div>
   );
 }
