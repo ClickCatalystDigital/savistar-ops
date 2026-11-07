@@ -61,6 +61,7 @@ export function AssistantWidget({ user, aiName }) {
   const endRef = useRef(null);
   const lastAnswerRef = useRef(null);
   const inputRef = useRef(null);
+  const panelRef = useRef(null);
   const idRef = useRef(1);
   const contextRef = useRef(null); // what the last table answer was about, for follow-ups ("and last month?")
 
@@ -92,12 +93,16 @@ export function AssistantWidget({ user, aiName }) {
 
   useEffect(() => {
     if (!open) return;
-    inputRef.current?.focus();
+    if (!isPhone()) inputRef.current?.focus(); // phones: the keyboard comes up when the box is tapped
+    // Phones: the panel follows the visible area, so the keyboard never covers the text box and nothing scrolls.
+    const vv = window.visualViewport;
+    const fit = () => { const el = panelRef.current; if (el && vv) { el.style.top = `${vv.offsetTop}px`; el.style.height = `${vv.height}px`; } };
+    if (isPhone() && vv) { fit(); vv.addEventListener('resize', fit); vv.addEventListener('scroll', fit); }
     const onKey = (e) => e.key === 'Escape' && setOpen(false);
     window.addEventListener('keydown', onKey);
     const prev = document.body.style.overflow;
     if (isPhone()) document.body.style.overflow = 'hidden';
-    return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = prev; };
+    return () => { window.removeEventListener('keydown', onKey); vv?.removeEventListener('resize', fit); vv?.removeEventListener('scroll', fit); document.body.style.overflow = prev; };
   }, [open]);
 
   // Read on every open, so a change made in Settings applies straight away.
@@ -222,7 +227,7 @@ export function AssistantWidget({ user, aiName }) {
   return (
     <>
     {limitOverlay}
-    <div role="dialog" aria-label={`${aiName} assistant`}
+    <div ref={panelRef} data-ai-panel role="dialog" aria-label={`${aiName} assistant`}
       className={cn('paper-surface fixed z-50 flex flex-col overflow-hidden print:hidden',
         'inset-0 pt-[env(safe-area-inset-top)] animate-in fade-in slide-in-from-bottom-3 duration-200',
         'md:inset-auto md:right-6 md:bottom-6 md:h-[min(44rem,calc(100dvh-3rem))] md:w-[28rem] md:rounded-xl md:pt-0')}>
@@ -380,7 +385,7 @@ export function AssistantWidget({ user, aiName }) {
           <textarea ref={inputRef} value={text} rows={1} maxLength={600} placeholder="Ask about a project, order, invoice…"
             onChange={(e) => { setText(e.target.value); e.target.style.height = 'auto'; e.target.style.height = `${Math.min(e.target.scrollHeight, 112)}px`; }}
             onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
-            className="max-h-28 min-h-9 flex-1 resize-none bg-transparent px-2.5 py-2 text-[15px] outline-none placeholder:text-muted-foreground/70 md:text-sm" />
+            className="max-h-28 min-h-9 flex-1 resize-none bg-transparent px-2.5 py-2 text-base outline-none placeholder:text-muted-foreground/70 md:text-sm" />
           <button type="submit" disabled={busy || !text.trim()} aria-label="Send"
             className="grid size-9 shrink-0 place-items-center rounded-md bg-primary text-primary-foreground transition-all hover:opacity-90 active:scale-95 disabled:bg-muted disabled:text-muted-foreground">
             <ArrowUpIcon className="size-4" />
