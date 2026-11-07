@@ -6,7 +6,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 const DENY = ['savistar', 'saag', 'hari', 'sachi', 'dristi', 'haripriya', 'afafs7926q', 'shree narayan darshan', 'hebatpur'];
-const SKIP = new Set(['invoices.company']); // stored keys 'savistar'/'saag'; shown as BRAND names (lib/brand.js)
+const SKIP = new Set(['invoices.company', 'quotations.company']); // stored keys 'savistar'/'saag'; shown as BRAND names (lib/brand.js)
 const db = createClient({ url: process.env.DB_URL, authToken: process.env.DB_TOKEN });
 const tables = (await db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")).rows.map((r) => r.name);
 let hits = 0;

@@ -63,17 +63,17 @@ export default function QuotesPage() {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="paper-surface rounded-xl p-4">
           <p className="text-xs text-muted-foreground">Open quotes</p>
-          <p className="figures text-2xl font-semibold">{rupees(openOnes.reduce((s, r) => s + r.total, 0))}</p>
-          <p className="text-xs text-muted-foreground">{openOnes.length} draft or sent, incl. GST</p>
+          <p className="figures text-2xl font-semibold">{rows ? rupees(openOnes.reduce((s, r) => s + r.total, 0)) : '…'}</p>
+          <p className="text-xs text-muted-foreground">{rows ? openOnes.length : '…'} draft or sent, incl. GST</p>
         </div>
         <div className="paper-surface rounded-xl p-4">
           <p className="text-xs text-muted-foreground">Won this month</p>
-          <p className="figures text-2xl font-semibold">{rupees(wonMonth.reduce((s, r) => s + r.total, 0))}</p>
-          <p className="text-xs text-muted-foreground">{wonMonth.length} accepted</p>
+          <p className="figures text-2xl font-semibold">{rows ? rupees(wonMonth.reduce((s, r) => s + r.total, 0)) : '…'}</p>
+          <p className="text-xs text-muted-foreground">{rows ? wonMonth.length : '…'} accepted</p>
         </div>
         <div className="paper-surface rounded-xl p-4">
           <p className="text-xs text-muted-foreground">Expiring this week</p>
-          <p className="figures text-2xl font-semibold">{list.filter((r) => r.shown === 'sent' && r.valid_until && r.valid_until <= weekOut).length}</p>
+          <p className="figures text-2xl font-semibold">{rows ? list.filter((r) => r.shown === 'sent' && r.valid_until && r.valid_until <= weekOut).length : '…'}</p>
           <p className="text-xs text-muted-foreground">sent quotes past or near their validity</p>
         </div>
       </div>
@@ -88,6 +88,8 @@ export default function QuotesPage() {
         </div>
       </div>
 
+      {/* Until the list arrives, say so: zeros and an empty table read as "my quotes are gone". */}
+      {!rows && <div className="h-40 animate-pulse rounded-lg bg-muted/50" aria-label="Loading quotes" />}
       {rows && shown.length === 0 && <StickyNote className="my-10">{rows.length ? 'Nothing here for this filter.' : 'No quotations yet. Press New quote to start one.'}</StickyNote>}
       {shown.length > 0 && (
         <div className="overflow-x-auto">
