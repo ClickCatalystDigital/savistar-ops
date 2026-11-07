@@ -15,12 +15,14 @@ import {
 } from '@/components/ui/dialog';
 import { UserAvatar } from '@/components/user-avatar';
 import { StickyNote } from '@/components/sticky-note';
+import { LoadSwap, CardsSkeleton } from '@/components/load-swap';
 import { SearchIcon } from 'lucide-react';
 
 const EMPTY = { name: '', phone: '', email: '', address: '', notes: '' };
 
 export default function ClientsPage() {
   const [clients, setClients] = useState([]);
+  const [loaded, setLoaded] = useState(false);
   const [q, setQ] = useState('');
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(EMPTY);
@@ -28,6 +30,7 @@ export default function ClientsPage() {
 
   async function load(query = '') {
     setClients(await api(`/api/clients${query ? `?q=${encodeURIComponent(query)}` : ''}`));
+    setLoaded(true);
   }
   useEffect(() => { load(); }, []);
   useEffect(() => {
@@ -95,6 +98,7 @@ export default function ClientsPage() {
       </div>
 
       {/* A rolodex: one card per client, latest conversation on it. */}
+      <LoadSwap ready={loaded} skeleton={<CardsSkeleton cards={8} className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" />}>
       {clients.length === 0 && <StickyNote className="my-10">{q ? 'Nobody by that name.' : 'No clients yet. Add the first one.'}</StickyNote>}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {clients.map(c => (
@@ -117,6 +121,7 @@ export default function ClientsPage() {
           </Link>
         ))}
       </div>
+      </LoadSwap>
     </div>
   );
 }

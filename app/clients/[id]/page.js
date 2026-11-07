@@ -31,6 +31,7 @@ import { NewQuoteDialog } from '@/components/new-quote-dialog';
 import { displayStatus } from '@/lib/quote-math';
 import { todayISO } from '@/lib/date';
 import { LOCALE, CURRENCY, US, TAX, w } from '@/lib/market';
+import { DetailSkeleton } from '@/components/load-swap';
 
 const rupees = n => `${CURRENCY}${(n || 0).toLocaleString(LOCALE, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const EMPTY_ITEM = { description: '', hsn: '', gst_pct: TAX.defaultPct, qty: 1, unit_price: 0 };
@@ -154,7 +155,7 @@ export default function ClientDetail() {
     } catch (e) { showToast(e.message, 'error'); }
   }
 
-  if (!client) return <div className="container py-10 text-muted-foreground">Loading…</div>;
+  if (!client) return <DetailSkeleton />;
 
   return (
     <div className="container flex flex-col gap-4 py-6">

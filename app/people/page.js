@@ -5,6 +5,7 @@ import { NewButton } from '@/components/new-button';
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { StickyNote } from '@/components/sticky-note';
+import { LoadSwap, RowsSkeleton, SkeletonTableRows } from '@/components/load-swap';
 import { api, showToast, formatMoney, capitalize } from '@/lib/client';
 import { todayISO, todayMonth } from '@/lib/date';
 import { Button } from '@/components/ui/button';
@@ -71,7 +72,7 @@ function Worksheet() {
     api('/api/orders?status=all').then(o => setOrders(o.filter(x => ['pending', 'in_progress'].includes(x.status)))).catch(() => {});
   }, []);
 
-  if (!data) return <p className="py-8 text-center text-muted-foreground">Loading…</p>;
+  if (!data) return <LoadSwap ready={false} skeleton={<RowsSkeleton rows={6} cols={4} />} />;
 
   return (
     <div className="flex flex-col gap-4">
@@ -228,11 +229,12 @@ const EMPTY_EMP = { name: '', profession: '', phone: '', pay_type: 'daily', pay_
 
 function Employees() {
   const [employees, setEmployees] = useState([]);
+  const [loaded, setLoaded] = useState(false);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(EMPTY_EMP);
   const [busy, setBusy] = useState(false);
 
-  async function load() { setEmployees(await api('/api/employees')); }
+  async function load() { setEmployees(await api('/api/employees')); setLoaded(true); }
   useEffect(() => { load(); }, []);
 
   async function save() {
@@ -313,7 +315,8 @@ function Employees() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {employees.length === 0 && (
+            <SkeletonTableRows ready={loaded} rows={6} cols={5} />
+            {loaded && employees.length === 0 && (
               <TableRow><TableCell colSpan={5} className="py-8"><StickyNote>No employees yet.</StickyNote></TableCell></TableRow>
             )}
             {employees.map(e => (
@@ -368,7 +371,7 @@ function Payroll() {
     } catch (e) { showToast(e.message, 'error'); }
   }
 
-  if (!data) return <p className="py-8 text-center text-muted-foreground">Loading…</p>;
+  if (!data) return <LoadSwap ready={false} skeleton={<RowsSkeleton rows={6} cols={4} />} />;
 
   return (
     <div className="flex flex-col gap-4">

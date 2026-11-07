@@ -29,6 +29,7 @@ import { StickyNote } from '@/components/sticky-note';
 import { MaterialsEditor } from '@/components/materials-editor';
 import { ProjectPhotos } from '@/components/project-photos';
 import { cn } from '@/lib/utils';
+import { DetailSkeleton } from '@/components/load-swap';
 
 export default function ProjectDetail() {
   const { id } = useParams();
@@ -114,7 +115,7 @@ export default function ProjectDetail() {
     } catch (e) { showToast(e.message, 'error'); }
   }
 
-  if (!p) return <div className="container py-10 text-muted-foreground">Loading…</div>;
+  if (!p) return <DetailSkeleton />;
 
   const done = p.milestones.filter(m => m.status === 'done').length;
 

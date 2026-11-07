@@ -14,6 +14,7 @@ import { track } from '@/components/DemoAnalytics';
 import { ResultCard, safePath } from './result-card';
 import { DraftCard } from './draft-card';
 import { AiLimitOverlay } from './ai-limit-overlay';
+import { StreamingText } from '@/components/interior/streaming-text';
 
 const greeting = () => {
   const h = new Date().getHours();
@@ -63,6 +64,7 @@ export function AssistantWidget({ user, aiName }) {
   const inputRef = useRef(null);
   const panelRef = useRef(null);
   const idRef = useRef(1);
+  const liveFrom = useRef(Infinity); // answers from this id on arrived in this tab (not restored), so they stream in
   const contextRef = useRef(null); // what the last table answer was about, for follow-ups ("and last month?")
 
   // The conversation survives a reload (this tab only, per login; gone when the tab closes). Unsaved reminder/note
@@ -75,6 +77,7 @@ export function AssistantWidget({ user, aiName }) {
       if (saved?.msgs?.length) { setMsgs(saved.msgs); contextRef.current = saved.context || null; idRef.current = Math.max(...saved.msgs.map((m) => m.id)) + 1; }
     } catch { /* storage blocked */ }
     restored.current = true;
+    liveFrom.current = idRef.current;
   }, [chatKey]);
   useEffect(() => {
     if (!restored.current) return;
@@ -353,7 +356,9 @@ export function AssistantWidget({ user, aiName }) {
                 <>
                   <div className="border-l-2 border-[color-mix(in_oklab,var(--weekend)_45%,transparent)] py-0.5 pl-3 text-[13.5px] leading-relaxed">
                     {m.reply.title && <p className="font-hand text-sm text-primary/80">{m.reply.title}</p>}
-                    <p className="whitespace-pre-wrap">{m.reply.text}</p>
+                    {m.id >= liveFrom.current && idx === msgs.length - 1
+                      ? <StreamingText text={m.reply.text} showSkip={false} label={`${aiName} answer`} />
+                      : <p className="whitespace-pre-wrap">{m.reply.text}</p>}
                   </div>
                   {m.reply.link && safePath(m.reply.link.path) && (
                     <Link href={m.reply.link.path} onClick={closeOnPhone} className="inline-flex w-fit items-center gap-1 rounded-full border border-dashed px-3 py-1 font-hand text-[13px] text-primary transition-colors hover:bg-muted">

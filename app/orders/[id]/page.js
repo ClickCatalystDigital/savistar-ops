@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/table';
 import { ArrowLeftIcon, PencilIcon, StarIcon } from 'lucide-react';
 import { TrashIcon } from '@heroicons/react/24/outline';
+import { DetailSkeleton } from '@/components/load-swap';
 
 const STATUSES = ['pending', 'in_progress', 'done', 'delivered', 'cancelled'];
 
@@ -67,7 +68,7 @@ export default function OrderDetail() {
     } catch (e) { showToast(e.message, 'error'); }
   }
 
-  if (!o) return <div className="container py-10 text-muted-foreground">Loading…</div>;
+  if (!o) return <DetailSkeleton />;
 
   // Group work logs by employee for the "who built this" summary.
   const byEmployee = {};

@@ -5,6 +5,7 @@ import { NewButton } from '@/components/new-button';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { StickyNote } from '@/components/sticky-note';
+import { LoadSwap, CardsSkeleton } from '@/components/load-swap';
 import { api, showToast, formatDate } from '@/lib/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,6 +26,7 @@ import { w } from '@/lib/market';
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState([]);
+  const [loaded, setLoaded] = useState(false);
   const [clients, setClients] = useState([]);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ name: '', client_id: '', start_date: '', notes: '', materials: '' });
@@ -32,6 +34,7 @@ export default function ProjectsPage() {
 
   async function load() {
     setProjects(await api('/api/projects'));
+    setLoaded(true);
   }
   useEffect(() => {
     load();
@@ -97,6 +100,7 @@ export default function ProjectsPage() {
         </Dialog>
       </div>
 
+      <LoadSwap ready={loaded} skeleton={<CardsSkeleton cards={6} className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" />}>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {projects.length === 0 && (
           <StickyNote className="col-span-full my-6">No projects yet.</StickyNote>
@@ -130,6 +134,7 @@ export default function ProjectsPage() {
           );
         })}
       </div>
+      </LoadSwap>
     </div>
   );
 }

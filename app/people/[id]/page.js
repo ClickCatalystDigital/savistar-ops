@@ -25,6 +25,7 @@ import {
 import { ArrowLeftIcon, PencilIcon, PlusIcon, StarIcon } from 'lucide-react';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import { LOCALE, CURRENCY } from '@/lib/market';
+import { DetailSkeleton } from '@/components/load-swap';
 
 export default function EmployeeDetail() {
   const { id } = useParams();
@@ -79,7 +80,7 @@ export default function EmployeeDetail() {
     load();
   }
 
-  if (!emp) return <div className="container py-10 text-muted-foreground">Loading…</div>;
+  if (!emp) return <DetailSkeleton />;
 
   const present = emp.attendance.filter(a => a.status === 'present').length + 0.5 * emp.attendance.filter(a => a.status === 'half').length;
   const absent = emp.attendance.filter(a => a.status === 'absent').length;

@@ -32,6 +32,7 @@ import { TrashIcon } from '@heroicons/react/24/outline';
 import { BRAND } from '@/lib/brand';
 import { LOCALE, CURRENCY, US } from '@/lib/market';
 import { QuickBooksStatus } from '@/components/quickbooks-status';
+import { DetailSkeleton } from '@/components/load-swap';
 
 const BLUE_ICON_BTN = 'text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-950/40';
 const RED_ICON_BTN = 'text-red-600 transition-colors hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-950/40';
@@ -69,7 +70,7 @@ export default function VendorDetail() {
     } catch (e) { showToast(e.message, 'error'); }
   }
 
-  if (!v) return <div className="container py-10 text-muted-foreground">Loading…</div>;
+  if (!v) return <DetailSkeleton />;
 
   return (
     <div className="container flex flex-col gap-4 py-6">
