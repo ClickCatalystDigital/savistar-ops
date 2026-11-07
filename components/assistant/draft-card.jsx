@@ -8,10 +8,16 @@ import { formatDate } from '@/lib/format';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { DateInput } from '@/components/ui/date-input';
+import { ActionCard } from './action-card';
 
 // A reminder or note the assistant drafted. Nothing is saved until the person presses Save: a reminder becomes their
 // own task through the normal Tasks API (Home and the calendar show it), a note goes to their private notes.
 export function DraftCard({ draft, user, onNavigate }) {
+  if (draft.kind === 'action') return <ActionCard draft={draft} onNavigate={onNavigate} />;
+  return <ReminderOrNote draft={draft} user={user} onNavigate={onNavigate} />;
+}
+
+function ReminderOrNote({ draft, user, onNavigate }) {
   const task = draft.kind === 'task';
   const [title, setTitle] = useState(task ? draft.title : draft.body);
   const [due, setDue] = useState(draft.due || '');

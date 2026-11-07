@@ -48,6 +48,59 @@ function MissedQuestions() {
   );
 }
 
+// AI app keys: connect Claude (or any MCP app) to this system at <origin>/mcp, acting as you. Each key shows once.
+function AppKeys() {
+  const [keys, setKeys] = useState(null);
+  const [name, setName] = useState('');
+  const [made, setMade] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const load = () => api('/api/assistant/keys').then(setKeys).catch(() => setKeys([]));
+  useEffect(() => { load(); }, []);
+  const url = typeof window === 'undefined' ? '/mcp' : `${window.location.origin}/mcp`;
+
+  async function create() {
+    setBusy(true);
+    try { setMade(await api('/api/assistant/keys', { method: 'POST', body: { name } })); setName(''); load(); }
+    catch (e) { showToast(e.message, 'error'); } finally { setBusy(false); }
+  }
+  async function revoke(id) {
+    if (!confirm('Revoke this key? Any AI app using it stops working.')) return;
+    await api(`/api/assistant/keys?id=${id}`, { method: 'DELETE' }).catch((e) => showToast(e.message, 'error')); load();
+  }
+
+  return (
+    <div className="flex flex-col gap-2 border-t border-dashed pt-4">
+      <span className="font-hand text-base">AI app keys</span>
+      <p className="text-xs text-muted-foreground">
+        Connect Claude or another AI app to <span className="figures">{url}</span> (MCP). It asks and makes changes as you, the same way this
+        assistant does: every change is shown first and only made after you confirm it.
+      </p>
+      {made && (
+        <div className="flex flex-col gap-1 rounded-lg border border-dashed border-primary/40 p-3 text-xs">
+          <span className="font-medium">Copy this key now; it won't be shown again.</span>
+          <code className="figures break-all rounded bg-muted px-2 py-1">{made.key}</code>
+          <span className="text-muted-foreground">In the AI app: server URL {url}, header Authorization: Bearer &lt;key&gt;.</span>
+        </div>
+      )}
+      <div className="flex max-w-md gap-2">
+        <Input value={name} maxLength={60} placeholder="Name, e.g. Claude on my laptop" onChange={(e) => setName(e.target.value)} />
+        <Button variant="outline" onClick={create} disabled={busy || !name.trim()}>{busy && <Loader2Icon className="animate-spin" />} Create key</Button>
+      </div>
+      {keys?.length > 0 && (
+        <ul className="divide-y rounded-lg border text-sm">
+          {keys.map((k) => (
+            <li key={k.id} className="flex items-center gap-3 px-3 py-2">
+              <span className="min-w-0 flex-1 truncate">{k.name}</span>
+              <span className="figures text-xs text-muted-foreground">{k.last_used_at ? `used ${String(k.last_used_at).slice(0, 10)}` : 'not used yet'}</span>
+              <button type="button" className="text-xs underline underline-offset-2" onClick={() => revoke(k.id)}>Revoke</button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 // Searchable model list (there are hundreds of models, so a plain select is unusable).
 function ModelPicker({ models, value, onChange }) {
   const [open, setOpen] = useState(false);
@@ -176,7 +229,9 @@ export function AssistantCard() {
         </CardTitle>
         <CardDescription className="max-w-2xl">
           Owners and admins only: setup that applies to everyone. Ask about projects, clients, orders, people, vendors and money in plain words. Jev (the decision model) picks a fixed,
-          read-only look-up; it never writes queries or changes anything. Everyone can use it; staff only see what their tabs show them.
+          read-only look-up; it never writes queries. It can also prepare everyday changes (a client, a task, attendance, a cash entry, a quote's
+          status…) as a card; nothing changes until the person presses Save, and the app's usual rules decide what they may do. Everyone can use it;
+          staff only see what their tabs show them.
         </CardDescription>
         <CardAction>
           <Button onClick={save} disabled={busy || !dirty}>{busy && <Loader2Icon className="animate-spin" />} Save</Button>
@@ -290,6 +345,7 @@ export function AssistantCard() {
         </div>
 
         <MissedQuestions />
+        <AppKeys />
       </CardContent>
     </Card>
   );
