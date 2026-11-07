@@ -49,54 +49,92 @@ function MissedQuestions() {
   );
 }
 
-// AI app keys: connect Claude (or any MCP app) to this system at <origin>/mcp, acting as you. Each key shows once.
+// Connect Claude / ChatGPT: paste <origin>/mcp into the AI app, sign in here, press Allow (lib/oauth.js). Below it,
+// everything connected (signed-in apps and pasted keys) with Disconnect, and keys for tools without the sign-in.
 function AppKeys() {
   const [keys, setKeys] = useState(null);
   const [name, setName] = useState('');
   const [made, setMade] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [showKeys, setShowKeys] = useState(false);
   const load = () => api('/api/assistant/keys').then(setKeys).catch(() => setKeys([]));
   useEffect(() => { load(); }, []);
   const url = typeof window === 'undefined' ? '/mcp' : `${window.location.origin}/mcp`;
 
+  async function copy() {
+    try { await navigator.clipboard.writeText(url); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { /* the address is on screen */ }
+  }
   async function create() {
     setBusy(true);
     try { setMade(await api('/api/assistant/keys', { method: 'POST', body: { name } })); setName(''); load(); }
     catch (e) { showToast(e.message, 'error'); } finally { setBusy(false); }
   }
-  async function revoke(id) {
-    if (!confirm('Revoke this key? Any AI app using it stops working.')) return;
-    await api(`/api/assistant/keys?id=${id}`, { method: 'DELETE' }).catch((e) => showToast(e.message, 'error')); load();
+  async function revoke(k) {
+    if (!confirm(`Disconnect ${k.name}? It stops working straight away.`)) return;
+    await api(`/api/assistant/keys?id=${k.id}`, { method: 'DELETE' }).catch((e) => showToast(e.message, 'error')); load();
   }
 
   return (
-    <div className="flex flex-col gap-2 border-t border-dashed pt-4">
-      <span className="font-hand text-base">AI app keys</span>
+    <div className="flex flex-col gap-3 border-t border-dashed pt-4">
+      <span className="font-hand text-base">Connect Claude or ChatGPT</span>
       <p className="text-xs text-muted-foreground">
-        Connect Claude or another AI app to <span className="figures">{url}</span> (MCP). It asks and makes changes as you, the same way this
-        assistant does: every change is shown first and only made after you confirm it.
+        Your AI app can then ask about this system and prepare changes as you, the same way this assistant does: every change is
+        shown to you first and made only when you confirm it.
       </p>
-      {made && (
-        <div className="flex flex-col gap-1 rounded-lg border border-dashed border-primary/40 p-3 text-xs">
-          <span className="font-medium">Copy this key now; it won't be shown again.</span>
-          <code className="figures break-all rounded bg-muted px-2 py-1">{made.key}</code>
-          <span className="text-muted-foreground">In the AI app: server URL {url}, header Authorization: Bearer &lt;key&gt;.</span>
-        </div>
-      )}
-      <div className="flex max-w-md gap-2">
-        <Input value={name} maxLength={60} placeholder="Name, e.g. Claude on my laptop" onChange={(e) => setName(e.target.value)} />
-        <Button variant="outline" onClick={create} disabled={busy || !name.trim()}>{busy && <Loader2Icon className="animate-spin" />} Create key</Button>
+      <div className="flex max-w-xl items-center gap-2">
+        <code className="figures min-w-0 flex-1 truncate rounded-lg border bg-muted/40 px-3 py-2 text-sm">{url}</code>
+        <Button variant="outline" onClick={copy}>{copied ? <CheckIcon /> : null}{copied ? 'Copied' : 'Copy'}</Button>
       </div>
+      <div className="grid gap-3 text-xs sm:grid-cols-2">
+        <div className="rounded-lg border border-dashed p-3">
+          <p className="mb-1 font-medium">Claude</p>
+          <ol className="list-decimal pl-4 text-muted-foreground">
+            <li>Settings → Connectors → Add custom connector.</li>
+            <li>Paste the address above and press Add, then Connect.</li>
+            <li>Sign in here and press Allow. Done; it stays connected.</li>
+          </ol>
+        </div>
+        <div className="rounded-lg border border-dashed p-3">
+          <p className="mb-1 font-medium">ChatGPT</p>
+          <ol className="list-decimal pl-4 text-muted-foreground">
+            <li>Settings → Apps &amp; Connectors → Create (developer mode on; plans that allow custom connectors).</li>
+            <li>Paste the address above, choose OAuth, and create.</li>
+            <li>Sign in here and press Allow. Done; it stays connected.</li>
+          </ol>
+        </div>
+      </div>
+
       {keys?.length > 0 && (
         <ul className="divide-y rounded-lg border text-sm">
           {keys.map((k) => (
             <li key={k.id} className="flex items-center gap-3 px-3 py-2">
               <span className="min-w-0 flex-1 truncate">{k.name}</span>
+              <span className="text-xs text-muted-foreground">{k.signed_in ? 'signed in' : 'key'}</span>
               <span className="figures text-xs text-muted-foreground">{k.last_used_at ? `used ${String(k.last_used_at).slice(0, 10)}` : 'not used yet'}</span>
-              <button type="button" className="text-xs underline underline-offset-2" onClick={() => revoke(k.id)}>Revoke</button>
+              <button type="button" className="text-xs underline underline-offset-2" onClick={() => revoke(k)}>Disconnect</button>
             </li>
           ))}
         </ul>
+      )}
+
+      <button type="button" onClick={() => setShowKeys((x) => !x)} className="w-fit text-xs underline underline-offset-2 text-muted-foreground">
+        {showKeys ? 'Hide' : 'Using Claude Code or another tool without sign-in? Make a key'}
+      </button>
+      {showKeys && (
+        <div className="flex flex-col gap-2">
+          {made && (
+            <div className="flex flex-col gap-1 rounded-lg border border-dashed border-primary/40 p-3 text-xs">
+              <span className="font-medium">Copy this key now; it won't be shown again.</span>
+              <code className="figures break-all rounded bg-muted px-2 py-1">{made.key}</code>
+              <span className="text-muted-foreground">Claude Code: claude mcp add --transport http designer-ops {url} --header "Authorization: Bearer &lt;key&gt;"</span>
+            </div>
+          )}
+          <div className="flex max-w-md gap-2">
+            <Input value={name} maxLength={60} placeholder="Name, e.g. Claude Code on my laptop" onChange={(e) => setName(e.target.value)} />
+            <Button variant="outline" onClick={create} disabled={busy || !name.trim()}>{busy && <Loader2Icon className="animate-spin" />} Make key</Button>
+          </div>
+        </div>
       )}
     </div>
   );

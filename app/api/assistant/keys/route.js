@@ -15,7 +15,7 @@ const forbidden = () => NextResponse.json({ error: 'Owners and admins only' }, {
 export async function GET(req) {
   const user = await who(req);
   if (!user) return forbidden();
-  return NextResponse.json(await queryAll('SELECT id, name, created_at, last_used_at FROM api_keys WHERE username = ? AND revoked = 0 ORDER BY id DESC', [user.username]));
+  return NextResponse.json(await queryAll('SELECT id, name, created_at, last_used_at, client_id IS NOT NULL AS signed_in FROM api_keys WHERE username = ? AND revoked = 0 ORDER BY id DESC', [user.username]));
 }
 
 export async function POST(req) {

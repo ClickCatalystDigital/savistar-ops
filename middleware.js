@@ -4,8 +4,9 @@
 import { NextResponse } from 'next/server';
 import { validSession } from '@/lib/session';
 
-// /mcp checks its own AI app key (app/mcp/route.js), not the session cookie.
-const PUBLIC_PATHS = ['/login', '/api/login', '/api/version', '/mcp'];
+// /mcp checks its own AI app key or sign-in token (app/mcp/route.js); /oauth/register and /oauth/token are the
+// AI app's own calls (lib/oauth.js). /.well-known/* is public through the dot rule below.
+const PUBLIC_PATHS = ['/login', '/api/login', '/api/version', '/mcp', '/oauth/register', '/oauth/token'];
 
 // Public demo (DEMO_MODE=1, interiors-erp.ahromlabs.com; never set on Render): visitors enter through
 // /demo, password login is off, and changes to logins and file uploads (incl. AI bank-statement reading)
@@ -50,7 +51,8 @@ export async function middleware(req) {
     if (pathname.startsWith('/api/')) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
-    return NextResponse.redirect(new URL(process.env.DEMO_MODE === '1' ? '/demo' : '/login', req.url));
+    // Log in, then come back here (lib: app/login/page.js reads ?next=).
+    return NextResponse.redirect(new URL(process.env.DEMO_MODE === '1' ? '/demo' : `/login?next=${encodeURIComponent(pathname + req.nextUrl.search)}`, req.url));
   }
 
   return NextResponse.next();

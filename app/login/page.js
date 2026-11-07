@@ -23,7 +23,9 @@ export default function Login() {
     setError('');
     try {
       await api('/api/login', { method: 'POST', body: form });
-      router.push('/');
+      // Back to where the person was sent from (e.g. connecting Claude): same-site paths only.
+      const next = new URLSearchParams(window.location.search).get('next');
+      router.push(next && next.startsWith('/') && !next.startsWith('//') ? next : '/');
       router.refresh();
     } catch (err) {
       setError(err.message);
