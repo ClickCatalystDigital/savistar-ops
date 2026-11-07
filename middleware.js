@@ -4,14 +4,15 @@
 import { NextResponse } from 'next/server';
 import { validSession } from '@/lib/session';
 
-const PUBLIC_PATHS = ['/login', '/api/login', '/api/version'];
+// /mcp checks its own AI app key (app/mcp/route.js), not the session cookie.
+const PUBLIC_PATHS = ['/login', '/api/login', '/api/version', '/mcp'];
 
 // Public demo (DEMO_MODE=1, interiors-erp.ahromlabs.com; never set on Render): visitors enter through
 // /demo, password login is off, and changes to logins and file uploads (incl. AI bank-statement reading)
 // are refused. Same as SB Ops' demoGuard.
 const DEMO_PUBLIC = ['/demo', '/api/demo/lead', '/api/demo/enter', '/api/demo/pass'];
 const DEMO_BLOCKED = ['/api/users', '/api/attachments', '/api/documents'];
-const DEMO_AI_OPEN = ['/api/assistant/chat', '/api/assistant/briefing', '/api/assistant/starters', '/api/assistant/feedback'];
+const DEMO_AI_OPEN = ['/api/assistant/chat', '/api/assistant/briefing', '/api/assistant/starters', '/api/assistant/feedback', '/api/assistant/act'];
 function demoGuard(req, pathname) {
   if (process.env.DEMO_MODE !== '1') return null;
   if (pathname === '/login') return NextResponse.redirect(new URL('/demo', req.url));

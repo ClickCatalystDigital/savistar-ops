@@ -81,12 +81,48 @@ const CASES = [
   // not data
   ['how do I log a site visit?', { type: 'text', text: /site visit/i }],
   ['how is payroll worked out?', { type: 'text', text: /days/i }],
-  ['mark the Mehta invoice paid', { type: 'text', text: /only look things up/i }],
+  ['mark the Mehta invoice paid', { type: 'draft', draft: 'action', action: 'mark_invoice_paid' }],
+  ['run payroll for October', { type: 'text', text: /can't do that one|payroll/i }],
+  // actions (a card only; nothing is saved: dry mode, and the card needs Save)
+  ['add a new client Anita Desai, 98250 12345', { type: 'draft', draft: 'action', action: 'add_client' }],
+  ['new client: Rohan Shah', { type: 'draft', draft: 'action', action: 'add_client' }],
+  ['log a call with Kiran Joshi, wants walnut veneer on the wardrobe', { type: 'draft', draft: 'action', action: 'log_conversation' }],
+  ['spoke to the Mehtas, they approved the dining table drawing', { type: 'draft', draft: 'action', action: 'log_conversation' }],
+  ['add a task for the office to collect the Northbridge cheque by Monday', { type: 'draft', draft: 'action', action: 'add_task' }],
+  ['the Northbridge cheque task is done', { type: 'draft', draft: 'action', action: 'complete_task' }],
+  ['start a new project for Greenleaf Montessori: classroom storage', { type: 'draft', draft: 'action', action: 'add_project' }],
+  ['add a milestone to the Brewnest cafe: final snag list by the 20th', { type: 'draft', draft: 'action', action: 'add_milestone' }],
+  ['mark the Joshi kitchen carcass install milestone done', { type: 'draft', draft: 'action', action: 'complete_milestone' }],
+  ['log a site visit to the Mehta bungalow today, false ceiling checked', { type: 'draft', draft: 'action', action: 'log_site_visit' }],
+  ['add a workshop order for 2 study tables for the Joshi apartment', { type: 'draft', draft: 'action', action: 'add_order' }],
+  ['the Brewnest counter order is delivered', { type: 'draft', draft: 'action', action: 'set_order_status' }],
+  ['move the dining table order to in progress', { type: 'draft', draft: 'action', action: 'set_order_status' }],
+  ['Ramesh is absent today', { type: 'draft', draft: 'action', action: 'mark_attendance' }],
+  ['mark Suresh half day', { type: 'draft', draft: 'action', action: 'mark_attendance' }],
+  ['gave Imran an advance of 2000', { type: 'draft', draft: 'action', action: 'add_expense' }],
+  ['received 50,000 cash from Brewnest', { type: 'draft', draft: 'action', action: 'cash_entry' }],
+  ['paid 800 cash to Sardar Transport for freight', { type: 'draft', draft: 'action', action: 'cash_entry' }],
+  ['make a quote for Vikram Rathod for the farmhouse living room', { type: 'draft', draft: 'action', action: 'new_quote' }],
+  ['send the Rathod quote', { type: 'draft', draft: 'action', action: 'send_quote' }],
+  ['Greenleaf accepted our quotation', { type: 'draft', draft: 'action', action: 'accept_quote' }],
+  ['the Joshi study unit quote is lost, they went elsewhere', { type: 'draft', draft: 'action', action: 'decline_quote' }],
+  ['revise the Greenleaf quote', { type: 'draft', draft: 'action', action: 'revise_quote' }],
+  ['Northbridge has paid their invoice', { type: 'draft', draft: 'action', action: 'mark_invoice_paid' }],
+  ['add a new supplier Shree Hardware for hinges', { type: 'draft', draft: 'action', action: 'add_vendor' }],
+  ['place a PO with the plywood vendor for 30 sheets', { type: 'draft', draft: 'action', action: 'add_vendor_po' }],
+  ['12 sheets of plywood arrived today against the PO', { type: 'draft', draft: 'action', action: 'record_delivery' }],
+  ['Sardar Transport charged 1800 for Vatva to Bodakdev', { type: 'draft', draft: 'action', action: 'add_freight' }],
+  ['move the Northbridge cheque task to next Friday', { type: 'draft', draft: 'action', action: 'reschedule_task' }],
+  ['push the Brewnest opening milestone to the 30th', { type: 'draft', draft: 'action', action: 'reschedule_milestone' }],
+  ['delete the glass delivery task', { type: 'draft', draft: 'action', action: 'delete_task' }],
   ['what is the value of our stock?', { type: 'text', text: /stock/i }],
   ['hello', { type: 'text', text: /^Hi/ }],
   ['write me a poem about chairs', { type: 'text', text: /only help/i }],
 ];
 
+// EVAL_ONLY=<regex>: run just the matching questions.
+const only = process.env.EVAL_ONLY ? new RegExp(process.env.EVAL_ONLY, 'i') : null;
+if (only) CASES.splice(0, CASES.length, ...CASES.filter(([q]) => only.test(q)));
 let pass = 0;
 for (const [q, want, prev] of CASES) {
   const messages = prev ? [{ role: 'user', content: prev[0] }, { role: 'assistant', content: 'ok' }, { role: 'user', content: q }] : [{ role: 'user', content: q }];
@@ -108,6 +144,7 @@ for (const [q, want, prev] of CASES) {
   if (want.compare && !String(r.toolLabel).includes('comparison')) fails.push('no comparison');
   if (want.text && !want.text.test(r.text || '')) fails.push(`text "${String(r.text).slice(0, 60)}"`);
   if (want.draft && r.draft?.kind !== want.draft) fails.push(`draft ${r.draft?.kind}`);
+  if (want.action && r.draft?.action !== want.action) fails.push(`action ${r.draft?.action}`);
   if (want.due && !r.draft?.due) fails.push('no due date');
   if (want.client && !r.draft?.client) fails.push('no client');
   if (!fails.length) pass++;
