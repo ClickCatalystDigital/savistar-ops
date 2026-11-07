@@ -187,6 +187,15 @@ export function AssistantWidget({ user, aiName }) {
     fetch('/api/assistant/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question, tool, good }) }).catch(() => {});
   }, []);
 
+  // Cue Cards (app/cue-cards): "Ask" opens the panel and sends that prompt, as if typed.
+  const sendRef = useRef(send);
+  sendRef.current = send;
+  useEffect(() => {
+    const onAsk = (e) => { if (!e.detail?.q) return; setOpen(true); setTimeout(() => sendRef.current(e.detail.q), 0); };
+    window.addEventListener('assistant:ask', onAsk);
+    return () => window.removeEventListener('assistant:ask', onAsk);
+  }, []);
+
   const reset = () => { setMsgs([]); contextRef.current = null; };
   const closeOnPhone = () => isPhone() && setOpen(false);
 
