@@ -36,7 +36,7 @@ export function PersonaCard({ aiName = 'the assistant' }) {
         </CardTitle>
         <CardDescription className="max-w-2xl">
           Your own choice; it doesn't change anyone else's. A persona adds a short written answer above each table, in its
-          voice. The numbers always come straight from the data, and {aiName} only ever looks things up.
+          voice. The numbers always come straight from the data, and a persona never changes what {aiName} does.
         </CardDescription>
       </CardHeader>
       <CardContent>
