@@ -128,5 +128,16 @@ if (!(await queryOne('SELECT id FROM attendance WHERE date = ? AND is_deleted_re
   log(`attendance: ${Math.min(5, staff.length)} of ${staff.length} marked today`);
 }
 
+// 5. Today's cash: a client receipt in and a small spend out (the evening briefing's "Cash today" line).
+const cash = US
+  ? [['credit', 4500, 'Northbridge Consulting LLC', 'Phase 2 payment, ACH', 'client', 4], ['debit', 38, 'Office', 'Coffee and courier', null, null]]
+  : [['credit', 120000, 'Northbridge Consultants Pvt Ltd', 'Stage 2 receipt, NEFT', 'client', 4], ['debit', 650, 'Office', 'Tea and courier', null, null]];
+for (const [kind, amount, party, description, ptype, pid] of cash) {
+  if (await queryOne('SELECT id FROM cash_transactions WHERE date = ? AND description = ?', [today, description])) continue;
+  await execute("INSERT INTO cash_transactions (date, kind, amount, party, description, created_by, party_type, party_id) VALUES (?, ?, ?, ?, ?, 'office', ?, ?)",
+    [today, kind, amount, party, description, ptype, pid]);
+  log(`cash today: ${kind} ${amount} ${party}`);
+}
+
 console.log('Done.');
 process.exit(0);
