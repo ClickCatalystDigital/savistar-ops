@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { SunIcon, MoonIcon, SettingsIcon, LogOutIcon, KeyRoundIcon, EllipsisIcon } from 'lucide-react';
+import { SunIcon, MoonIcon, SettingsIcon, LogOutIcon, KeyRoundIcon, EllipsisIcon, MessageSquareQuoteIcon } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { LINKS } from '@/lib/nav';
 import { Wordmark } from '@/components/wordmark';
@@ -121,6 +121,10 @@ export default function Nav({ user }) {
                   </DropdownMenuItem>
                   <DropdownMenuItem onSelect={e => { e.preventDefault(); setPwOpen(true); }}>
                     <KeyRoundIcon data-icon="inline-start" />Change password
+                  </DropdownMenuItem>
+                  {/* what you can say to the assistant (app/cue-cards) */}
+                  <DropdownMenuItem onClick={() => router.push('/cue-cards')}>
+                    <MessageSquareQuoteIcon data-icon="inline-start" />Cue Cards
                   </DropdownMenuItem>
                   {/* everyone: staff see only their own assistant settings there */}
                   <DropdownMenuItem onClick={() => router.push('/settings')}>

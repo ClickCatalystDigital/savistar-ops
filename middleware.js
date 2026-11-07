@@ -12,7 +12,7 @@ const PUBLIC_PATHS = ['/login', '/api/login', '/api/version', '/mcp'];
 // are refused. Same as SB Ops' demoGuard.
 const DEMO_PUBLIC = ['/demo', '/api/demo/lead', '/api/demo/enter', '/api/demo/pass'];
 const DEMO_BLOCKED = ['/api/users', '/api/attachments', '/api/documents'];
-const DEMO_AI_OPEN = ['/api/assistant/chat', '/api/assistant/briefing', '/api/assistant/starters', '/api/assistant/feedback', '/api/assistant/act'];
+const DEMO_AI_OPEN = ['/api/assistant/chat', '/api/assistant/briefing', '/api/assistant/starters', '/api/assistant/feedback', '/api/assistant/act', '/api/assistant/cue-cards'];
 function demoGuard(req, pathname) {
   if (process.env.DEMO_MODE !== '1') return null;
   if (pathname === '/login') return NextResponse.redirect(new URL('/demo', req.url));

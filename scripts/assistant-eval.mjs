@@ -132,6 +132,9 @@ const CASES = [
   ['write me a poem about chairs', { type: 'text', text: /only help/i }],
 ];
 
+// Every Cue Card (app/cue-cards, lib/cue-cards.js) is a promise that the prompt works: ask each one too.
+const cue = await fetch(`${BASE}/api/assistant/cue-cards`, { headers: { cookie } }).then((r) => r.json()).catch(() => null);
+for (const c of cue?.cards || []) if (!CASES.some(([q]) => q.toLowerCase() === c.q.toLowerCase())) CASES.push([c.q, c.expect]);
 // EVAL_ONLY=<regex>: run just the matching questions.
 const only = process.env.EVAL_ONLY ? new RegExp(process.env.EVAL_ONLY, 'i') : null;
 if (only) CASES.splice(0, CASES.length, ...CASES.filter(([q]) => only.test(q)));
