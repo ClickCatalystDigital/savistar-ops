@@ -45,9 +45,17 @@ const vendor = await id('INSERT INTO vendors (name, material) VALUES (?, ?)', ['
 const po = await id('INSERT INTO vendor_pos (vendor_id, item, qty_ordered, rate) VALUES (?, ?, 20, 2400)', [vendor, 'BWR plywood 18 mm']);
 const inv = await id("INSERT INTO invoices (client_id, project_id, invoice_no, title, status) VALUES (?, ?, 'SAV/26-27/014', 'Stage 2', 'sent')", [kiran, proj]);
 await execute('INSERT INTO invoice_items (invoice_id, description, gst_pct, qty, unit_price, sort_order) VALUES (?, ?, 18, 1, 100000, 0)', [inv, 'Stage 2: carcass']);
+const cash = await id("INSERT INTO cash_transactions (date, kind, amount, party, description, created_by) VALUES (?, 'debit', 600, 'Office', 'Tea and snacks', 'hari')", ['2026-11-06']);
+const exp = await id("INSERT INTO employee_expenses (employee_id, date, kind, amount, description) VALUES (?, ?, 'advance', 1500, 'Diwali advance')", [emp, '2026-11-05']);
+const visit = await id('INSERT INTO site_visits (project_id, visit_date, notes) VALUES (?, ?, ?)', [proj, '2026-11-04', 'Plumbing points marked']);
+const rate = await id('INSERT INTO vendor_rates (vendor_id, from_loc, to_loc, expected_amount) VALUES (?, ?, ?, 1400)', [vendor, 'Narol', 'Bopal']);
+const fr = await id('INSERT INTO freight_charges (vendor_id, date, from_loc, to_loc, amount) VALUES (?, ?, ?, ?, 1800)', [vendor, '2026-11-03', 'Narol', 'Bopal']);
+const wl = await id('INSERT INTO work_logs (employee_id, order_id, date, description) VALUES (?, ?, ?, ?)', [emp, ord, '2026-11-05', 'Fluting on the counter front']);
+await execute("INSERT INTO attendance (employee_id, date, status) VALUES (?, '2026-10-05', 'present'), (?, '2026-10-06', 'present'), (?, '2026-10-07', 'half')", [emp, emp, emp]);
+await execute("INSERT INTO employee_expenses (employee_id, date, kind, amount) VALUES (?, '2026-10-10', 'advance', 500)", [emp]);
 
 // 1. Wiring.
-const sample = { ref: 1, date: day, money: 500, number: 2, text: 'x', longtext: 'x', phone: '9825012345', email: 'a@b.co', enum: null };
+const sample = { ref: 1, date: day, month: '2026-10', money: 500, number: 2, text: 'x', longtext: 'x', phone: '9825012345', email: 'a@b.co', enum: null };
 for (const a of ACTIONS) {
   const v = Object.fromEntries(a.fields.map((f) => [f.name, f.type === 'enum' ? f.options[0].value : sample[f.type]]));
   if (a.key === 'set_order_status') v.order = ord;
@@ -87,6 +95,22 @@ const cases = [
   ['employee_left', 'Ramesh has left', { employee: emp }],
   ['log_work', 'Ramesh worked on the cafe counter order today, fluting done', { employee: emp, order: ord, date: day }],
   ['cancel_po', 'cancel the plywood PO from Gujarat Ply', { po }],
+  ['record_payroll', "record Ramesh's October salary as paid", { employee: emp, period: '2026-10' }],
+  ['record_payroll', 'paid Ramesh his wages', { employee: emp, period: '2026-10' }], // last month by default
+  ['add_invoice', 'make an invoice for Kiran Joshi for the study unit, 45,000 at 18%', { client: kiran, amount: 45000, gst_pct: '18', company: 'savistar' }],
+  ['edit_cash_entry', 'the tea and snacks cash entry was 650, not 600', { entry: cash, amount: 650 }],
+  ['edit_vendor', "Gujarat Ply's new number is 98240 22222", { vendor, phone: '9824022222' }],
+  ['delete_cash_entry', 'delete the tea and snacks cash entry', { entry: cash }],
+  ['delete_expense', "delete Ramesh's Diwali advance", { expense: exp }],
+  ['delete_client', 'delete the client Brewnest Cafe LLP', {}],
+  ['delete_project', 'delete the Joshi apartment project', { project: proj }],
+  ['delete_invoice', 'delete invoice SAV/26-27/014', { invoice: inv }],
+  ['delete_vendor', 'delete the vendor Gujarat Ply House', { vendor }],
+  ['delete_employee', 'delete Ramesh Prajapati from people', { employee: emp }],
+  ['delete_site_visit', 'delete the Joshi site visit about plumbing points', { visit }],
+  ['delete_vendor_rate', 'delete the Narol to Bopal rate for Gujarat Ply', { rate }],
+  ['delete_freight', 'delete the Narol Bopal freight bill', { freight: fr }],
+  ['delete_work_log', "delete Ramesh's fluting work log", { log: wl }],
 ];
 for (const [key, q, want] of cases) {
   const c = await fill(key, q, day);
@@ -95,6 +119,13 @@ for (const [key, q, want] of cases) {
 // A name given as text (how MCP passes it) resolves; a wrong id is an error, not a guess.
 assert.equal((await check('mark_attendance', { employee: 'Ramesh', status: 'present' }, day)).values.employee, emp);
 assert.ok((await check('complete_task', { task: 99999 }, day)).errors.length);
+// The payroll card shows the pay before Save: 2.5 days × 900 − 500 advance.
+assert.match((await check('record_payroll', { employee: emp, period: '2026-10' }, day)).summary, /: 1750 \(2250 − 500 advances\)/);
+assert.ok((await check('record_payroll', { employee: emp, period: 'October' }, day)).errors.length, 'a month must be YYYY-MM');
+// Staff: a card offers and accepts only their own cash entries (the cash routes' rule).
+const staff = { username: 'dristi', role: 'user' };
+assert.equal((await fill('delete_cash_entry', 'delete the tea and snacks cash entry', day, staff)).values.entry, null);
+assert.ok((await check('delete_cash_entry', { entry: cash }, day, staff)).errors.length);
 
 // 3. End to end, as an owner, through the real routes.
 const owner = { id: 1, username: 'hari', role: 'owner', display_name: 'Hari' };
@@ -153,6 +184,36 @@ await Q.decideQuotation(qid, 'accepted');
 const si = await run('raise_stage_invoice', { quote: qid });
 assert.ok(si.result.invoice_id, 'stage invoice raised');
 assert.ok(!refused.ok && /at least one line/i.test(refused.error), `accept_quote should be refused: ${refused.error}`);
+// The new actions, end to end.
+const pay = await run('record_payroll', { employee: emp, period: '2026-10' });
+assert.equal((await (await import('../lib/db.js')).queryOne('SELECT net FROM payroll_payments WHERE id = ?', [pay.result.id])).net, 1750);
+const twice = await runAction(owner, 'record_payroll', { employee: emp, period: '2026-10' });
+assert.ok(!twice.ok && /already recorded/i.test(twice.error), `payroll twice: ${twice.error}`);
+const ni = await run('add_invoice', { client: kiran, project: proj, description: 'Study unit', amount: 45000, gst_pct: '12', company: 'saag' });
+const nir = await (await import('../lib/db.js')).queryOne('SELECT i.company, i.status, it.unit_price, it.gst_pct FROM invoices i JOIN invoice_items it ON it.invoice_id = i.id WHERE i.id = ?', [ni.result.id]);
+assert.deepEqual({ ...nir }, { company: 'saag', status: 'draft', unit_price: 45000, gst_pct: 12 });
+await run('edit_cash_entry', { entry: cash, amount: 650 });
+const ce = await (await import('../lib/db.js')).queryOne('SELECT amount, party, date FROM cash_transactions WHERE id = ?', [cash]);
+assert.deepEqual({ ...ce }, { amount: 650, party: 'Office', date: '2026-11-06' }, 'only the amount changed');
+const nothing = await runAction(owner, 'edit_cash_entry', { entry: cash });
+assert.ok(!nothing.ok && /what to change/i.test(nothing.error));
+const staffUser = { id: 4, username: 'dristi', role: 'user', display_name: 'Dristi' };
+assert.ok(!(await runAction(staffUser, 'edit_cash_entry', { entry: cash, amount: 1 })).ok, "staff can't touch others' cash");
+await run('edit_vendor', { vendor, phone: '9824022222', material: 'Plywood, laminates' });
+assert.equal((await (await import('../lib/db.js')).queryOne('SELECT name, phone FROM vendors WHERE id = ?', [vendor])).name, 'Gujarat Ply House');
+const gone = async (table, rid) => assert.equal((await (await import('../lib/db.js')).queryOne(`SELECT is_deleted_record AS d FROM ${table} WHERE id = ?`, [rid])).d, 1, `${table} ${rid} deleted`);
+for (const [key, f, table, rid] of [['delete_cash_entry', 'entry', 'cash_transactions', cash], ['delete_expense', 'expense', 'employee_expenses', exp],
+  ['delete_site_visit', 'visit', 'site_visits', visit], ['delete_vendor_rate', 'rate', 'vendor_rates', rate], ['delete_freight', 'freight', 'freight_charges', fr],
+  ['delete_work_log', 'log', 'work_logs', wl], ['delete_invoice', 'invoice', 'invoices', ni.result.id], ['delete_quote', 'quote', 'quotations', rev.result.id],
+  ['delete_po', 'po', 'vendor_pos', po]]) { await run(key, { [f]: rid }); await gone(table, rid); }
+const dc = await run('add_client', { name: 'Delete Me Client' });
+const dp = await run('add_project', { name: 'Delete me project', client: dc.result.id, start_date: day });
+await run('delete_project', { project: dp.result.id }); await gone('projects', dp.result.id);
+await run('delete_client', { client: dc.result.id }); await gone('clients', dc.result.id);
+const dv = await run('add_vendor', { name: 'Delete Me Vendor' });
+await run('delete_vendor', { vendor: dv.result.id }); await gone('vendors', dv.result.id);
+const de = await run('add_employee', { name: 'Delete Me Worker', pay_type: 'daily', pay_rate: 500 });
+await run('delete_employee', { employee: de.result.id }); await gone('employees', de.result.id);
 const missing = await runAction(owner, 'add_client', {});
 assert.ok(!missing.ok && /Missing: name/.test(missing.error));
 

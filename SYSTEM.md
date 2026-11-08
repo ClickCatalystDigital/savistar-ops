@@ -72,11 +72,11 @@ Everyone, regardless of role, can change their own password from the nav menu (�
 ## AI assistant
 
 A butterfly button in the corner opens **Atelier AI** (owners can rename it in Settings → My assistant), a read-only chat over the
-app's data. Ported from reel-inventory's LS AI: Jev (`typesafe/jev-1.13`, via OpenRouter) only *chooses*
+app's data that can also make changes as cards (below). Ported from reel-inventory's LS AI: Jev (`typesafe/jev-1.13`, via OpenRouter) only *chooses*
 the kind of question, the look-up, company, period and follow-up; code matches the names (clients,
 projects, orders, vendors, people) and runs a fixed, parameterised query (`lib/assistantTools.js`, 27
 look-ups that use the same maths as the tabs). Answers are ledger tables, optionally with a short
-summary from a writing model. It never changes data.
+summary from a writing model. A look-up never changes data.
 
 - **Settings → My assistant** (owners and admins): name, OpenRouter key (encrypted with `SETTINGS_ENC_KEY`, only the
   last 4 shown), credit, model, answer mode, daily question limit, and the switch for data questions
@@ -99,6 +99,17 @@ summary from a writing model. It never changes data.
   notes into `assistant_notes`, visible only to their author). “What did I note about …?” finds them; Settings →
   My assistant lists them with delete. Notes are off in the demo (shared logins).
 - Each panel opens with a briefing (today, or tomorrow in the evening) and the person's usual questions.
+- **Actions** (54, `lib/assistantActions.js`): a request becomes a card with every field editable; nothing changes
+  until Save, which sends the screen's own request to the app's route as that person (`lib/actionRunner.js`), so the
+  route's own checks apply. Deletes show red. MCP (Claude / ChatGPT) gets the same list via propose_action /
+  confirm_action. Clients, conversations, tasks (add, done, move, delete), projects (add, status, delete), milestones
+  (add, done, move, delete), site visits (log, delete), workshop orders (add, status, delete), attendance, advances
+  and expenses (add, delete), employees (add, rate, left, delete), work logs (add, delete), payroll (record a month
+  paid, at the computed amount), cash (add, correct, delete; staff only their own), quotations (new, send, accept,
+  decline, revise, delete), invoices (new one-line draft, stage invoice, paid, delete), vendors (add, edit, delete),
+  POs (place, delivery, cancel, delete), freight bills and agreed rates (add, delete). Not from chat: file uploads,
+  logins, the BOQ library and the multi-line quotation / invoice editors. `scripts/check-actions.mjs` runs every
+  action end to end on a throwaway copy of the local database.
 - `scripts/assistant-eval.mjs` runs 55 questions (incl. fragments, typos and Hinglish) against a server with the demo data.
 
 ## Deploy (Render)
