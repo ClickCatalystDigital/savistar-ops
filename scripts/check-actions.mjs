@@ -97,7 +97,7 @@ const cases = [
   ['cancel_po', 'cancel the plywood PO from Gujarat Ply', { po }],
   ['record_payroll', "record Ramesh's October salary as paid", { employee: emp, period: '2026-10' }],
   ['record_payroll', 'paid Ramesh his wages', { employee: emp, period: '2026-10' }], // last month by default
-  ['add_invoice', 'make an invoice for Kiran Joshi for the study unit, 45,000 at 18%', { client: kiran, amount: 45000, gst_pct: '18', company: 'savistar' }],
+  ['add_invoice', 'make an invoice for Kiran Joshi for the study unit, 45,000 at 18%', { client: kiran, amount: 45000, gst_pct: process.env.NEXT_PUBLIC_MARKET === 'NA' ? 0 : '18', company: 'savistar' }],
   ['edit_cash_entry', 'the tea and snacks cash entry was 650, not 600', { entry: cash, amount: 650 }],
   ['edit_vendor', "Gujarat Ply's new number is 98240 22222", { vendor, phone: '9824022222' }],
   ['delete_cash_entry', 'delete the tea and snacks cash entry', { entry: cash }],
