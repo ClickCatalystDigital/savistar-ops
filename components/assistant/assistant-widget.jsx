@@ -173,8 +173,8 @@ export function AssistantWidget({ user, aiName }) {
         setMsgs((m) => [...m, { id: idRef.current++, role: 'assistant', error: { text: data?.error || 'Something went wrong. Please try again.', link: data?.link, linkLabel: data?.linkLabel } }]);
       } else {
         setMsgs((m) => [...m, { id: idRef.current++, role: 'assistant', reply: data.reply, content: replyText(data.reply) }]);
+        // Keep the last table's context through text turns ("thanks", a how-to) so a later "did it make money?" still knows "it".
         if (data.reply.type === 'table') contextRef.current = data.reply.context ?? null;
-        else if (data.reply.type === 'text') contextRef.current = null;
       }
     } catch {
       setMsgs((m) => [...m, { id: idRef.current++, role: 'assistant', error: { text: 'Could not reach the server. Check your connection and try again.' } }]);

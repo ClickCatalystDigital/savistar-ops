@@ -132,13 +132,69 @@ const CASES = [
   ['write me a poem about chairs', { type: 'text', text: /only help/i }],
 ];
 
+// Conversations, turn by turn, the way the chat widget sends them: the last six messages (replies as their text) and
+// the last table's context, kept across text replies. The Atelier episodes, plus follow-ups that must carry over.
+const P = { mehta: 'Project=Mehta bungalow — full interiors', brew: 'Project=Brewnest cafe, Sindhu Bhavan Road', joshi: 'Project=Joshi apartment — kitchen and wardrobes', kap: 'Project=Kapadia living room', north: 'Project=Northbridge office fit-out, 40 seats' };
+const CHAINS = [
+  ['Ep 1 profit', [['Which projects are most profitable?', { tool: 'project_profit', notSum: /100%|costs incomplete/ }], ['Did Northbridge make money?', { tool: 'project_profit', has: [P.north] }], ['what about the Kapadia living room?', { tool: 'project_profit', has: [P.kap] }]]],
+  ['Ep 1 pronoun', [['How is the Mehta bungalow going?', { tool: 'project_overview', has: [P.mehta] }], ['Did it make money?', { tool: 'project_profit', has: [P.mehta] }]]],
+  ['Ep 2 receivables', [['Who owes us money?', { tool: 'outstanding_invoices', sum: /past due/ }]]],
+  ['Ep 3 quotes', [['Which quotations are still waiting for a reply?', { tool: 'open_quotes', sum: /waiting for a reply/ }], ['How many quotes did we win this month?', { tool: 'quotes_won' }], ['and last month?', { tool: 'quotes_won', has: ['Period=Last month'] }]]],
+  ['Ep 4 delays', [['Which milestones are overdue?', { tool: 'milestones' }], ['How is the Brewnest cafe going?', { tool: 'project_overview', has: [P.brew] }]]],
+  ['Ep 5 materials', [['What material is still to come for the Mehta bungalow?', { tool: 'vendor_pos', has: [P.mehta] }], ['What about Brewnest Cafe?', { tool: 'vendor_pos', has: [P.brew] }], ['Which workshop orders are late?', { tool: 'orders' }]]],
+  ['context survives a text turn', [['What material is still to come for Brewnest?', { tool: 'vendor_pos', has: [P.brew] }], ['thanks', { type: 'text' }], ['and for the Joshi apartment?', { tool: 'vendor_pos', has: [P.joshi] }]]],
+  ['Ep 6 on time', [['Are we delivering workshop orders on time?', { tool: 'turnaround' }]]],
+  ['Ep 7 quiet clients', [["Which clients haven't we spoken to in two weeks?", { tool: 'quiet_clients' }], ['Remind me to call Kiran Joshi on Friday', { type: 'draft', draft: 'task', due: true, client: true }]]],
+  ['Ep 8 stage invoice', [['Raise the next stage invoice for the Mehta loose furniture quote', { type: 'draft', draft: 'action', action: 'raise_stage_invoice' }]]],
+  ['Ep 9 freight', [['Did a transporter charge us above the rate card?', { tool: 'freight_overcharges' }]]],
+  ['Ep 10 billing', [['How much did we bill this month, and how much GST?', { tool: 'invoiced', notSum: /Nothing invoiced/ }], ['How did billing this month compare with last month?', { tool: 'invoiced', compare: true }]]],
+];
+
 // Every Cue Card (app/cue-cards, lib/cue-cards.js) is a promise that the prompt works: ask each one too.
 const cue = await fetch(`${BASE}/api/assistant/cue-cards`, { headers: { cookie } }).then((r) => r.json()).catch(() => null);
 for (const c of cue?.cards || []) if (!CASES.some(([q]) => q.toLowerCase() === c.q.toLowerCase())) CASES.push([c.q, c.expect]);
 // EVAL_ONLY=<regex>: run just the matching questions.
 const only = process.env.EVAL_ONLY ? new RegExp(process.env.EVAL_ONLY, 'i') : null;
 if (only) CASES.splice(0, CASES.length, ...CASES.filter(([q]) => only.test(q)));
-let pass = 0;
+let pass = 0, total = CASES.length;
+// What went wrong with one reply, against what we expected of it.
+function check(res, d, want) {
+  const r = d.reply || {};
+  const params = (r.params || []).map((p) => `${p.label}=${p.value}`);
+  const fails = [];
+  if (!res.ok) fails.push(`HTTP ${res.status} ${d.error}`);
+  if (want.type && r.type !== want.type) fails.push(`type ${r.type}`);
+  if (want.tool && r.tool !== want.tool) fails.push(`tool ${r.tool}`);
+  for (const h of want.has || []) if (!params.some((p) => (h.endsWith('=') ? p.startsWith(h) : p === h))) fails.push(`missing ${h} (got ${params.join(', ') || 'none'})`);
+  if (want.sum && !want.sum.test(r.summary || '')) fails.push(`summary "${String(r.summary).slice(0, 80)}"`);
+  if (want.notSum && want.notSum.test(r.summary || '')) fails.push(`summary says ${want.notSum}: "${String(r.summary).slice(0, 120)}"`);
+  if (want.second && !(r.cards || []).some((c) => c.tool === want.second)) fails.push(`second ${(r.cards || []).map((c) => c.tool)}`);
+  if (want.compare && !String(r.toolLabel).includes('comparison')) fails.push('no comparison');
+  if (want.text && !want.text.test(r.text || '')) fails.push(`text "${String(r.text).slice(0, 60)}"`);
+  if (want.draft && r.draft?.kind !== want.draft) fails.push(`draft ${r.draft?.kind}`);
+  if (want.action && r.draft?.action !== want.action) fails.push(`action ${r.draft?.action}`);
+  if (want.due && !r.draft?.due) fails.push('no due date');
+  if (want.client && !r.draft?.client) fails.push('no client');
+  return fails;
+}
+const show = (q, fails, d) => { const r = d.reply || {}; console.log(`${fails.length ? 'FAIL' : 'ok  '}  ${q}${fails.length ? `\n      ${fails.join('; ')}\n      ${(d.meta?.trace || []).join(' | ')}` : `  →  ${r.draft ? JSON.stringify(r.draft) : r.summary || String(r.text).slice(0, 70)}`}`); };
+const onlyChains = only ? CHAINS.filter(([name, turns]) => only.test(name) || turns.some(([q]) => only.test(q))) : CHAINS;
+for (const [name, turns] of onlyChains) {
+  console.log(`\n— ${name}`);
+  const history = []; let context = null;
+  for (const [q, want] of turns) {
+    history.push({ role: 'user', content: q });
+    const res = await fetch(`${BASE}/api/assistant/chat`, { method: 'POST', headers: { 'content-type': 'application/json', cookie }, body: JSON.stringify({ dry: true, messages: history.slice(-6), context }) });
+    const d = await res.json();
+    const r = d.reply || {};
+    history.push({ role: 'assistant', content: r.summary || r.text || 'ok' });
+    if (r.type === 'table') context = r.context ?? null;
+    const fails = check(res, d, want);
+    total++; if (!fails.length) pass++;
+    show(`  ${q}`, fails, d);
+  }
+}
+console.log('\n— single questions');
 for (const [q, want, prev] of CASES) {
   const messages = prev ? [{ role: 'user', content: prev[0] }, { role: 'assistant', content: 'ok' }, { role: 'user', content: q }] : [{ role: 'user', content: q }];
   let context = null;
@@ -148,22 +204,9 @@ for (const [q, want, prev] of CASES) {
   }
   const res = await fetch(`${BASE}/api/assistant/chat`, { method: 'POST', headers: { 'content-type': 'application/json', cookie }, body: JSON.stringify({ dry: true, messages, context }) });
   const d = await res.json();
-  const r = d.reply || {};
-  const params = (r.params || []).map((p) => `${p.label}=${p.value}`);
-  const fails = [];
-  if (!res.ok) fails.push(`HTTP ${res.status} ${d.error}`);
-  if (want.type && r.type !== want.type) fails.push(`type ${r.type}`);
-  if (want.tool && r.tool !== want.tool) fails.push(`tool ${r.tool}`);
-  for (const h of want.has || []) if (!params.some((p) => (h.endsWith('=') ? p.startsWith(h) : p === h))) fails.push(`missing ${h}`);
-  if (want.second && !(r.cards || []).some((c) => c.tool === want.second)) fails.push(`second ${(r.cards || []).map((c) => c.tool)}`);
-  if (want.compare && !String(r.toolLabel).includes('comparison')) fails.push('no comparison');
-  if (want.text && !want.text.test(r.text || '')) fails.push(`text "${String(r.text).slice(0, 60)}"`);
-  if (want.draft && r.draft?.kind !== want.draft) fails.push(`draft ${r.draft?.kind}`);
-  if (want.action && r.draft?.action !== want.action) fails.push(`action ${r.draft?.action}`);
-  if (want.due && !r.draft?.due) fails.push('no due date');
-  if (want.client && !r.draft?.client) fails.push('no client');
+  const fails = check(res, d, want);
   if (!fails.length) pass++;
-  console.log(`${fails.length ? 'FAIL' : 'ok  '}  ${q}${fails.length ? `\n      ${fails.join('; ')}\n      ${(d.meta?.trace || []).join(' | ')}` : `  →  ${r.draft ? JSON.stringify(r.draft) : r.summary || String(r.text).slice(0, 70)}`}`);
+  show(q, fails, d);
 }
-console.log(`\n${pass}/${CASES.length} passed`);
-process.exit(pass === CASES.length ? 0 : 1);
+console.log(`\n${pass}/${total} passed`);
+process.exit(pass === total ? 0 : 1);
