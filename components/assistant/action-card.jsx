@@ -104,6 +104,7 @@ function Field({ f, value, display, onChange }) {
       </span>
     );
   }
+  if (f.type === 'month') return <Input type="month" value={value || ''} onChange={(e) => onChange(e.target.value || null)} className={cn(box, 'w-44')} />;
   const numeric = f.type === 'money' || f.type === 'number';
   return <Input value={value ?? ''} inputMode={numeric ? 'decimal' : f.type === 'phone' ? 'tel' : f.type === 'email' ? 'email' : undefined}
     onChange={(e) => onChange(numeric ? (e.target.value === '' ? null : e.target.value) : e.target.value)} className={box} />;
