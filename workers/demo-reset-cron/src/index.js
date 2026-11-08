@@ -66,20 +66,23 @@ export async function shiftDates(url, token, today = new Date(Date.now() + 5.5 *
   const seededOn = meta.rows[0]?.[0]?.value;
   const n = Math.round((Date.parse(today) - Date.parse(seededOn)) / 864e5);
   if (!seededOn || !n) return { shifted: 0 };
+  // Periods move by calendar months crossed, not days: shifting '2026-09' by one day from the 15th never changed the month.
+  const ym = (d) => Number(d.slice(0, 4)) * 12 + Number(d.slice(5, 7));
+  const k = ym(today) - ym(seededOn);
   const [cols] = await run(url, token, [
     `SELECT m.name, p.name FROM sqlite_master m JOIN pragma_table_info(m.name) p
      WHERE m.type = 'table' AND m.name NOT LIKE 'sqlite\\_%' ESCAPE '\\' AND m.name NOT LIKE '\\_%' ESCAPE '\\' AND m.name <> 'demo_meta'`,
   ]);
-  const stmts = days => cols.rows.flatMap(([t, c]) => {
+  const stmts = (days, months) => cols.rows.flatMap(([t, c]) => {
     const [tq, cq] = [`"${t.value}"`, `"${c.value}"`];
     return [
       // `date(...) IS NOT NULL`: only real dates move; a financial year like '2026-27' would otherwise be nulled.
       `UPDATE ${tq} SET ${cq} = date(substr(${cq},1,10),'${days} days') || substr(${cq},11) WHERE typeof(${cq}) = 'text' AND ${cq} GLOB ${DAY} AND date(substr(${cq},1,10)) IS NOT NULL`,
-      `UPDATE ${tq} SET ${cq} = substr(date(${cq} || '-15','${days} days'),1,7) WHERE typeof(${cq}) = 'text' AND ${cq} GLOB ${MONTH} AND date(${cq} || '-15') IS NOT NULL`,
+      ...(months ? [`UPDATE ${tq} SET ${cq} = substr(date(${cq} || '-01','${months >= 0 ? '+' : ''}${months} months'),1,7) WHERE typeof(${cq}) = 'text' AND ${cq} GLOB ${MONTH} AND date(${cq} || '-01') IS NOT NULL`] : []),
     ];
   });
-  for (const days of [n + 36525, -36525]) {
-    const all = stmts(days >= 0 ? `+${days}` : `${days}`);
+  for (const [days, months] of [[n + 36525, k ? k + 1200 : 0], [-36525, k ? -1200 : 0]]) {
+    const all = stmts(days >= 0 ? `+${days}` : `${days}`, months);
     for (let i = 0; i < all.length; i += 200) await run(url, token, all.slice(i, i + 200));
   }
   // Golden now reads as of today: record it, so tomorrow's shift moves it by one day.
