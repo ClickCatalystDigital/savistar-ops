@@ -191,6 +191,13 @@ function check(res, d, want) {
   return fails;
 }
 const show = (q, fails, d) => { const r = d.reply || {}; console.log(`${fails.length ? 'FAIL' : 'ok  '}  ${q}${fails.length ? `\n      ${fails.join('; ')}\n      ${(d.meta?.trace || []).join(' | ')}` : `  →  ${r.draft ? JSON.stringify(r.draft) : r.summary || String(r.text).slice(0, 70)}`}`); };
+// EVAL_MARKET=NA: the US demo's records have US names.
+if (process.env.EVAL_MARKET === 'NA') {
+  const US_NAMES = [['Mehta bungalow — full interiors', 'Carter house — full interiors'], ['Brewnest cafe, Sindhu Bhavan Road', 'Brewnest coffee bar, South Lamar'], ['Joshi apartment — kitchen and wardrobes', 'Brooks apartment — kitchen and closets'],
+    ['Kapadia living room', 'Foster living room'], ['Kiran Joshi', 'Kevin Brooks'], ['Mehta bungalow', 'Carter house'], ['Mehta', 'Carter'], ['Joshi', 'Brooks'], ['Kapadia', 'Foster'], ['Brewnest Cafe', 'Brewnest coffee bar'], ['Brewnest cafe', 'Brewnest coffee bar'], ['GST', 'sales tax']];
+  const us = (t) => US_NAMES.reduce((x, [a, b]) => x.replaceAll(a, b), t);
+  for (const [, turns] of CHAINS) for (const t of turns) { t[0] = us(t[0]); if (t[1].has) t[1].has = t[1].has.map(us); }
+}
 const onlyChains = only ? CHAINS.filter(([name, turns]) => only.test(name) || turns.some(([q]) => only.test(q))) : CHAINS;
 for (const [name, turns] of onlyChains) {
   console.log(`\n— ${name}`);
