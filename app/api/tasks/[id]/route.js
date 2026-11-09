@@ -13,6 +13,8 @@ export async function PUT(req, ctx) {
     if (task.assigned_to !== user.username) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
   const b = await req.json();
+  // Staff can't hand a task to someone else: say so instead of quietly keeping it theirs.
+  if (isStaff(user) && b.assigned_to && b.assigned_to !== user.username) return NextResponse.json({ error: 'Only owners and managers can give a task to someone else' }, { status: 403 });
   if (b.status === 'done') {
     await execute(`UPDATE tasks SET status = 'done', completed_at = CURRENT_TIMESTAMP WHERE id = ?`, [params.id]);
   } else if (b.status === 'open') {

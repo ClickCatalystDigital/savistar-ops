@@ -99,17 +99,51 @@ summary from a writing model. A look-up never changes data.
   notes into `assistant_notes`, visible only to their author). “What did I note about …?” finds them; Settings →
   My assistant lists them with delete. Notes are off in the demo (shared logins).
 - Each panel opens with a briefing (today, or tomorrow in the evening) and the person's usual questions.
-- **Actions** (54, `lib/assistantActions.js`): a request becomes a card with every field editable; nothing changes
+- **Actions** (59, `lib/assistantActions.js`): a request becomes a card with every field editable; nothing changes
   until Save, which sends the screen's own request to the app's route as that person (`lib/actionRunner.js`), so the
   route's own checks apply. Deletes show red. MCP (Claude / ChatGPT) gets the same list via propose_action /
-  confirm_action. Clients, conversations, tasks (add, done, move, delete), projects (add, status, delete), milestones
-  (add, done, move, delete), site visits (log, delete), workshop orders (add, status, delete), attendance, advances
+  confirm_action. Clients, conversations, tasks (add, done, reopen, move, give to someone, delete), projects (add, status, delete), milestones
+  (add, done, move, delete), site visits (log, delete), workshop orders (add, status, move, delete), attendance, advances
   and expenses (add, delete), employees (add, rate, left, delete), work logs (add, delete), payroll (record a month
   paid, at the computed amount), cash (add, correct, delete; staff only their own), quotations (new, send, accept,
   decline, revise, delete), invoices (new one-line draft, stage invoice, paid, delete), vendors (add, edit, delete),
-  POs (place, delivery, cancel, delete), freight bills and agreed rates (add, delete). Not from chat: file uploads,
+  POs (place, edit qty / rate, delivery, return, cancel, delete), freight bills and agreed rates (add, delete). Not from chat: file uploads,
   logins, the BOQ library and the multi-line quotation / invoice editors. `scripts/check-actions.mjs` runs every
-  action end to end on a throwaway copy of the local database.
+  action end to end on a throwaway copy of the local database (it fails if one is missed), and every action has a Cue
+  Card filled from records, in both markets.
+
+  Every write route the screens call (audit, 10 Nov 2026): 68 route + method pairs: 48 covered by an action, 20 left out on purpose (invoice PUT counts as covered by “paid”; its line editor is left out).
+
+  | Route | Method | Action(s) |
+  |---|---|---|
+  | `/api/clients`, `/:id` | POST · PUT · DELETE | add_client · edit_client · delete_client |
+  | `/api/clients/:id/conversations` | POST | log_conversation |
+  | `/api/tasks`, `/:id` | POST · PUT · DELETE | add_task · complete_task, reopen_task, reschedule_task, assign_task · delete_task |
+  | `/api/projects`, `/:id` | POST · PUT · DELETE | add_project · set_project_status · delete_project |
+  | `/api/milestones`, `/:id` | POST · PUT · DELETE | add_milestone · complete_milestone, reschedule_milestone · delete_milestone |
+  | `/api/site-visits`, `/:id` | POST · DELETE | log_site_visit · delete_site_visit |
+  | `/api/orders`, `/:id` | POST · PUT · DELETE | add_order · set_order_status, reschedule_order · delete_order |
+  | `/api/attendance` | POST | mark_attendance |
+  | `/api/expenses`, `/:id` | POST · DELETE | add_expense · delete_expense |
+  | `/api/employees`, `/:id` | POST · PUT · DELETE | add_employee · set_pay_rate, employee_left · delete_employee |
+  | `/api/work-logs`, `/:id` | POST · DELETE | log_work · delete_work_log |
+  | `/api/payroll` | POST | record_payroll |
+  | `/api/cash`, `/:id` | POST · PUT · DELETE | cash_entry · edit_cash_entry · delete_cash_entry |
+  | `/api/quotations`, `/:id` | POST · DELETE | new_quote · delete_quote |
+  | `/api/quotations/:id/action` | POST | send_quote, accept_quote, decline_quote, revise_quote |
+  | `/api/quotations/:id/invoice` | POST | raise_stage_invoice |
+  | `/api/invoices`, `/:id` | POST · PUT · DELETE | add_invoice · mark_invoice_paid · delete_invoice |
+  | `/api/vendors`, `/:id` | POST · PUT · DELETE | add_vendor · edit_vendor · delete_vendor |
+  | `/api/vendor-pos`, `/:id` | POST · PUT · DELETE | add_vendor_po · edit_po, cancel_po · delete_po |
+  | `/api/vendor-pos/:id/deliveries` | POST | record_delivery, record_return |
+  | `/api/freight`, `/:id` | POST · DELETE | add_freight · delete_freight |
+  | `/api/vendor-rates`, `/:id` | POST · DELETE | add_vendor_rate · delete_vendor_rate |
+  | `/api/work-logs/:id` | PUT | left out: editing a worksheet line (rating, part) is done on People → worksheet |
+  | `/api/quotations/:id`, `/api/invoices/:id` (lines) | PUT | left out: multi-line quotation / invoice editors |
+  | `/api/boq-items`, `/:id` | POST · PUT · DELETE | left out: BOQ library |
+  | `/api/attachments`, `/api/documents`, `/:id`, `/:id/line-attachment` | POST · PUT · DELETE | left out: file uploads (statements, receipts) |
+  | `/api/users`, `/:id`, `/:id/avatar`, `/api/me/password`, `/api/login`, `/api/logout` | POST · PUT · DELETE | left out: logins, passwords, avatars |
+
 - **Manual / Auto** (Settings → My assistant, owners and admins): “Allow changes from the assistant” (off = no change
   cards in chat or MCP; look-ups and how-to unchanged) and “Roles that may use Auto” (none ticked by default). Those roles
   get a small Manual / Auto switch beside the chat box, remembered per person. In Auto, an add or edit saves at once
