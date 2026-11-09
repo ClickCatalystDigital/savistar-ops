@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ArrowUpIcon, ArrowUpRightIcon, ChevronDownIcon, LockIcon, RotateCcwIcon, ThumbsDownIcon, ThumbsUpIcon, XIcon } from 'lucide-react';
+import { ArrowUpIcon, ArrowUpRightIcon, ChevronDownIcon, LockIcon, ZapIcon, RotateCcwIcon, ThumbsDownIcon, ThumbsUpIcon, XIcon } from 'lucide-react';
 import { Butterfly } from './butterfly';
 import { PERSONA_BY_KEY } from '@/lib/assistant-personas';
 import { cn } from '@/lib/utils';
@@ -58,6 +58,9 @@ export function AssistantWidget({ user, aiName }) {
   const locked = DEMO && demoAi?.left === 0;
   // This person's persona (chosen in Settings → My assistant): per login on the live app; in the browser on the demo.
   const [persona, setPersona] = useState('plain');
+  // Manual (the card) or Auto (adds and edits save at once, with Undo). Shown only when the server says this role may.
+  const [mayAuto, setMayAuto] = useState(false);
+  const [auto, setAuto] = useState(false);
   const loadedAt = useRef(0); // the briefing is time-aware: reload it when the panel opens after 10+ minutes
   const endRef = useRef(null);
   const lastAnswerRef = useRef(null);
@@ -111,14 +114,23 @@ export function AssistantWidget({ user, aiName }) {
   // Read on every open, so a change made in Settings applies straight away.
   useEffect(() => {
     if (!open) return;
-    if (DEMO) { const p = store.get('ai_persona'); setPersona(PERSONA_BY_KEY[p] ? p : 'plain'); return; }
-    fetch('/api/assistant/persona').then((r) => (r.ok ? r.json() : null)).then((d) => d && setPersona(d.persona)).catch(() => {});
+    fetch('/api/assistant/persona').then((r) => (r.ok ? r.json() : null)).then((d) => {
+      if (!d) return;
+      setMayAuto(!!d.mayAuto);
+      if (DEMO) { const p = store.get('ai_persona'); setPersona(PERSONA_BY_KEY[p] ? p : 'plain'); setAuto(store.get('ai_auto') === '1'); }
+      else { setPersona(d.persona); setAuto(!!d.auto); }
+    }).catch(() => {});
   }, [open]);
 
   useEffect(() => {
     if (!DEMO) return;
     fetch('/api/demo/ai').then((r) => (r.ok ? r.json() : null)).then((d) => d && setDemoAi(d)).catch(() => {});
   }, []);
+  const flipAuto = () => {
+    const next = !auto; setAuto(next);
+    if (DEMO) store.set('ai_auto', next ? '1' : '0');
+    else fetch('/api/assistant/persona', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ auto: next }) }).catch(() => {});
+  };
   const showLimit = () => { setLimitOpen(true); track('interiors_demo_ai_limit'); };
 
   // Once a day a sticky note appears beside the button.
@@ -172,14 +184,15 @@ export function AssistantWidget({ user, aiName }) {
       if (!res.ok || !data?.reply) {
         setMsgs((m) => [...m, { id: idRef.current++, role: 'assistant', error: { text: data?.error || 'Something went wrong. Please try again.', link: data?.link, linkLabel: data?.linkLabel } }]);
       } else {
-        setMsgs((m) => [...m, { id: idRef.current++, role: 'assistant', reply: data.reply, content: replyText(data.reply) }]);
+        // `auto` is stamped when the answer arrives, so flipping the toggle later never saves an older card.
+        setMsgs((m) => [...m, { id: idRef.current++, role: 'assistant', reply: data.reply, content: replyText(data.reply), auto: mayAuto && auto }]);
         // Keep the last table's context through text turns ("thanks", a how-to) so a later "did it make money?" still knows "it".
         if (data.reply.type === 'table') contextRef.current = data.reply.context ?? null;
       }
     } catch {
       setMsgs((m) => [...m, { id: idRef.current++, role: 'assistant', error: { text: 'Could not reach the server. Check your connection and try again.' } }]);
     } finally { setBusy(false); }
-  }, [msgs, text, busy, pathname, locked, persona]);
+  }, [msgs, text, busy, pathname, locked, persona, mayAuto, auto]);
 
   // Thumbs on an answer: one log row; a thumbs-down also lands in Settings → My assistant → "Questions it couldn't answer".
   const rate = useCallback((id, question, tool, good) => {
@@ -358,8 +371,8 @@ export function AssistantWidget({ user, aiName }) {
                 </>
               ) : m.reply?.type === 'draft' ? (
                 <>
-                  <p className="text-[13.5px]">{m.reply.text}</p>
-                  <DraftCard draft={m.reply.draft} user={user.username} onNavigate={closeOnPhone} />
+                  {!(m.auto && m.reply.draft.auto && m.reply.draft.ready) && <p className="text-[13.5px]">{m.reply.text}</p>}
+                  <DraftCard draft={m.reply.draft} user={user.username} auto={m.auto} onNavigate={closeOnPhone} />
                 </>
               ) : m.reply ? (
                 <>
@@ -396,10 +409,17 @@ export function AssistantWidget({ user, aiName }) {
       {/* composer */}
       <form className="border-t border-dashed px-3 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))]" onSubmit={(e) => { e.preventDefault(); send(); }}>
         <div className="flex items-end gap-2 rounded-lg border bg-card p-1.5 transition-shadow focus-within:border-primary/40 focus-within:ring-2 focus-within:ring-primary/10">
-          <textarea ref={inputRef} value={text} rows={1} maxLength={600} placeholder="Ask about a project, order, invoice…"
+          <textarea ref={inputRef} value={text} rows={1} maxLength={600} placeholder={mayAuto ? 'Ask about a project, order…' : 'Ask about a project, order, invoice…'}
             onChange={(e) => { setText(e.target.value); e.target.style.height = 'auto'; e.target.style.height = `${Math.min(e.target.scrollHeight, 112)}px`; }}
             onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
             className="max-h-28 min-h-9 flex-1 resize-none bg-transparent px-2.5 py-2 text-base outline-none placeholder:text-muted-foreground/70 md:text-sm" />
+          {mayAuto && (
+            <button type="button" onClick={flipAuto} aria-pressed={auto} aria-label={auto ? 'Auto mode (tap for Manual)' : 'Manual mode (tap for Auto)'}
+              title={auto ? 'Auto: adds and edits save at once, with Undo. Deletes, payments and approvals still ask.' : 'Manual: every change shows a card to check and Save.'}
+              className={cn('mb-1.5 inline-flex h-6 shrink-0 items-center gap-1 rounded-full border px-1.5 text-[11px] transition-colors sm:px-2', auto ? 'border-primary/50 bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground')}>
+              <ZapIcon className={cn('size-3', !auto && 'opacity-50')} /><span className="hidden sm:inline">{auto ? 'Auto' : 'Manual'}</span>
+            </button>
+          )}
           <button type="submit" disabled={busy || !text.trim()} aria-label="Send"
             className="grid size-9 shrink-0 place-items-center rounded-md bg-primary text-primary-foreground transition-all hover:opacity-90 active:scale-95 disabled:bg-muted disabled:text-muted-foreground">
             <ArrowUpIcon className="size-4" />

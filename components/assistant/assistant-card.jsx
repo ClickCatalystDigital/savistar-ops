@@ -11,6 +11,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { LOCALE, w } from '@/lib/market';
 
@@ -381,6 +382,35 @@ export function AssistantCard() {
               </span>
             </span>
           </label>
+
+          <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-dashed p-3">
+            <Switch checked={s.actions.on} disabled={busy} className="mt-0.5"
+              onCheckedChange={(on) => put({ actions: { on } }, on ? 'Assistant changes switched on' : 'Assistant changes switched off')} />
+            <span className="flex flex-col gap-1">
+              <span className="text-sm font-medium">Allow changes from the assistant</span>
+              <span className="text-xs text-muted-foreground">
+                {s.actions.on
+                  ? 'On. It can prepare changes (add a task, log a visit…) as a card; nothing is saved until Save, or at once in Auto.'
+                  : 'Off. No change cards, in chat or from Claude / ChatGPT; questions and how-to still work.'}
+              </span>
+            </span>
+          </label>
+
+          {s.actions.on && (
+            <div className="flex flex-col gap-2 rounded-lg border border-dashed p-3">
+              <span className="text-sm font-medium">Roles that may use Auto</span>
+              <div className="flex flex-wrap gap-x-4 gap-y-2">
+                {[['owner', 'Owner'], ['admin', 'Admin'], ['manager', 'Manager'], ['user', 'Staff']].map(([r, label]) => (
+                  <label key={r} className="flex cursor-pointer items-center gap-1.5 text-sm">
+                    <Checkbox checked={s.actions.autoRoles.includes(r)} disabled={busy}
+                      onCheckedChange={(c) => put({ actions: { autoRoles: c ? [...s.actions.autoRoles, r] : s.actions.autoRoles.filter((x) => x !== r) } }, 'Auto roles saved')} />
+                    {label}
+                  </label>
+                ))}
+              </div>
+              <span className="text-xs text-muted-foreground">These people get a Manual / Auto switch in chat. In Auto, adds and edits save at once with Undo; deletes, payments and approvals always show the card. Claude / ChatGPT always ask first.</span>
+            </div>
+          )}
         </div>
 
         <MissedQuestions />

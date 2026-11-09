@@ -110,6 +110,14 @@ summary from a writing model. A look-up never changes data.
   POs (place, delivery, cancel, delete), freight bills and agreed rates (add, delete). Not from chat: file uploads,
   logins, the BOQ library and the multi-line quotation / invoice editors. `scripts/check-actions.mjs` runs every
   action end to end on a throwaway copy of the local database.
+- **Manual / Auto** (Settings → My assistant, owners and admins): “Allow changes from the assistant” (off = no change
+  cards in chat or MCP; look-ups and how-to unchanged) and “Roles that may use Auto” (none ticked by default). Those roles
+  get a small Manual / Auto switch beside the chat box, remembered per person. In Auto, an add or edit saves at once
+  and shows “Done · Undo”; the server re-checks the role and the action (`autoOk` in `lib/assistantActions.js`).
+  Deletes, payments (invoice paid, payroll, cash out), approvals (accept / decline a quote), stage invoices and actions
+  with no clean reverse (attendance, conversations, send / revise quote, deliveries, route rates) always show the card.
+  Undo runs the route's own reverse (delete what was created, or put the old row back), signed for that person, 30
+  minutes. MCP always proposes, then confirms. `scripts/check-actions.mjs` covers Auto by role, refusals, the switch and Undo.
 - `scripts/assistant-eval.mjs` runs 55 questions (incl. fragments, typos and Hinglish) against a server with the demo data.
 
 ## QuickBooks Online (North American public demo only)

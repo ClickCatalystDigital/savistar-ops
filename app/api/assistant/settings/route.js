@@ -1,4 +1,4 @@
-// Settings → My assistant (owner/admin): OpenRouter key, model, answer mode, daily limit, data-questions switch.
+// Settings → My assistant (owner/admin): OpenRouter key, model, answer mode, daily limit, data-questions switch, assistant changes (on/off, roles that may use Auto).
 // The key is write-only: responses carry `hasKey` + the last 4 characters, never the key.
 import { NextResponse } from 'next/server';
 import { getUserFromRequest } from '@/lib/auth';
@@ -28,6 +28,15 @@ export async function PUT(req) {
   if (typeof b.dataAccess === 'boolean') {
     await A.setSettings(user, [['assistant_data_access', JSON.stringify({ on: b.dataAccess, by: user, at: A.nowIST() })]]);
     await A.audit(user, b.dataAccess ? 'data_access_on' : 'data_access_off', {});
+    return NextResponse.json(await payload());
+  }
+
+  if (b.actions && typeof b.actions === 'object') {
+    const cur = (await A.getSettings()).actions;
+    const on = typeof b.actions.on === 'boolean' ? b.actions.on : cur.on;
+    const autoRoles = Array.isArray(b.actions.autoRoles) ? A.AUTO_ROLES.filter((r) => b.actions.autoRoles.includes(r)) : cur.autoRoles;
+    await A.setSettings(user, [['assistant_actions', JSON.stringify({ on, autoRoles })]]);
+    await A.audit(user, 'actions', { on, autoRoles });
     return NextResponse.json(await payload());
   }
 
