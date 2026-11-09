@@ -30,7 +30,10 @@ delete process.env.SKIP_MIGRATE;
 const { initDB, execute } = await import('../lib/db.js');
 await initDB();
 const { ACTIONS, fill, check } = await import('../lib/assistantActions.js');
-const { routeFor, runAction, runUndo } = await import('../lib/actionRunner.js');
+const { routeFor, runAction: runRaw, runUndo } = await import('../lib/actionRunner.js');
+// Every action must succeed end to end at least once (checked at the bottom).
+const ranOk = new Set();
+const runAction = async (...a) => { const r = await runRaw(...a); if (r.ok) ranOk.add(a[1]); return r; };
 const day = '2026-11-07'; // a Saturday
 
 // Sample records the sentences below name.
@@ -51,6 +54,9 @@ const exp = await id("INSERT INTO employee_expenses (employee_id, date, kind, am
 const visit = await id('INSERT INTO site_visits (project_id, visit_date, notes) VALUES (?, ?, ?)', [proj, '2026-11-04', 'Plumbing points marked']);
 const rate = await id('INSERT INTO vendor_rates (vendor_id, from_loc, to_loc, expected_amount) VALUES (?, ?, ?, 1400)', [vendor, 'Narol', 'Bopal']);
 const fr = await id('INSERT INTO freight_charges (vendor_id, date, from_loc, to_loc, amount) VALUES (?, ?, ?, ?, 1800)', [vendor, '2026-11-03', 'Narol', 'Bopal']);
+await execute("INSERT INTO vendor_deliveries (vendor_po_id, date, qty_delivered) VALUES (?, '2026-11-02', 5)", [po]);
+const doneTask = await id("INSERT INTO tasks (title, due_date, status) VALUES (?, ?, 'done')", ['Send site photos to Kiran', '2026-11-03']);
+const dristi = (await (await import('../lib/db.js')).queryOne("SELECT id FROM users WHERE username = 'dristi'")).id;
 const wl = await id('INSERT INTO work_logs (employee_id, order_id, date, description) VALUES (?, ?, ?, ?)', [emp, ord, '2026-11-05', 'Fluting on the counter front']);
 await execute("INSERT INTO attendance (employee_id, date, status) VALUES (?, '2026-10-05', 'present'), (?, '2026-10-06', 'present'), (?, '2026-10-07', 'half')", [emp, emp, emp]);
 await execute("INSERT INTO employee_expenses (employee_id, date, kind, amount) VALUES (?, '2026-10-10', 'advance', 500)", [emp]);
@@ -112,6 +118,11 @@ const cases = [
   ['delete_vendor_rate', 'delete the Narol to Bopal rate for Gujarat Ply', { rate }],
   ['delete_freight', 'delete the Narol Bopal freight bill', { freight: fr }],
   ['delete_work_log', "delete Ramesh's fluting work log", { log: wl }],
+  ['record_return', 'returned 2 sheets of BWR plywood to Gujarat Ply, damaged', { po, qty_returned: 2 }],
+  ['reschedule_order', 'move the cafe counter order to friday', { order: ord, due_date: '2026-11-13' }],
+  ['reopen_task', 'reopen the site photos task', { task: doneTask }],
+  ['assign_task', 'give the collect cheque task to Dristi', { task, user: dristi }],
+  ['edit_po', 'change the BWR plywood PO rate to 2600', { po, rate: 2600, qty_ordered: null }],
 ];
 for (const [key, q, want] of cases) {
   const c = await fill(key, q, day);
@@ -257,9 +268,46 @@ assert.ok(!(await runAction(staffUser, 'edit_cash_entry', { entry: other.result.
 await setActions({ on: false, autoRoles: ['owner'] });
 const off = await runAction(owner, 'add_client', { name: 'Switched off' });
 assert.ok(!off.ok && off.status === 403 && /switched off/.test(off.error), `switch off: ${off.error}`);
+// The five added last, end to end (with Auto and Undo where they have it).
+await setActions({ on: true, autoRoles: ['owner'] });
+const Qd = await run('new_quote', { client: kiran, title: 'Decline check' });
+const qd = await Q.loadQuotation(Qd.result.id);
+await Q.saveQuotation(Qd.result.id, { ...qd, items: [{ description: 'TV unit', unit: 'nos', qty: 1, rate: 30000, gst_pct: 18 }], stages: qd.stages });
+await run('send_quote', { quote: Qd.result.id });
+await run('decline_quote', { quote: Qd.result.id });
+const Qa = await run('new_quote', { client: kiran, title: 'Accept check' });
+const qa = await Q.loadQuotation(Qa.result.id);
+await Q.saveQuotation(Qa.result.id, { ...qa, items: [{ description: 'Bed back panel', unit: 'sqft', qty: 40, rate: 650, gst_pct: 18 }], stages: qa.stages });
+await run('accept_quote', { quote: Qa.result.id });
+assert.equal((await Q1('SELECT status FROM quotations WHERE id = ?', [Qa.result.id])).status, 'accepted');
+assert.equal((await Q1('SELECT status FROM quotations WHERE id = ?', [Qd.result.id])).status, 'declined');
+const po3 = await run('add_vendor_po', { vendor, item: 'Laminate 1 mm', qty_ordered: 10, rate: 900 });
+await run('record_delivery', { po: po3.result.id, qty_delivered: 6, date: day });
+await run('record_return', { po: po3.result.id, qty_returned: 2, notes: 'Chipped', date: day });
+assert.ok(!(await runAction(owner, 'record_return', { po: po3.result.id, qty_returned: 9, date: day })).ok, 'cannot return more than delivered');
+assert.ok((await runAction(owner, 'record_return', { po: po3.result.id, qty_returned: 1, date: day }, { auto: true })).needsCard, 'a return has no clean reverse: card');
+const ae = await auto(owner, 'edit_po', { po: po3.result.id, rate: 950 });
+assert.deepEqual({ ...(await Q1('SELECT qty_ordered, rate, item FROM vendor_pos WHERE id = ?', [po3.result.id])) }, { qty_ordered: 10, rate: 950, item: 'Laminate 1 mm' });
+assert.ok((await runUndo(owner, ae.undo)).ok); assert.equal((await Q1('SELECT rate FROM vendor_pos WHERE id = ?', [po3.result.id])).rate, 900, 'undo edit_po');
+const o3 = await run('add_order', { item: 'Shoe rack', qty: 1, due_date: '2026-11-20' });
+const ao = await auto(owner, 'reschedule_order', { order: o3.result.id, due_date: '2026-11-27' });
+assert.deepEqual({ ...(await Q1('SELECT due_date, item, status FROM orders WHERE id = ?', [o3.result.id])) }, { due_date: '2026-11-27', item: 'Shoe rack', status: 'pending' });
+assert.ok((await runUndo(owner, ao.undo)).ok); assert.equal((await Q1('SELECT due_date FROM orders WHERE id = ?', [o3.result.id])).due_date, '2026-11-20', 'undo reschedule_order');
+const aro = await auto(owner, 'reopen_task', { task: doneTask });
+assert.equal((await Q1('SELECT status FROM tasks WHERE id = ?', [doneTask])).status, 'open');
+assert.ok((await runUndo(owner, aro.undo)).ok); assert.equal((await Q1('SELECT status FROM tasks WHERE id = ?', [doneTask])).status, 'done', 'undo reopen_task');
+const t4 = await run('add_task', { title: 'Hand this over', due_date: day });
+const aa = await auto(owner, 'assign_task', { task: t4.result.id, user: dristi });
+assert.equal((await Q1('SELECT assigned_to FROM tasks WHERE id = ?', [t4.result.id])).assigned_to, 'dristi');
+assert.ok((await runUndo(owner, aa.undo)).ok); assert.equal((await Q1('SELECT assigned_to FROM tasks WHERE id = ?', [t4.result.id])).assigned_to, 'hari', 'undo assign_task');
+const st = await runAction(staffUser, 'add_task', { title: 'Staff own task', due_date: day });
+const sa = await runAction(staffUser, 'assign_task', { task: st.result.id, user: 1 });
+assert.ok(!sa.ok && /owners and managers/.test(sa.error), `staff can't hand a task on: ${sa.error}`);
+assert.deepEqual(ACTIONS.map((a) => a.key).filter((k) => !ranOk.has(k)), [], 'every action ran end to end');
+
 // (MCP's propose_action reads the same switch; its module needs the native PDF reader, so it is not loaded here.)
 await setActions({ on: true, autoRoles: [] });
 
 rmSync(db, { force: true });
-console.log(`check-actions: ${ACTIONS.length} actions wired (${ACTIONS.filter((a) => a.undo && !a.confirm).length} auto-able), ${cases.length} sentences filled, end-to-end run, Auto and Undo passed`);
+console.log(`check-actions: ${ACTIONS.length} actions wired (${ACTIONS.filter((a) => a.undo && !a.confirm).length} auto-able), ${cases.length} sentences filled, every action end to end, Auto and Undo passed`);
 process.exit(0);
