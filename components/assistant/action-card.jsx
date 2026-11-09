@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ArrowUpRightIcon, Trash2Icon, WandSparklesIcon } from 'lucide-react';
+import { ArrowUpRightIcon, Trash2Icon, Undo2Icon, WandSparklesIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -10,34 +10,55 @@ import { DateInput } from '@/components/ui/date-input';
 
 // A task the assistant prepared (lib/assistantActions.js): every field shown and editable, nothing saved until Save.
 // Save sends the fields to /api/assistant/act, which checks them again and runs the app's own route as this person.
-export function ActionCard({ draft, onNavigate }) {
+// auto (chat's Auto mode): an add or edit the server agrees may skip the card saves at once and shows "Done · Undo";
+// if the server says no (a delete, a payment, a role without Auto) the card shows as usual.
+export function ActionCard({ draft, auto, onNavigate }) {
   const [values, setValues] = useState(draft.values);
   const [display, setDisplay] = useState(Object.fromEntries(draft.fields.filter((f) => f.type === 'ref').map((f) => [f.name, f.display || ''])));
   const [state, setState] = useState('draft'); // draft | saving | saved | cancelled
   const [error, setError] = useState(draft.errors?.join('. ') || null);
   const [done, setDone] = useState(null);
+  const tried = useRef(false);
   const set = (name, v) => setValues((x) => ({ ...x, [name]: v }));
   const del = draft.risk === 'delete';
   const missing = draft.fields.filter((f) => f.required && (values[f.name] == null || values[f.name] === ''));
 
-  async function save() {
+  const post = async (body) => (await fetch('/api/assistant/act', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })).json().catch(() => ({}));
+
+  async function save(isAuto = false) {
     setState('saving'); setError(null);
     try {
-      const res = await fetch('/api/assistant/act', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: draft.action, fields: values }) });
-      const out = await res.json().catch(() => ({}));
+      const out = await post({ action: draft.action, fields: values, auto: isAuto });
+      if (out.needsCard) { setState('draft'); return; }
       if (!out.ok) throw new Error(out.error || 'Could not save');
       setDone(out); setState('saved');
     } catch (e) { setError(e.message); setState('draft'); }
   }
 
-  if (state === 'saved') {
+  async function undo() {
+    setState('undoing');
+    const out = await post({ undo: done.undo });
+    if (out.ok) setState('undone'); else { setDone({ ...done, undo: null, error: out.error || 'Could not undo' }); setState('saved'); }
+  }
+
+  // Once, on arrival (the ref survives React's double effect in development).
+  useEffect(() => {
+    if (tried.current || !auto || !draft.auto || !draft.ready) return;
+    tried.current = true; save(true);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (state === 'saved' || state === 'undoing') {
     return (
       <p className="flex flex-wrap items-center gap-x-2 border-l-2 border-[color-mix(in_oklab,var(--success)_55%,transparent)] py-0.5 pl-3 text-[13.5px]">
         Done: {done.summary}.
         {done.link && <Link href={done.link} onClick={onNavigate} className="inline-flex items-center gap-0.5 font-hand text-[13px] text-primary">Open <ArrowUpRightIcon className="size-3" /></Link>}
+        {done.undo && <button type="button" disabled={state === 'undoing'} onClick={undo} className="inline-flex items-center gap-0.5 font-hand text-[13px] text-primary disabled:opacity-50"><Undo2Icon className="size-3" /> {state === 'undoing' ? 'Undoing…' : 'Undo'}</button>}
+        {done.error && <span className="text-[12px] text-destructive">{done.error}</span>}
       </p>
     );
   }
+  if (state === 'undone') return <p className="text-[13px] text-muted-foreground">Undone: {done.summary}.</p>;
+  if (state === 'saving' && auto && draft.auto && !done && tried.current && !error) return <p className="text-[13px] text-muted-foreground">Saving: {draft.summary}…</p>;
   if (state === 'cancelled') return <p className="text-[13px] text-muted-foreground">Not saved.</p>;
 
   return (
@@ -55,7 +76,7 @@ export function ActionCard({ draft, onNavigate }) {
       {error && <p className="mt-2 text-[12px] text-destructive">{error}</p>}
       <div className="mt-3 flex items-center justify-end gap-2">
         <button type="button" onClick={() => setState('cancelled')} className="rounded-md px-3 py-1.5 text-[13px] opacity-70 hover:opacity-100">Cancel</button>
-        <button type="button" onClick={save} disabled={state === 'saving' || missing.length > 0}
+        <button type="button" onClick={() => save()} disabled={state === 'saving' || missing.length > 0}
           className={cn('rounded-md px-3 py-1.5 text-[13px] transition-opacity hover:opacity-90 disabled:opacity-50', del ? 'bg-destructive text-white' : 'bg-primary text-primary-foreground')}>
           {state === 'saving' ? 'Saving…' : missing.length ? `Add ${missing[0].label.toLowerCase()}` : del ? 'Delete' : 'Save'}
         </button>

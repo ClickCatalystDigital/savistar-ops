@@ -12,8 +12,8 @@ import { ActionCard } from './action-card';
 
 // A reminder or note the assistant drafted. Nothing is saved until the person presses Save: a reminder becomes their
 // own task through the normal Tasks API (Home and the calendar show it), a note goes to their private notes.
-export function DraftCard({ draft, user, onNavigate }) {
-  if (draft.kind === 'action') return <ActionCard draft={draft} onNavigate={onNavigate} />;
+export function DraftCard({ draft, user, auto, onNavigate }) {
+  if (draft.kind === 'action') return <ActionCard draft={draft} auto={auto} onNavigate={onNavigate} />;
   return <ReminderOrNote draft={draft} user={user} onNavigate={onNavigate} />;
 }
 

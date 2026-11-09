@@ -1,7 +1,8 @@
 // Self-check for the assistant's actions (lib/assistantActions.js + lib/actionRunner.js), no model calls:
 //   1. every action's request maps to a real route module and method;
 //   2. sample sentences fill the right fields (names, dates, amounts, choices);
-//   3. every action runs end to end through its route, on a throwaway copy of the local database.
+//   3. every action runs end to end through its route, on a throwaway copy of the local database;
+//   4. Auto mode: allowed by role, always-confirm actions refused, the Settings switch, Undo.
 //   node --no-warnings scripts/check-actions.mjs
 import assert from 'node:assert/strict';
 import { copyFileSync, existsSync, rmSync } from 'node:fs';
@@ -29,7 +30,7 @@ delete process.env.SKIP_MIGRATE;
 const { initDB, execute } = await import('../lib/db.js');
 await initDB();
 const { ACTIONS, fill, check } = await import('../lib/assistantActions.js');
-const { routeFor, runAction } = await import('../lib/actionRunner.js');
+const { routeFor, runAction, runUndo } = await import('../lib/actionRunner.js');
 const day = '2026-11-07'; // a Saturday
 
 // Sample records the sentences below name.
@@ -217,6 +218,48 @@ await run('delete_employee', { employee: de.result.id }); await gone('employees'
 const missing = await runAction(owner, 'add_client', {});
 assert.ok(!missing.ok && /Missing: name/.test(missing.error));
 
+// 4. Auto mode. Off for every role until Settings ticks some; the server decides, not the card.
+const { setSettings } = await import('../lib/assistant.js');
+const Q1 = (await import('../lib/db.js')).queryOne;
+const setActions = (v) => setSettings('hari', [['assistant_actions', JSON.stringify(v)]]);
+assert.ok((await runAction(owner, 'add_task', { title: 'Auto nobody', due_date: day }, { auto: true })).needsCard, 'no roles ticked: card');
+await setActions({ on: true, autoRoles: ['owner'] });
+const auto = async (who, key, f) => { const r = await runAction(who, key, f, { auto: true }); assert.ok(r.ok && r.undo, `${key} auto: ${r.error}`); return r; };
+assert.ok((await runAction(staffUser, 'cash_entry', { kind: 'credit', amount: 100, date: day }, { auto: true })).needsCard, 'staff role not ticked: card');
+// Always the card in Auto: a delete, a payment, an approval, a stage invoice, cash out; and one with no clean reverse.
+for (const [key, f] of [['delete_task', { task }], ['mark_invoice_paid', { invoice: inv }], ['accept_quote', { quote: qid }], ['raise_stage_invoice', { quote: qid }],
+  ['record_payroll', { employee: emp, period: '2026-09' }], ['cash_entry', { kind: 'debit', amount: 100, date: day }], ['mark_attendance', { employee: emp, status: 'present', date: day }]]) {
+  const r = await runAction(owner, key, f, { auto: true });
+  assert.ok(!r.ok && r.needsCard, `${key} must need the card in Auto: ${r.error}`);
+}
+assert.ok(ACTIONS.filter((a) => a.risk === 'delete').every((a) => !a.undo), 'no delete is auto-able');
+// Undo: a create is deleted, an edit is put back.
+const at = await auto(owner, 'add_task', { title: 'Auto task', due_date: day });
+assert.ok((await runUndo(owner, at.undo)).ok); assert.equal((await Q1('SELECT is_deleted_record AS d FROM tasks WHERE id = ?', [at.result.id])).d, 1, 'undo add_task');
+const ac = await auto(owner, 'cash_entry', { kind: 'credit', amount: 2500, party: 'Kiran', date: day });
+assert.ok((await runUndo(owner, ac.undo)).ok); assert.equal((await Q1('SELECT is_deleted_record AS d FROM cash_transactions WHERE id = ?', [ac.result.id])).d, 1, 'undo cash in');
+const before = (await Q1('SELECT pay_rate FROM employees WHERE id = ?', [emp])).pay_rate;
+const ap = await auto(owner, 'set_pay_rate', { employee: emp, pay_rate: 1100 });
+assert.equal((await Q1('SELECT pay_rate FROM employees WHERE id = ?', [emp])).pay_rate, 1100);
+assert.ok(!(await runUndo(staffUser, ap.undo)).ok, "someone else can't use the undo");
+assert.ok((await runUndo(owner, ap.undo)).ok); assert.equal((await Q1('SELECT pay_rate FROM employees WHERE id = ?', [emp])).pay_rate, before, 'undo set_pay_rate');
+const t3 = await run('add_task', { title: 'Auto move', due_date: day });
+const ar = await auto(owner, 'reschedule_task', { task: t3.result.id, due_date: '2026-12-01' });
+assert.ok((await runUndo(owner, ar.undo)).ok); assert.equal((await Q1('SELECT due_date FROM tasks WHERE id = ?', [t3.result.id])).due_date, day, 'undo reschedule_task');
+assert.ok(!(await runUndo(owner, 'forged')).ok, 'a forged undo is refused');
+// Staff ticked: Auto for their own entry; the cash route's own rule still keeps them off others'.
+await setActions({ on: true, autoRoles: ['owner', 'user'] });
+const sc = await auto(staffUser, 'cash_entry', { kind: 'credit', amount: 300, date: day });
+assert.ok((await runUndo(staffUser, sc.undo)).ok);
+const other = await run('cash_entry', { kind: 'credit', amount: 400, date: day });
+assert.ok(!(await runAction(staffUser, 'edit_cash_entry', { entry: other.result.id, amount: 1 }, { auto: true })).ok, "staff still can't touch others' cash in Auto");
+// The Settings switch off: no changes from the assistant at all (chat card, Auto, or MCP confirm).
+await setActions({ on: false, autoRoles: ['owner'] });
+const off = await runAction(owner, 'add_client', { name: 'Switched off' });
+assert.ok(!off.ok && off.status === 403 && /switched off/.test(off.error), `switch off: ${off.error}`);
+// (MCP's propose_action reads the same switch; its module needs the native PDF reader, so it is not loaded here.)
+await setActions({ on: true, autoRoles: [] });
+
 rmSync(db, { force: true });
-console.log(`check-actions: ${ACTIONS.length} actions wired, ${cases.length} sentences filled, end-to-end run passed`);
+console.log(`check-actions: ${ACTIONS.length} actions wired (${ACTIONS.filter((a) => a.undo && !a.confirm).length} auto-able), ${cases.length} sentences filled, end-to-end run, Auto and Undo passed`);
 process.exit(0);
