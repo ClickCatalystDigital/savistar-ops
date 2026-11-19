@@ -12,6 +12,7 @@ const PUBLIC_PATHS = ['/login', '/api/login', '/api/version', '/mcp', '/oauth/re
 // /demo, password login is off, and changes to logins and file uploads (incl. AI bank-statement reading)
 // are refused. Same as SB Ops' demoGuard.
 const DEMO_PUBLIC = ['/demo', '/api/demo/lead', '/api/demo/enter', '/api/demo/pass'];
+const GUEST_OPEN = ['/api/logout', '/api/assistant/chat'];
 const DEMO_BLOCKED = ['/api/users', '/api/attachments', '/api/documents'];
 const DEMO_AI_OPEN = ['/api/assistant/chat', '/api/assistant/briefing', '/api/assistant/starters', '/api/assistant/feedback', '/api/assistant/act', '/api/assistant/cue-cards'];
 function demoGuard(req, pathname) {
@@ -22,6 +23,10 @@ function demoGuard(req, pathname) {
   // The assistant: only asking (and its briefing, starters, thumbs) — never its settings, key or logs.
   if (pathname.startsWith('/api/assistant') && !DEMO_AI_OPEN.includes(pathname) && !(pathname === '/api/assistant/persona' && req.method === 'GET')) return NextResponse.json({ error: 'Not available in the demo' }, { status: 403 });
   const write = !['GET', 'HEAD', 'OPTIONS'].includes(req.method);
+  // Guest pass (lib/demo-leads.js): view-only. Only signing in or out, the pass box and asking the assistant get through.
+  if (write && req.cookies.get('demo_lead')?.value?.startsWith('guest.') && !GUEST_OPEN.includes(pathname)) {
+    return NextResponse.json({ error: 'This demo pass is view-only, so nothing can be changed.' }, { status: 403 });
+  }
   // A user's avatar is allowed through: lib/r2.js lets only the owner-pass browser store the picture, and
   // PUT /api/users/<id> accepts only its colour and font, from that browser only.
   const avatar = /^\/api\/users\/\d+\/avatar$/.test(pathname) || (req.method === 'PUT' && /^\/api\/users\/\d+$/.test(pathname));

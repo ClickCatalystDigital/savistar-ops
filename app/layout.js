@@ -11,7 +11,7 @@ import { queryOne } from '@/lib/db';
 import { AssistantWidget } from '@/components/assistant/assistant-widget';
 import { getAiName } from '@/lib/assistant';
 import { cookies } from 'next/headers';
-import { isOwnerPass } from '@/lib/demo-leads';
+import { isOwnerPass, isGuestToken } from '@/lib/demo-leads';
 
 // Home's type system (app/page.js) for every page: --font-hand for titles and labels,
 // --font-figures for dates and money (globals.css .font-hand / .figures).
@@ -31,7 +31,9 @@ const themeInit = `(function(){try{var t=localStorage.getItem('theme');if(t)docu
 export default async function RootLayout({ children }) {
   const session = await getSessionUser();
   // Public demo: the owner-pass browser edits the saved copy (kept); every other browser's changes go at the nightly reset.
-  const demoOwner = process.env.DEMO_MODE === '1' && isOwnerPass((await cookies()).get('demo_lead')?.value);
+  const demoLead = (await cookies()).get('demo_lead')?.value;
+  const demoOwner = process.env.DEMO_MODE === '1' && isOwnerPass(demoLead);
+  const demoGuest = process.env.DEMO_MODE === '1' && isGuestToken(demoLead);
   // The nav shows the login's avatar; the token doesn't carry it.
   const user = session && {
     ...session,
@@ -50,6 +52,7 @@ export default async function RootLayout({ children }) {
             <div data-demo-pill className="fixed bottom-20 left-1/2 z-50 -translate-x-1/2 whitespace-nowrap rounded-full border bg-background/95 px-3 py-1.5 text-xs text-muted-foreground shadow-md backdrop-blur md:bottom-4 print:hidden">
               {demoOwner
                 ? <span className="font-medium text-primary">Owner mode<span className="hidden sm:inline"> · changes saved</span></span>
+                : demoGuest ? <span className="font-medium">View-only pass</span>
                 : <>Demo<span className="hidden sm:inline"> · resets nightly</span></>} ·{' '}
               <a href="/demo" className="font-medium text-foreground underline-offset-2 hover:underline">Switch login</a> ·{' '}
               <DemoWhatsApp />
